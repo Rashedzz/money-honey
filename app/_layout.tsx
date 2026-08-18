@@ -1,15 +1,22 @@
-import React, { useEffect } from 'react';
+import React from 'react';
+import { Platform } from 'react-native';
 import { Stack } from 'expo-router';
 import { DatabaseProvider } from '../src/db/DatabaseProvider';
-import * as Notifications from 'expo-notifications';
 
-Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldShowAlert: true,
-    shouldPlaySound: true,
-    shouldSetBadge: false,
-  }),
-});
+if (Platform.OS !== 'web') {
+  try {
+    const Notifications = require('expo-notifications');
+    Notifications.setNotificationHandler({
+      handleNotification: async () => ({
+        shouldShowAlert: true,
+        shouldPlaySound: true,
+        shouldSetBadge: false,
+      }),
+    });
+  } catch (e) {
+    // Ignore notification setup error on platforms without notification service
+  }
+}
 
 export default function RootLayout() {
   return (

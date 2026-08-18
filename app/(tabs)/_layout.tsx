@@ -1,18 +1,25 @@
 import React from 'react';
 import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { Colors } from '../../src/theme';
 
 export default function TabsLayout() {
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: '#4CAF50',
-        tabBarInactiveTintColor: '#9E9E9E',
+        tabBarActiveTintColor: Colors.primary,
+        tabBarInactiveTintColor: Colors.textMuted,
         tabBarStyle: {
-          backgroundColor: '#ffffff',
-          borderTopColor: '#E0E0E0',
+          backgroundColor: Colors.bgCard,
+          borderTopColor: Colors.border,
           borderTopWidth: 1,
-          elevation: 0,
+          height: 60,
+          paddingBottom: 8,
+          paddingTop: 8,
+        },
+        tabBarLabelStyle: {
+          fontSize: 10,
+          fontWeight: '600',
         },
         headerShown: false,
       }}
@@ -22,7 +29,7 @@ export default function TabsLayout() {
         options={{
           title: 'Dashboard',
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name="home" size={size} color={color} />
+            <Ionicons name="home" size={22} color={color} />
           ),
         }}
       />
@@ -31,7 +38,7 @@ export default function TabsLayout() {
         options={{
           title: 'Accounts',
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name="wallet" size={size} color={color} />
+            <Ionicons name="wallet" size={22} color={color} />
           ),
         }}
       />
@@ -40,7 +47,7 @@ export default function TabsLayout() {
         options={{
           title: 'Loans',
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name="cash-outline" size={size} color={color} />
+            <Ionicons name="cash-outline" size={22} color={color} />
           ),
         }}
       />
@@ -49,7 +56,7 @@ export default function TabsLayout() {
         options={{
           title: 'Investments',
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name="bar-chart" size={size} color={color} />
+            <Ionicons name="trending-up" size={22} color={color} />
           ),
         }}
       />
@@ -58,7 +65,7 @@ export default function TabsLayout() {
         options={{
           title: 'Budget',
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name="pie-chart" size={size} color={color} />
+            <Ionicons name="pie-chart" size={22} color={color} />
           ),
         }}
       />

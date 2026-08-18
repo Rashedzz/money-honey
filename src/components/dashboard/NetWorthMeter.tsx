@@ -1,11 +1,9 @@
 import React, { useEffect } from 'react';
-import { View, Text, StyleSheet, TextInput } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
 import Animated, {
   useSharedValue,
-  useAnimatedProps,
   withSpring,
   useAnimatedStyle,
-  withTiming,
 } from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Colors, Typography, Radius, Spacing } from '../../theme';
@@ -21,10 +19,8 @@ interface NetWorthMeterProps {
   };
 }
 
-const AnimatedTextInput = Animated.createAnimatedComponent(TextInput);
-
 const formatBDT = (amount: number) => {
-  return amount.toLocaleString('en-IN', {
+  return (amount || 0).toLocaleString('en-IN', {
     maximumFractionDigits: 0,
     minimumFractionDigits: 0,
   });
@@ -36,7 +32,6 @@ export const NetWorthMeter: React.FC<NetWorthMeterProps> = ({
   totalLiabilities,
   allocation,
 }) => {
-  const animatedNetWorth = useSharedValue(0);
   const totalAlloc = allocation.cash + allocation.fixedDeposits + allocation.savings || 1;
 
   const widthCash = useSharedValue(0);
@@ -44,17 +39,10 @@ export const NetWorthMeter: React.FC<NetWorthMeterProps> = ({
   const widthSavings = useSharedValue(0);
 
   useEffect(() => {
-    animatedNetWorth.value = withSpring(netWorth, { duration: 1200 });
     widthCash.value = withSpring((allocation.cash / totalAlloc) * 100);
     widthFDR.value = withSpring((allocation.fixedDeposits / totalAlloc) * 100);
     widthSavings.value = withSpring((allocation.savings / totalAlloc) * 100);
-  }, [netWorth, allocation, totalAlloc]);
-
-  const animatedProps = useAnimatedProps(() => {
-    return {
-      text: `৳ ${formatBDT(animatedNetWorth.value)}`,
-    };
-  });
+  }, [allocation, totalAlloc]);
 
   const cashStyle = useAnimatedStyle(() => ({ width: `${widthCash.value}%` }));
   const fdrStyle = useAnimatedStyle(() => ({ width: `${widthFDR.value}%` }));
@@ -69,12 +57,7 @@ export const NetWorthMeter: React.FC<NetWorthMeterProps> = ({
       <LinearGradient colors={['#0F1320', '#161C2D']} style={styles.card}>
         <View style={styles.content}>
           <Text style={styles.label}>NET WORTH</Text>
-          <AnimatedTextInput
-            editable={false}
-            value={`৳ ${formatBDT(netWorth)}`}
-            animatedProps={animatedProps}
-            style={styles.amount}
-          />
+          <Text style={styles.amount}>৳ {formatBDT(netWorth)}</Text>
 
           <View style={styles.badges}>
             <View style={[styles.badge, { backgroundColor: 'rgba(0,229,179,0.1)' }]}>
@@ -143,8 +126,6 @@ const styles = StyleSheet.create({
     ...Typography.displayXL,
     color: Colors.textPrimary,
     marginBottom: Spacing.md,
-    padding: 0,
-    margin: 0,
   },
   badges: {
     flexDirection: 'row',

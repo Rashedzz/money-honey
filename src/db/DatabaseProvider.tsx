@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
-import { Platform } from 'react-native';
+import { Platform, View, Text } from 'react-native';
 import { Database } from '@nozbe/watermelondb';
 import DatabaseProviderWMDB from '@nozbe/watermelondb/DatabaseProvider';
 
@@ -53,6 +53,11 @@ export const DatabaseProvider: React.FC<DatabaseProviderProps> = ({ children }) 
   const [isReady, setIsReady] = useState(false);
 
   useEffect(() => {
+    // Safety fallback timer to prevent blank screen
+    const timer = setTimeout(() => {
+      setIsReady(true);
+    }, 800);
+
     const seedInitialData = async () => {
       try {
         const budgetCategories = await database.get('budget_categories').query().fetch();
@@ -85,14 +90,34 @@ export const DatabaseProvider: React.FC<DatabaseProviderProps> = ({ children }) 
         console.error('Error seeding initial data', error);
       } finally {
         setIsReady(true);
+        clearTimeout(timer);
       }
     };
 
     seedInitialData();
+
+    return () => clearTimeout(timer);
   }, []);
 
   if (!isReady) {
-    return null;
+    return (
+      <View
+        style={{
+          flex: 1,
+          backgroundColor: '#080B14',
+          justifyContent: 'center',
+          alignItems: 'center',
+          padding: 24,
+        }}
+      >
+        <Text style={{ color: '#00E5B3', fontSize: 28, fontWeight: '700', letterSpacing: -0.5 }}>
+          Money-Honey
+        </Text>
+        <Text style={{ color: '#8892A4', fontSize: 13, marginTop: 8 }}>
+          Loading your financial vault...
+        </Text>
+      </View>
+    );
   }
 
   return (
