@@ -1,10 +1,5 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import Animated, {
-  useSharedValue,
-  withSpring,
-  useAnimatedStyle,
-} from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Colors, Typography, Radius, Spacing } from '../../theme';
 
@@ -33,21 +28,6 @@ export const NetWorthMeter: React.FC<NetWorthMeterProps> = ({
   allocation,
 }) => {
   const totalAlloc = allocation.cash + allocation.fixedDeposits + allocation.savings || 1;
-
-  const widthCash = useSharedValue(0);
-  const widthFDR = useSharedValue(0);
-  const widthSavings = useSharedValue(0);
-
-  useEffect(() => {
-    widthCash.value = withSpring((allocation.cash / totalAlloc) * 100);
-    widthFDR.value = withSpring((allocation.fixedDeposits / totalAlloc) * 100);
-    widthSavings.value = withSpring((allocation.savings / totalAlloc) * 100);
-  }, [allocation, totalAlloc]);
-
-  const cashStyle = useAnimatedStyle(() => ({ width: `${widthCash.value}%` }));
-  const fdrStyle = useAnimatedStyle(() => ({ width: `${widthFDR.value}%` }));
-  const savingsStyle = useAnimatedStyle(() => ({ width: `${widthSavings.value}%` }));
-
   const cashPct = Math.round((allocation.cash / totalAlloc) * 100);
   const fdrPct = Math.round((allocation.fixedDeposits / totalAlloc) * 100);
   const savingsPct = Math.round((allocation.savings / totalAlloc) * 100);
@@ -75,15 +55,15 @@ export const NetWorthMeter: React.FC<NetWorthMeterProps> = ({
           <View style={styles.divider} />
 
           <View style={styles.barContainer}>
-            <Animated.View style={[styles.barSegment, { backgroundColor: Colors.primary }, cashStyle]}>
+            <View style={[styles.barSegment, { flex: Math.max(1, allocation.cash), backgroundColor: Colors.primary }]}>
               {cashPct > 15 && <Text style={styles.barText}>{cashPct}%</Text>}
-            </Animated.View>
-            <Animated.View style={[styles.barSegment, { backgroundColor: Colors.secondary }, fdrStyle]}>
+            </View>
+            <View style={[styles.barSegment, { flex: Math.max(1, allocation.fixedDeposits), backgroundColor: Colors.secondary }]}>
               {fdrPct > 15 && <Text style={styles.barText}>{fdrPct}%</Text>}
-            </Animated.View>
-            <Animated.View style={[styles.barSegment, { backgroundColor: Colors.accent }, savingsStyle]}>
+            </View>
+            <View style={[styles.barSegment, { flex: Math.max(1, allocation.savings), backgroundColor: Colors.accent }]}>
               {savingsPct > 15 && <Text style={styles.barText}>{savingsPct}%</Text>}
-            </Animated.View>
+            </View>
           </View>
 
           <View style={styles.legend}>

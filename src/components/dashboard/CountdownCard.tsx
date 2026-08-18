@@ -1,12 +1,5 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import Animated, {
-  useSharedValue,
-  useAnimatedStyle,
-  withRepeat,
-  withSequence,
-  withTiming,
-} from 'react-native-reanimated';
 import { GlassCard } from '../shared/GlassCard';
 import { Colors, Typography, Radius, Spacing, Shadows } from '../../theme';
 
@@ -34,24 +27,6 @@ export const CountdownCard: React.FC<CountdownCardProps> = ({
   percentageElapsed,
   onPress,
 }) => {
-  const pulseOpacity = useSharedValue(1);
-
-  useEffect(() => {
-    if (urgencyLevel === 'critical') {
-      pulseOpacity.value = withRepeat(
-        withSequence(withTiming(0.4, { duration: 1300 }), withTiming(1, { duration: 1000 })),
-        -1,
-        true
-      );
-    } else {
-      pulseOpacity.value = 1;
-    }
-  }, [urgencyLevel]);
-
-  const animatedPulse = useAnimatedStyle(() => ({
-    opacity: pulseOpacity.value,
-  }));
-
   const getUrgencyColor = () => {
     switch (urgencyLevel) {
       case 'critical': return Colors.danger;
@@ -82,7 +57,7 @@ export const CountdownCard: React.FC<CountdownCardProps> = ({
       padding={0}
     >
       <View style={styles.container}>
-        <Animated.View style={[styles.accentBar, { backgroundColor: color }, animatedPulse]} />
+        <View style={[styles.accentBar, { backgroundColor: color }]} />
         <View style={styles.content}>
           <View style={styles.topRow}>
             <Text style={styles.emoji}>{getEmoji()}</Text>
@@ -96,9 +71,9 @@ export const CountdownCard: React.FC<CountdownCardProps> = ({
 
           <View style={styles.bottomRow}>
             <View style={styles.daysBlock}>
-              <Animated.Text style={[styles.daysNumber, { color }, animatedPulse]}>
+              <Text style={[styles.daysNumber, { color }]}>
                 {daysRemaining}
-              </Animated.Text>
+              </Text>
               <Text style={styles.daysLabel}>days</Text>
             </View>
             <View style={styles.amountBlock}>
@@ -109,7 +84,7 @@ export const CountdownCard: React.FC<CountdownCardProps> = ({
         </View>
       </View>
       <View style={styles.progressBg}>
-        <View style={[styles.progressFill, { width: `${percentageElapsed}%`, backgroundColor: color }]} />
+        <View style={[styles.progressFill, { width: `${Math.min(100, Math.max(0, percentageElapsed))}%`, backgroundColor: color }]} />
       </View>
     </GlassCard>
   );

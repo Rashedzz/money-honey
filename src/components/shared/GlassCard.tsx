@@ -1,7 +1,6 @@
 import React from 'react';
 import { View, StyleSheet, TouchableOpacity, StyleProp, ViewStyle } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import { Colors, Radius } from '../../theme';
 
 interface GlassCardProps {
@@ -12,8 +11,6 @@ interface GlassCardProps {
   padding?: number;
 }
 
-const AnimatedTouchable = Animated.createAnimatedComponent(TouchableOpacity);
-
 export const GlassCard: React.FC<GlassCardProps> = ({
   children,
   style,
@@ -21,20 +18,6 @@ export const GlassCard: React.FC<GlassCardProps> = ({
   onPress,
   padding = 16,
 }) => {
-  const scale = useSharedValue(1);
-
-  const animatedStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: scale.value }],
-  }));
-
-  const handlePressIn = () => {
-    scale.value = withTiming(0.97, { duration: 100 });
-  };
-
-  const handlePressOut = () => {
-    scale.value = withTiming(1, { duration: 100 });
-  };
-
   const CardContent = (
     <LinearGradient
       colors={[Colors.gradientCard[0], Colors.gradientCard[1]]}
@@ -54,15 +37,9 @@ export const GlassCard: React.FC<GlassCardProps> = ({
 
   if (onPress) {
     return (
-      <AnimatedTouchable
-        activeOpacity={0.9}
-        onPress={onPress}
-        onPressIn={handlePressIn}
-        onPressOut={handlePressOut}
-        style={animatedStyle}
-      >
+      <TouchableOpacity activeOpacity={0.85} onPress={onPress}>
         {CardContent}
-      </AnimatedTouchable>
+      </TouchableOpacity>
     );
   }
 

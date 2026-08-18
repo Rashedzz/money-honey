@@ -13,7 +13,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { format } from 'date-fns';
 
-import { Colors, Typography, Spacing, Radius, Shadows } from '../../src/theme';
+import { Colors, Typography, Spacing, Radius } from '../../src/theme';
 import { GlassCard } from '../../src/components/shared/GlassCard';
 import { RadialGauge } from '../../src/components/visuals/RadialGauge';
 import { SegmentedDonut } from '../../src/components/visuals/SegmentedDonut';
@@ -21,12 +21,85 @@ import { FlowBreakdownBar } from '../../src/components/visuals/FlowBreakdownBar'
 import { HealthStatusMeter } from '../../src/components/visuals/HealthStatusMeter';
 import { ProjectionComparisonCard } from '../../src/components/visuals/ProjectionComparisonCard';
 import { ScheduleTimeline, ScheduleEvent } from '../../src/components/visuals/ScheduleTimeline';
+import { AssetEvaluationCard } from '../../src/components/visuals/AssetEvaluationCard';
+import { AddAssetModal } from '../../src/components/modals/AddAssetModal';
 import { CountdownCard } from '../../src/components/dashboard/CountdownCard';
 import { EMIReminderCard } from '../../src/components/dashboard/EMIReminderCard';
+import { AssetItem, evaluateAssets } from '../../src/finance/assetEvaluation';
 
 // ----------------------------------------------------
 // Master Financial Dataset
 // ----------------------------------------------------
+const initialAssets: AssetItem[] = [
+  {
+    id: 'AST-101',
+    name: 'Gulshan 2BR Luxury Rental Flat',
+    category: 'Real Estate',
+    purchasePrice: 15000000,
+    currentValuation: 18000000,
+    quantity: 1450,
+    uom: 'Sq. Ft',
+    currentRatePerUoM: 12413,
+    monthlyIncome: 65000,
+    appreciationRateAnnualPct: 8.5,
+    isIdle: false,
+    acquiredDate: '2022-03-15',
+  },
+  {
+    id: 'AST-102',
+    name: 'Purbachal Sector 14 Land Plot',
+    category: 'Real Estate',
+    purchasePrice: 11000000,
+    currentValuation: 17500000,
+    quantity: 5,
+    uom: 'Katha',
+    currentRatePerUoM: 3500000,
+    monthlyIncome: 0, // IDLE ASSET
+    appreciationRateAnnualPct: 15.5,
+    isIdle: true,
+    acquiredDate: '2020-11-10',
+  },
+  {
+    id: 'AST-103',
+    name: '22K Physical Gold Bullion',
+    category: 'Precious Metals',
+    purchasePrice: 1200000,
+    currentValuation: 1875000,
+    quantity: 15,
+    uom: 'Bhori',
+    currentRatePerUoM: 125000,
+    monthlyIncome: 0, // IDLE ASSET
+    appreciationRateAnnualPct: 12.0,
+    isIdle: true,
+    acquiredDate: '2021-06-01',
+  },
+  {
+    id: 'AST-104',
+    name: 'Dhanmondi Commercial Shop Space',
+    category: 'Commercial',
+    purchasePrice: 8000000,
+    currentValuation: 9500000,
+    quantity: 450,
+    uom: 'Sq. Ft',
+    currentRatePerUoM: 21111,
+    monthlyIncome: 38000,
+    appreciationRateAnnualPct: 9.0,
+    isIdle: false,
+    acquiredDate: '2023-01-20',
+  },
+  {
+    id: 'AST-105',
+    name: 'Toyota Harrier Premium SUV',
+    category: 'Vehicles',
+    purchasePrice: 6800000,
+    currentValuation: 6200000,
+    monthlyIncome: 0, // IDLE ASSET
+    appreciationRateAnnualPct: -6.0,
+    isIdle: true,
+    acquiredDate: '2022-08-10',
+  },
+];
+
 const cashBreakdown = [
   { id: '1', label: 'City Bank Savings', amount: 650000, color: '#00E5B3' },
   { id: '2', label: 'BRAC Bank Salary A/C', amount: 450000, color: '#00B4D8' },
@@ -44,24 +117,6 @@ const loanBreakdown = [
 
 const totalLoans = loanBreakdown.reduce((sum, item) => sum + item.amount, 0);
 
-const currentIncomeItems = [
-  { id: '1', name: 'Monthly Salary', sub: 'Primary Tech Employment', amount: 135000, color: '#00E5B3' },
-  { id: '2', name: 'Sanchaypatra Coupon', sub: 'National Savings 3-Mo Profit', amount: 21500, color: '#7B6EF6' },
-  { id: '3', name: 'FDR Monthly Return', sub: 'DBBL Fixed Deposit Credit', amount: 18500, color: '#00B4D8' },
-  { id: '4', name: 'Freelance & Advisory', sub: 'Side Consulting Income', amount: 10000, color: '#FFB547' },
-];
-
-const totalCurrentIncome = currentIncomeItems.reduce((sum, item) => sum + item.amount, 0);
-
-const currentExpenseItems = [
-  { id: '1', name: 'City Bank Home Loan EMI', sub: 'Debt Service • Bank Loan', amount: 45000, color: '#FF4757' },
-  { id: '2', name: 'Household & Groceries', sub: 'Family Living & Supplies', amount: 28000, color: '#FFB547' },
-  { id: '3', name: 'EBL Vehicle Auto Loan EMI', sub: 'Debt Service • Asset EMI', amount: 22500, color: '#FF6B35' },
-  { id: '4', name: 'Utilities & Subscriptions', sub: 'Electricity, Gas, Internet', amount: 7000, color: '#00B4D8' },
-];
-
-const totalCurrentExpense = currentExpenseItems.reduce((sum, item) => sum + item.amount, 0);
-
 const upcomingSchedules: ScheduleEvent[] = [
   {
     id: '1',
@@ -76,6 +131,16 @@ const upcomingSchedules: ScheduleEvent[] = [
   },
   {
     id: '2',
+    title: 'Gulshan 2BR Monthly Rent Collection',
+    subtitle: 'Credit from Tenant (AST-101)',
+    date: '01 Sep 2026',
+    daysRemaining: 14,
+    amount: 65000,
+    type: 'salary',
+    status: 'safe',
+  },
+  {
+    id: '3',
     title: '3-Month Sanchaypatra Profit Coupon',
     subtitle: 'Direct Credit to City Bank A/C #8832',
     date: '24 Aug 2026',
@@ -85,7 +150,7 @@ const upcomingSchedules: ScheduleEvent[] = [
     status: 'critical',
   },
   {
-    id: '3',
+    id: '4',
     title: 'DBBL FDR Monthly Interest Payout',
     subtitle: 'Auto-disbursement #14 of 36',
     date: '06 Sep 2026',
@@ -94,22 +159,44 @@ const upcomingSchedules: ScheduleEvent[] = [
     type: 'fdr_payout',
     status: 'warning',
   },
-  {
-    id: '4',
-    title: 'EBL Vehicle Auto Loan EMI',
-    subtitle: 'Scheduled Auto-Debit #37 of 60',
-    date: '05 Sep 2026',
-    daysRemaining: 18,
-    amount: 22500,
-    type: 'emi',
-    status: 'safe',
-    isAutoDebit: true,
-  },
 ];
 
 export default function DashboardScreen() {
   const [refreshing, setRefreshing] = useState(false);
-  const [activeTab, setActiveTab] = useState<'overview' | 'breakdowns' | 'forecast' | 'schedules'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'assets' | 'cash_debt' | 'income_expense' | 'schedules'>('overview');
+  const [assets, setAssets] = useState<AssetItem[]>(initialAssets);
+  const [modalVisible, setModalVisible] = useState(false);
+
+  const assetSummary = evaluateAssets(assets);
+
+  const handleAddAsset = (newAsset: AssetItem) => {
+    setAssets((prev) => [newAsset, ...prev]);
+  };
+
+  // Dynamic Current Month Income (Including Asset Rental / Dividend Yields)
+  const currentIncomeItems = [
+    { id: '1', name: 'Monthly Employment Salary', sub: 'Primary Tech Work', amount: 135000, color: '#00E5B3' },
+    {
+      id: '2',
+      name: 'Asset Cash Flow (Rent/Yield)',
+      sub: `${assetSummary.incomeGeneratingCount} Active Assets (AST-101, AST-104)`,
+      amount: assetSummary.totalMonthlyAssetIncome,
+      color: '#7B6EF6',
+    },
+    { id: '3', name: '3-Mo Sanchaypatra Coupon', sub: 'National Savings', amount: 21500, color: '#00B4D8' },
+    { id: '4', name: 'FDR Monthly Return', sub: 'DBBL Fixed Deposit', amount: 18500, color: '#FFB547' },
+  ];
+
+  const totalCurrentIncome = currentIncomeItems.reduce((sum, item) => sum + item.amount, 0);
+
+  const currentExpenseItems = [
+    { id: '1', name: 'City Bank Home Loan EMI', sub: 'Debt Service • Bank Loan', amount: 45000, color: '#FF4757' },
+    { id: '2', name: 'Household & Groceries', sub: 'Family Living & Supplies', amount: 28000, color: '#FFB547' },
+    { id: '3', name: 'EBL Vehicle Auto Loan EMI', sub: 'Debt Service • Asset EMI', amount: 22500, color: '#FF6B35' },
+    { id: '4', name: 'Utilities & Subscriptions', sub: 'Electricity, Gas, Internet', amount: 7000, color: '#00B4D8' },
+  ];
+
+  const totalCurrentExpense = currentExpenseItems.reduce((sum, item) => sum + item.amount, 0);
 
   const onRefresh = () => {
     setRefreshing(true);
@@ -137,21 +224,20 @@ export default function DashboardScreen() {
             <Text style={styles.greeting}>{getGreeting()} 👋</Text>
             <Text style={styles.date}>{format(new Date(), 'EEEE, d MMMM yyyy')}</Text>
           </View>
-          <View style={styles.headerIcons}>
-            <View style={styles.iconCircle}>
-              <Ionicons name="notifications-outline" size={20} color="#FFF" />
-              <View style={styles.notifDot} />
-            </View>
-          </View>
+          <TouchableOpacity style={styles.quickAddBtn} onPress={() => setModalVisible(true)}>
+            <Ionicons name="add" size={18} color="#000" />
+            <Text style={styles.quickAddText}>+ Add Asset</Text>
+          </TouchableOpacity>
         </View>
 
-        {/* Section Navigation Filter Pill Bar */}
-        <View style={styles.navBar}>
+        {/* Navigation Filter Pills */}
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.navBar}>
           {[
-            { id: 'overview', label: 'Overview' },
-            { id: 'breakdowns', label: 'Cash & Debt' },
-            { id: 'forecast', label: 'Income & Budget' },
-            { id: 'schedules', label: 'Schedules' },
+            { id: 'overview', label: '👑 Master Overview' },
+            { id: 'assets', label: '🏰 Asset Intelligence & Valuation' },
+            { id: 'cash_debt', label: '💵 Cash & Loans' },
+            { id: 'income_expense', label: '📊 Income & Expenses' },
+            { id: 'schedules', label: '📅 Schedules & Reminders' },
           ].map((tab) => (
             <TouchableOpacity
               key={tab.id}
@@ -171,7 +257,7 @@ export default function DashboardScreen() {
               </Text>
             </TouchableOpacity>
           ))}
-        </View>
+        </ScrollView>
 
         {/* ================================================================= */}
         {/* REQUIREMENT #3: Current Financial Status (Cash in Hand - Loan)   */}
@@ -182,11 +268,32 @@ export default function DashboardScreen() {
         />
 
         {/* ================================================================= */}
-        {/* TAB 1: OVERVIEW — High-Level Meters & Quick Visuals               */}
+        {/* SECTION: ASSET PORTFOLIO, IDLE ASSET AUDIT & ADVANCED EVALUATION  */}
         {/* ================================================================= */}
-        {(activeTab === 'overview' || activeTab === 'breakdowns') && (
+        {(activeTab === 'overview' || activeTab === 'assets') && (
           <>
-            {/* Quick 2-Column Gauge Row */}
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>
+                ASSET VALUATION, INCOME AUDIT & IDLE ASSET INTELLIGENCE
+              </Text>
+              <TouchableOpacity onPress={() => setModalVisible(true)}>
+                <Text style={styles.seeAll}>+ Add New →</Text>
+              </TouchableOpacity>
+            </View>
+
+            <AssetEvaluationCard
+              assets={assets}
+              summary={assetSummary}
+              onAddAssetPress={() => setModalVisible(true)}
+            />
+          </>
+        )}
+
+        {/* ================================================================= */}
+        {/* SECTION: CASH IN HAND & LOAN BREAKDOWN (BANK & OUTSIDE BANK)     */}
+        {/* ================================================================= */}
+        {(activeTab === 'overview' || activeTab === 'cash_debt') && (
+          <>
             <View style={styles.twoColRow}>
               {/* Cash in Hand Radial Donut */}
               <GlassCard style={styles.halfCard} padding={16} glowColor={Colors.primary}>
@@ -195,20 +302,20 @@ export default function DashboardScreen() {
                   segments={cashBreakdown}
                   totalLabel="Total Liquid"
                   totalFormatted={`৳ ${(totalCashInHand / 100000).toFixed(1)}L`}
-                  size={150}
+                  size={140}
                 />
               </GlassCard>
 
               {/* Debt Distribution Radial Gauge */}
               <GlassCard style={styles.halfCard} padding={16} glowColor={Colors.danger}>
-                <Text style={[styles.cardHeaderTitle, { color: Colors.danger }]}>2. OUTSTANDING LOANS</Text>
+                <Text style={[styles.cardHeaderTitle, { color: Colors.danger }]}>2. LOAN LIABILITIES</Text>
                 <RadialGauge
-                  score={84} // 84% bank loans
+                  score={84}
                   title={`৳ ${(totalLoans / 100000).toFixed(1)} Lakhs`}
                   subtitle="84% Bank • 5% Private"
-                  statusLabel="High Debt"
+                  statusLabel="Debt Load"
                   statusColor={Colors.danger}
-                  size={150}
+                  size={140}
                 />
               </GlassCard>
             </View>
@@ -226,9 +333,9 @@ export default function DashboardScreen() {
         )}
 
         {/* ================================================================= */}
-        {/* TAB 2: INCOME & EXPENSES CURRENT MONTH WITH PERCENTAGES (%)      */}
+        {/* SECTION: INCOME & EXPENSES CURRENT MONTH (SOURCES & SECTOR %)    */}
         {/* ================================================================= */}
-        {(activeTab === 'overview' || activeTab === 'forecast') && (
+        {(activeTab === 'overview' || activeTab === 'income_expense') && (
           <>
             <View style={styles.sectionHeader}>
               <Text style={styles.sectionTitle}>4. CURRENT MONTH INCOME (SOURCES & %)</Text>
@@ -238,7 +345,7 @@ export default function DashboardScreen() {
               <FlowBreakdownBar
                 items={currentIncomeItems}
                 total={totalCurrentIncome}
-                title="INCOME SOURCES WITH ALLOCATION %"
+                title="INCOME SOURCES WITH ASSET YIELD & ALLOCATION %"
                 totalFormatted={`৳ ${totalCurrentIncome.toLocaleString('en-IN')}`}
               />
             </GlassCard>
@@ -265,14 +372,14 @@ export default function DashboardScreen() {
               currentMonthName="August"
               nextMonthName="September 2026"
               currentIncome={totalCurrentIncome}
-              projectedIncomeNextMonth={192000}
+              projectedIncomeNextMonth={totalCurrentIncome + 7000}
               currentExpense={totalCurrentExpense}
               projectedExpenseNextMonth={104000}
               projectedIncomeBreakdown={[
                 { name: 'Salary', amount: 135000, color: '#00E5B3' },
-                { name: 'Sanchaypatra (Q)', amount: 28500, color: '#7B6EF6' },
-                { name: 'FDR Returns', amount: 18500, color: '#00B4D8' },
-                { name: 'Other Receivables', amount: 10000, color: '#FFB547' },
+                { name: 'Asset Rent (AST-101, 104)', amount: assetSummary.totalMonthlyAssetIncome, color: '#7B6EF6' },
+                { name: 'Sanchaypatra (Q)', amount: 28500, color: '#00B4D8' },
+                { name: 'FDR Returns', amount: 18500, color: '#FFB547' },
               ]}
               projectedExpenseBreakdown={[
                 { name: 'Fixed EMIs (Home + Auto)', amount: 67500, color: '#FF4757' },
@@ -366,6 +473,13 @@ export default function DashboardScreen() {
           </>
         )}
       </ScrollView>
+
+      {/* Add Asset Modal */}
+      <AddAssetModal
+        visible={modalVisible}
+        onClose={() => setModalVisible(false)}
+        onSave={handleAddAsset}
+      />
     </SafeAreaView>
   );
 }
@@ -379,7 +493,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   contentContainer: {
-    paddingBottom: 110,
+    paddingBottom: 120,
   },
   header: {
     flexDirection: 'row',
@@ -398,30 +512,21 @@ const styles = StyleSheet.create({
     color: Colors.textSecondary,
     marginTop: 2,
   },
-  headerIcons: {
+  quickAddBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: 4,
+    backgroundColor: Colors.primary,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: Radius.full,
   },
-  iconCircle: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  notifDot: {
-    position: 'absolute',
-    top: 8,
-    right: 8,
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: Colors.danger,
+  quickAddText: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: '#000',
   },
   navBar: {
-    flexDirection: 'row',
     paddingHorizontal: Spacing.md,
     paddingVertical: Spacing.sm,
     gap: 8,
@@ -475,9 +580,10 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     ...Typography.label,
-    fontSize: 11,
+    fontSize: 10,
     color: Colors.primary,
     fontWeight: '800',
+    flex: 1,
   },
   seeAll: {
     ...Typography.caption,
