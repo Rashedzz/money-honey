@@ -1,0 +1,62 @@
+name: "Build & Release Money-Honey"
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  build-web:
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install dependencies
+        run: npm ci --legacy-peer-deps
+
+      - name: Export web
+        run: npx expo export --platform web
+
+      - name: Upload web build artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: web-build/
+          name: money-honey-web
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
+
+  build-apk:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install EAS CLI
+        run: npm install -g eas-cli
+
+      # To set the EXPO_TOKEN secret:
+      # 1. Go to your Expo account settings: https://expo.dev/accounts/[account]/settings/access-tokens
+      # 2. Create a new token
+      # 3. Go to your GitHub repository Settings > Secrets and variables > Actions
+      # 4. Click "New repository secret", name it "EXPO_TOKEN", and paste the token
+      - name: Build APK
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+        run: eas build --platform android --profile preview --non-interactive --no-wait

@@ -1,0 +1,60 @@
+{
+  "expo": {
+    "name": "Money-Honey",
+    "slug": "money-honey",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "dark",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#080B14"
+    },
+    "assetBundlePatterns": ["**/*"],
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.moneyhoney.app",
+      "buildNumber": "1"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#080B14"
+      },
+      "package": "com.moneyhoney.app",
+      "versionCode": 1,
+      "permissions": [
+        "android.permission.RECEIVE_SMS",
+        "android.permission.READ_SMS",
+        "android.permission.RECEIVE_BOOT_COMPLETED",
+        "android.permission.VIBRATE",
+        "android.permission.SCHEDULE_EXACT_ALARM"
+      ]
+    },
+    "web": {
+      "favicon": "./assets/favicon.png",
+      "bundler": "metro",
+      "output": "static",
+      "name": "Money-Honey",
+      "shortName": "MoneyHoney",
+      "description": "Local-first personal finance manager",
+      "themeColor": "#00E5B3",
+      "backgroundColor": "#080B14"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-font",
+      ["expo-notifications", { "icon": "./assets/notification-icon.png", "color": "#00E5B3" }],
+      ["expo-secure-store"],
+      "expo-background-fetch"
+    ],
+    "experiments": {
+      "typedRoutes": true
+    },
+    "scheme": "moneyhoney",
+    "extra": {
+      "eas": { "projectId": "YOUR_EAS_PROJECT_ID" }
+    }
+  }
+}
