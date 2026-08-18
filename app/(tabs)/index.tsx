@@ -9,7 +9,6 @@ import {
   SafeAreaView,
   TouchableOpacity,
 } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { format } from 'date-fns';
 
@@ -22,13 +21,21 @@ import { HealthStatusMeter } from '../../src/components/visuals/HealthStatusMete
 import { ProjectionComparisonCard } from '../../src/components/visuals/ProjectionComparisonCard';
 import { ScheduleTimeline, ScheduleEvent } from '../../src/components/visuals/ScheduleTimeline';
 import { AssetEvaluationCard } from '../../src/components/visuals/AssetEvaluationCard';
-import { AddAssetModal } from '../../src/components/modals/AddAssetModal';
+import { InsuranceBirthdayCards } from '../../src/components/visuals/InsuranceBirthdayCards';
+import { HistoricalAnalyticsView } from '../../src/components/visuals/HistoricalAnalyticsView';
+import { UniversalEntryModal, EntryType } from '../../src/components/modals/UniversalEntryModal';
 import { CountdownCard } from '../../src/components/dashboard/CountdownCard';
 import { EMIReminderCard } from '../../src/components/dashboard/EMIReminderCard';
 import { AssetItem, evaluateAssets } from '../../src/finance/assetEvaluation';
+import {
+  LifeInsurancePolicy,
+  BirthdayEvent,
+  calculateInsuranceSummary,
+  calculateBirthdayReminders,
+} from '../../src/finance/insuranceBirthday';
 
 // ----------------------------------------------------
-// Master Financial Dataset
+// Master Datasets
 // ----------------------------------------------------
 const initialAssets: AssetItem[] = [
   {
@@ -100,22 +107,86 @@ const initialAssets: AssetItem[] = [
   },
 ];
 
-const cashBreakdown = [
+const initialPolicies: LifeInsurancePolicy[] = [
+  {
+    id: 'INS-001',
+    policyName: 'MetLife DPS Guaranteed Savings Plan',
+    insurer: 'MetLife Bangladesh',
+    policyNumber: 'POL-992014-BD',
+    sumAssured: 10000000, // ৳ 1.0 Crore
+    premiumAmount: 85000,
+    premiumFrequency: 'annual',
+    policyTermYears: 15,
+    premiumPayingTermYears: 10,
+    paidPremiumsTotal: 425000,
+    projectedMaturityBonus: 4500000,
+    startDate: '2021-04-10',
+    nextPremiumDueDate: '2026-09-15',
+    nomineeName: 'Sarah Rahman (Spouse)',
+    status: 'active',
+  },
+  {
+    id: 'INS-002',
+    policyName: 'Delta Life Child Education Endowment',
+    insurer: 'Delta Life Insurance Ltd.',
+    policyNumber: 'POL-330192-DL',
+    sumAssured: 5000000, // ৳ 50 Lakhs
+    premiumAmount: 48000,
+    premiumFrequency: 'annual',
+    policyTermYears: 18,
+    premiumPayingTermYears: 12,
+    paidPremiumsTotal: 192000,
+    projectedMaturityBonus: 2200000,
+    startDate: '2022-08-01',
+    nextPremiumDueDate: '2026-11-20',
+    nomineeName: 'Ayan Rahman (Son)',
+    status: 'active',
+  },
+];
+
+const initialBirthdays: BirthdayEvent[] = [
+  {
+    id: 'BD-001',
+    personName: 'Sarah Rahman',
+    relation: 'Spouse',
+    birthDate: '1994-08-24', // in 6 days!
+    giftBudget: 15000,
+    customGreetingMessage:
+      'Happy Birthday to my incredible wife Sarah! ❤️ May your day be as radiant and lovely as you are! 🎂💐',
+    notifyDaysBefore: 7,
+  },
+  {
+    id: 'BD-002',
+    personName: 'Ayan Rahman',
+    relation: 'Child',
+    birthDate: '2019-09-08',
+    giftBudget: 8000,
+    customGreetingMessage:
+      'Happy 7th Birthday to our little champion Ayan! 🚀 Keep shining bright and dreaming big! 🎁🎈',
+    notifyDaysBefore: 5,
+  },
+  {
+    id: 'BD-003',
+    personName: 'Mom',
+    relation: 'Parent',
+    birthDate: '1965-10-14',
+    giftBudget: 10000,
+    notifyDaysBefore: 7,
+  },
+];
+
+const initialCash = [
   { id: '1', label: 'City Bank Savings', amount: 650000, color: '#00E5B3' },
   { id: '2', label: 'BRAC Bank Salary A/C', amount: 450000, color: '#00B4D8' },
   { id: '3', label: 'Cash in Hand (Physical)', amount: 65000, color: '#FFB547' },
   { id: '4', label: 'bKash Wallet (MFS)', amount: 35000, color: '#FF4757' },
 ];
 
-const totalCashInHand = cashBreakdown.reduce((sum, item) => sum + item.amount, 0);
-
-const loanBreakdown = [
+const initialLoans = [
   { id: '1', name: 'Apartment Home Loan', sub: 'City Bank Ltd. (226 mos left)', amount: 4250000, color: '#FF4757' },
   { id: '2', name: 'Vehicle Auto Loan', sub: 'Eastern Bank Ltd. (24 mos left)', amount: 540000, color: '#FF6B35' },
   { id: '3', name: 'Personal Loan (Outside Bank)', sub: 'Private Family / Direct Loan', amount: 250000, color: '#FFB547' },
 ];
-
-const totalLoans = loanBreakdown.reduce((sum, item) => sum + item.amount, 0);
 
 const upcomingSchedules: ScheduleEvent[] = [
   {
@@ -163,17 +234,46 @@ const upcomingSchedules: ScheduleEvent[] = [
 
 export default function DashboardScreen() {
   const [refreshing, setRefreshing] = useState(false);
-  const [activeTab, setActiveTab] = useState<'overview' | 'assets' | 'cash_debt' | 'income_expense' | 'schedules'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'assets' | 'insurance_bday' | 'history' | 'cash_debt' | 'income_expense' | 'schedules'>('overview');
+
+  // Master Reactive States
   const [assets, setAssets] = useState<AssetItem[]>(initialAssets);
-  const [modalVisible, setModalVisible] = useState(false);
+  const [cashList, setCashList] = useState(initialCash);
+  const [loanList, setLoanList] = useState(initialLoans);
+  const [policies, setPolicies] = useState<LifeInsurancePolicy[]>(initialPolicies);
+  const [birthdays, setBirthdays] = useState<BirthdayEvent[]>(initialBirthdays);
 
+  // Modal State
+  const [entryModalVisible, setEntryModalVisible] = useState(false);
+  const [modalInitialType, setModalInitialType] = useState<EntryType>('income');
+
+  // Calculated Summaries
+  const totalCashInHand = cashList.reduce((sum, item) => sum + item.amount, 0);
+  const totalLoans = loanList.reduce((sum, item) => sum + item.amount, 0);
   const assetSummary = evaluateAssets(assets);
+  const insuranceSummary = calculateInsuranceSummary(policies, totalLoans);
+  const birthdayReminders = calculateBirthdayReminders(birthdays);
 
-  const handleAddAsset = (newAsset: AssetItem) => {
-    setAssets((prev) => [newAsset, ...prev]);
+  const handleUniversalSave = (type: EntryType, data: any) => {
+    if (type === 'asset') {
+      setAssets((prev) => [data, ...prev]);
+    } else if (type === 'insurance') {
+      setPolicies((prev) => [data, ...prev]);
+    } else if (type === 'birthday') {
+      setBirthdays((prev) => [data, ...prev]);
+    } else if (type === 'bank') {
+      setCashList((prev) => [...prev, { id: data.id, label: data.title, amount: data.amount, color: '#00E5B3' }]);
+    } else if (type === 'loan') {
+      setLoanList((prev) => [...prev, { id: data.id, name: data.title, sub: data.category, amount: data.amount, color: '#FF4757' }]);
+    }
   };
 
-  // Dynamic Current Month Income (Including Asset Rental / Dividend Yields)
+  const openModalWithType = (type: EntryType) => {
+    setModalInitialType(type);
+    setEntryModalVisible(true);
+  };
+
+  // Dynamic Current Month Income
   const currentIncomeItems = [
     { id: '1', name: 'Monthly Employment Salary', sub: 'Primary Tech Work', amount: 135000, color: '#00E5B3' },
     {
@@ -200,7 +300,7 @@ export default function DashboardScreen() {
 
   const onRefresh = () => {
     setRefreshing(true);
-    setTimeout(() => setRefreshing(false), 1200);
+    setTimeout(() => setRefreshing(false), 1000);
   };
 
   const getGreeting = () => {
@@ -224,9 +324,9 @@ export default function DashboardScreen() {
             <Text style={styles.greeting}>{getGreeting()} 👋</Text>
             <Text style={styles.date}>{format(new Date(), 'EEEE, d MMMM yyyy')}</Text>
           </View>
-          <TouchableOpacity style={styles.quickAddBtn} onPress={() => setModalVisible(true)}>
+          <TouchableOpacity style={styles.quickAddBtn} onPress={() => openModalWithType('income')}>
             <Ionicons name="add" size={18} color="#000" />
-            <Text style={styles.quickAddText}>+ Add Asset</Text>
+            <Text style={styles.quickAddText}>+ Data Entry</Text>
           </TouchableOpacity>
         </View>
 
@@ -235,6 +335,8 @@ export default function DashboardScreen() {
           {[
             { id: 'overview', label: '👑 Master Overview' },
             { id: 'assets', label: '🏰 Asset Intelligence & Valuation' },
+            { id: 'insurance_bday', label: '🛡️ Life Insurance & Birthdays' },
+            { id: 'history', label: '📈 Historical Trends' },
             { id: 'cash_debt', label: '💵 Cash & Loans' },
             { id: 'income_expense', label: '📊 Income & Expenses' },
             { id: 'schedules', label: '📅 Schedules & Reminders' },
@@ -276,16 +378,52 @@ export default function DashboardScreen() {
               <Text style={styles.sectionTitle}>
                 ASSET VALUATION, INCOME AUDIT & IDLE ASSET INTELLIGENCE
               </Text>
-              <TouchableOpacity onPress={() => setModalVisible(true)}>
-                <Text style={styles.seeAll}>+ Add New →</Text>
+              <TouchableOpacity onPress={() => openModalWithType('asset')}>
+                <Text style={styles.seeAll}>+ Add Asset →</Text>
               </TouchableOpacity>
             </View>
 
             <AssetEvaluationCard
               assets={assets}
               summary={assetSummary}
-              onAddAssetPress={() => setModalVisible(true)}
+              onAddAssetPress={() => openModalWithType('asset')}
             />
+          </>
+        )}
+
+        {/* ================================================================= */}
+        {/* SECTION: LIFE INSURANCE VAULT & BIRTHDAY CELEBRATIONS             */}
+        {/* ================================================================= */}
+        {(activeTab === 'overview' || activeTab === 'insurance_bday') && (
+          <>
+            <View style={styles.sectionHeader}>
+              <Text style={[styles.sectionTitle, { color: Colors.secondary }]}>
+                LIFE INSURANCE COVERAGE & BIRTHDAY MILESTONES
+              </Text>
+            </View>
+
+            <InsuranceBirthdayCards
+              policies={policies}
+              insuranceSummary={insuranceSummary}
+              birthdayReminders={birthdayReminders}
+              onAddPolicyPress={() => openModalWithType('insurance')}
+              onAddBirthdayPress={() => openModalWithType('birthday')}
+            />
+          </>
+        )}
+
+        {/* ================================================================= */}
+        {/* SECTION: HISTORICAL FINANCIAL INTELLIGENCE & PARAMETER AUDIT     */}
+        {/* ================================================================= */}
+        {(activeTab === 'overview' || activeTab === 'history') && (
+          <>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>
+                HISTORICAL MULTI-MONTH FINANCIAL TRENDS
+              </Text>
+            </View>
+
+            <HistoricalAnalyticsView />
           </>
         )}
 
@@ -299,7 +437,7 @@ export default function DashboardScreen() {
               <GlassCard style={styles.halfCard} padding={16} glowColor={Colors.primary}>
                 <Text style={styles.cardHeaderTitle}>1. CASH IN HAND</Text>
                 <SegmentedDonut
-                  segments={cashBreakdown}
+                  segments={cashList}
                   totalLabel="Total Liquid"
                   totalFormatted={`৳ ${(totalCashInHand / 100000).toFixed(1)}L`}
                   size={140}
@@ -323,7 +461,7 @@ export default function DashboardScreen() {
             {/* Detailed Loan Bank-Wise & Outside-Bank Breakdown */}
             <GlassCard style={styles.fullCard} padding={16}>
               <FlowBreakdownBar
-                items={loanBreakdown}
+                items={loanList}
                 total={totalLoans}
                 title="LOAN BREAKDOWN (BANK-WISE & OUTSIDE OF BANK)"
                 totalFormatted={`৳ ${totalLoans.toLocaleString('en-IN')}`}
@@ -474,11 +612,12 @@ export default function DashboardScreen() {
         )}
       </ScrollView>
 
-      {/* Add Asset Modal */}
-      <AddAssetModal
-        visible={modalVisible}
-        onClose={() => setModalVisible(false)}
-        onSave={handleAddAsset}
+      {/* Master Universal Entry Modal */}
+      <UniversalEntryModal
+        visible={entryModalVisible}
+        initialType={modalInitialType}
+        onClose={() => setEntryModalVisible(false)}
+        onSave={handleUniversalSave}
       />
     </SafeAreaView>
   );
