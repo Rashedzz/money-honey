@@ -23,6 +23,8 @@ import { ScheduleTimeline, ScheduleEvent } from '../../src/components/visuals/Sc
 import { AssetEvaluationCard } from '../../src/components/visuals/AssetEvaluationCard';
 import { InsuranceBirthdayCards } from '../../src/components/visuals/InsuranceBirthdayCards';
 import { HistoricalAnalyticsView } from '../../src/components/visuals/HistoricalAnalyticsView';
+import { WealthVelocityCard } from '../../src/components/visuals/WealthVelocityCard';
+import { FinancialConsultantToolsCard } from '../../src/components/visuals/FinancialConsultantToolsCard';
 import { UniversalEntryModal, EntryType } from '../../src/components/modals/UniversalEntryModal';
 import { CountdownCard } from '../../src/components/dashboard/CountdownCard';
 import { EMIReminderCard } from '../../src/components/dashboard/EMIReminderCard';
@@ -33,6 +35,8 @@ import {
   calculateInsuranceSummary,
   calculateBirthdayReminders,
 } from '../../src/finance/insuranceBirthday';
+import { calculateWealthVelocity } from '../../src/finance/wealthVelocity';
+import { calculateFinancialPlanningSuite } from '../../src/finance/financialPlanningTools';
 
 // ----------------------------------------------------
 // Master Datasets
@@ -234,7 +238,7 @@ const upcomingSchedules: ScheduleEvent[] = [
 
 export default function DashboardScreen() {
   const [refreshing, setRefreshing] = useState(false);
-  const [activeTab, setActiveTab] = useState<'overview' | 'assets' | 'insurance_bday' | 'history' | 'cash_debt' | 'income_expense' | 'schedules'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'velocity' | 'planning' | 'assets' | 'insurance_bday' | 'history' | 'cash_debt' | 'income_expense' | 'schedules'>('overview');
 
   // Master Reactive States
   const [assets, setAssets] = useState<AssetItem[]>(initialAssets);
@@ -253,25 +257,6 @@ export default function DashboardScreen() {
   const assetSummary = evaluateAssets(assets);
   const insuranceSummary = calculateInsuranceSummary(policies, totalLoans);
   const birthdayReminders = calculateBirthdayReminders(birthdays);
-
-  const handleUniversalSave = (type: EntryType, data: any) => {
-    if (type === 'asset') {
-      setAssets((prev) => [data, ...prev]);
-    } else if (type === 'insurance') {
-      setPolicies((prev) => [data, ...prev]);
-    } else if (type === 'birthday') {
-      setBirthdays((prev) => [data, ...prev]);
-    } else if (type === 'bank') {
-      setCashList((prev) => [...prev, { id: data.id, label: data.title, amount: data.amount, color: '#00E5B3' }]);
-    } else if (type === 'loan') {
-      setLoanList((prev) => [...prev, { id: data.id, name: data.title, sub: data.category, amount: data.amount, color: '#FF4757' }]);
-    }
-  };
-
-  const openModalWithType = (type: EntryType) => {
-    setModalInitialType(type);
-    setEntryModalVisible(true);
-  };
 
   // Dynamic Current Month Income
   const currentIncomeItems = [
@@ -297,6 +282,43 @@ export default function DashboardScreen() {
   ];
 
   const totalCurrentExpense = currentExpenseItems.reduce((sum, item) => sum + item.amount, 0);
+
+  // Real-Time Wealth Velocity & Financial Planning Suites
+  const wealthVelocity = calculateWealthVelocity(
+    '1992-05-15',
+    totalCurrentIncome,
+    totalCurrentExpense,
+    assetSummary.totalAssetValuation + totalCashInHand - totalLoans
+  );
+
+  const planningSuite = calculateFinancialPlanningSuite(
+    totalCurrentIncome,
+    totalCurrentExpense,
+    totalCashInHand,
+    totalLoans,
+    assetSummary.totalAssetValuation,
+    insuranceSummary.totalLifeCoverage,
+    wealthVelocity.ageYears
+  );
+
+  const handleUniversalSave = (type: EntryType, data: any) => {
+    if (type === 'asset') {
+      setAssets((prev) => [data, ...prev]);
+    } else if (type === 'insurance') {
+      setPolicies((prev) => [data, ...prev]);
+    } else if (type === 'birthday') {
+      setBirthdays((prev) => [data, ...prev]);
+    } else if (type === 'bank') {
+      setCashList((prev) => [...prev, { id: data.id, label: data.title, amount: data.amount, color: '#00E5B3' }]);
+    } else if (type === 'loan') {
+      setLoanList((prev) => [...prev, { id: data.id, name: data.title, sub: data.category, amount: data.amount, color: '#FF4757' }]);
+    }
+  };
+
+  const openModalWithType = (type: EntryType) => {
+    setModalInitialType(type);
+    setEntryModalVisible(true);
+  };
 
   const onRefresh = () => {
     setRefreshing(true);
@@ -334,8 +356,10 @@ export default function DashboardScreen() {
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.navBar}>
           {[
             { id: 'overview', label: '👑 Master Overview' },
-            { id: 'assets', label: '🏰 Asset Intelligence & Valuation' },
-            { id: 'insurance_bday', label: '🛡️ Life Insurance & Birthdays' },
+            { id: 'velocity', label: '⏱️ Wealth Velocity (Min/Hr/Yr)' },
+            { id: 'planning', label: '🧠 Consultant & Rule of 72' },
+            { id: 'assets', label: '🏰 Asset Valuation & Idle Audit' },
+            { id: 'insurance_bday', label: '🛡️ Insurance & Birthdays' },
             { id: 'history', label: '📈 Historical Trends' },
             { id: 'cash_debt', label: '💵 Cash & Loans' },
             { id: 'income_expense', label: '📊 Income & Expenses' },
@@ -368,6 +392,20 @@ export default function DashboardScreen() {
           totalCashInHand={totalCashInHand}
           totalLoans={totalLoans}
         />
+
+        {/* ================================================================= */}
+        {/* SECTION: WEALTH VELOCITY & TIME VALUE OF LIFE (YEAR/DAY/MIN)      */}
+        {/* ================================================================= */}
+        {(activeTab === 'overview' || activeTab === 'velocity') && (
+          <WealthVelocityCard velocity={wealthVelocity} />
+        )}
+
+        {/* ================================================================= */}
+        {/* SECTION: FINANCIAL CONSULTANT SUITE, RULE OF 72 & FIRE 4% RULE    */}
+        {/* ================================================================= */}
+        {(activeTab === 'overview' || activeTab === 'planning') && (
+          <FinancialConsultantToolsCard planning={planningSuite} />
+        )}
 
         {/* ================================================================= */}
         {/* SECTION: ASSET PORTFOLIO, IDLE ASSET AUDIT & ADVANCED EVALUATION  */}
