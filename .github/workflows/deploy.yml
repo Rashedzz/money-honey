@@ -34,8 +34,10 @@ jobs:
       - name: Install dependencies
         run: npm ci --legacy-peer-deps
 
-      - name: Export Web PWA
-        run: npx expo export --platform web
+      - name: Inject GitHub Pages baseUrl & Export Web PWA
+        run: |
+          node -e "const fs=require('fs'); const a=JSON.parse(fs.readFileSync('app.json')); a.expo.experiments={...a.expo.experiments, baseUrl:'/money-honey'}; fs.writeFileSync('app.json', JSON.stringify(a,null,2));"
+          npx expo export --platform web
 
       - name: Configure GitHub Pages Routing (.nojekyll & 404 fallback)
         run: |

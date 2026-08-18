@@ -50,8 +50,7 @@
       "expo-background-fetch"
     ],
     "experiments": {
-      "typedRoutes": true,
-      "baseUrl": "/money-honey"
+      "typedRoutes": true
     },
     "scheme": "moneyhoney",
     "extra": {
