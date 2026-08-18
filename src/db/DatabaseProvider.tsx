@@ -1,21 +1,37 @@
 import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import { Platform } from 'react-native';
 import { Database } from '@nozbe/watermelondb';
-import SQLiteAdapter from '@nozbe/watermelondb/adapters/sqlite';
 import DatabaseProviderWMDB from '@nozbe/watermelondb/DatabaseProvider';
 
 import { schema } from './schema';
 import { migrations } from './migrations';
 import { modelClasses } from './models';
 
-// Create SQLite adapter
-const adapter = new SQLiteAdapter({
-  schema,
-  migrations,
-  jsi: true, // Use JSI if available (improves performance)
-  onSetUpError: (error) => {
-    console.error('Database setup error', error);
-  },
-});
+// Create appropriate adapter for Web vs Native
+let adapter: any;
+
+if (Platform.OS === 'web') {
+  const LokiJSAdapter = require('@nozbe/watermelondb/adapters/lokijs').default;
+  adapter = new LokiJSAdapter({
+    schema,
+    migrations,
+    useWebWorker: false,
+    useIncrementalIndexedDB: true,
+    onSetUpError: (error: any) => {
+      console.error('Web Database setup error', error);
+    },
+  });
+} else {
+  const SQLiteAdapter = require('@nozbe/watermelondb/adapters/sqlite').default;
+  adapter = new SQLiteAdapter({
+    schema,
+    migrations,
+    jsi: true,
+    onSetUpError: (error: any) => {
+      console.error('Database setup error', error);
+    },
+  });
+}
 
 // Initialize the database singleton
 export const database = new Database({
@@ -76,7 +92,7 @@ export const DatabaseProvider: React.FC<DatabaseProviderProps> = ({ children }) 
   }, []);
 
   if (!isReady) {
-    return null; // Or a loading spinner
+    return null;
   }
 
   return (

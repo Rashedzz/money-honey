@@ -1,6 +1,5 @@
 import React from 'react';
-import { View, StyleSheet, TouchableOpacity, StyleProp, ViewStyle } from 'react-style-components'; // fallback
-import { TouchableOpacity as RNTouchableOpacity, View as RNView } from 'react-native';
+import { View, StyleSheet, TouchableOpacity, StyleProp, ViewStyle } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import { Colors, Radius } from '../../theme';
@@ -13,7 +12,7 @@ interface GlassCardProps {
   padding?: number;
 }
 
-const AnimatedTouchable = Animated.createAnimatedComponent(RNTouchableOpacity);
+const AnimatedTouchable = Animated.createAnimatedComponent(TouchableOpacity);
 
 export const GlassCard: React.FC<GlassCardProps> = ({
   children,
@@ -67,7 +66,7 @@ export const GlassCard: React.FC<GlassCardProps> = ({
     );
   }
 
-  return <RNView>{CardContent}</RNView>;
+  return <View>{CardContent}</View>;
 };
 
 const styles = StyleSheet.create({
