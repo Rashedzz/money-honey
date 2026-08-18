@@ -8,26 +8,32 @@ import {
   StatusBar,
   SafeAreaView,
   TouchableOpacity,
+  useWindowDimensions,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import { format } from 'date-fns';
-
 import { Colors, Typography, Spacing, Radius } from '../../src/theme';
 import { GlassCard } from '../../src/components/shared/GlassCard';
+import { TopNavBar, MainTabType } from '../../src/components/navigation/TopNavBar';
 import { RadialGauge } from '../../src/components/visuals/RadialGauge';
 import { SegmentedDonut } from '../../src/components/visuals/SegmentedDonut';
 import { FlowBreakdownBar } from '../../src/components/visuals/FlowBreakdownBar';
 import { HealthStatusMeter } from '../../src/components/visuals/HealthStatusMeter';
 import { ProjectionComparisonCard } from '../../src/components/visuals/ProjectionComparisonCard';
 import { ScheduleTimeline, ScheduleEvent } from '../../src/components/visuals/ScheduleTimeline';
-import { AssetEvaluationCard } from '../../src/components/visuals/AssetEvaluationCard';
-import { InsuranceBirthdayCards } from '../../src/components/visuals/InsuranceBirthdayCards';
-import { HistoricalAnalyticsView } from '../../src/components/visuals/HistoricalAnalyticsView';
 import { WealthVelocityCard } from '../../src/components/visuals/WealthVelocityCard';
 import { FinancialConsultantToolsCard } from '../../src/components/visuals/FinancialConsultantToolsCard';
-import { UniversalEntryModal, EntryType } from '../../src/components/modals/UniversalEntryModal';
 import { CountdownCard } from '../../src/components/dashboard/CountdownCard';
 import { EMIReminderCard } from '../../src/components/dashboard/EMIReminderCard';
+import { UniversalEntryModal, EntryType } from '../../src/components/modals/UniversalEntryModal';
+
+// Dedicated Screen Views
+import { PhysicalAssetsScreen } from '../../src/components/screens/PhysicalAssetsScreen';
+import { PaperAssetsScreen } from '../../src/components/screens/PaperAssetsScreen';
+import { ExpensesScreen } from '../../src/components/screens/ExpensesScreen';
+import { SettingsScreen } from '../../src/components/screens/SettingsScreen';
+import AccountsScreen from './accounts';
+import LoansScreen from './loans';
+
+// Math Engines
 import { AssetItem, evaluateAssets } from '../../src/finance/assetEvaluation';
 import {
   LifeInsurancePolicy,
@@ -38,9 +44,7 @@ import {
 import { calculateWealthVelocity } from '../../src/finance/wealthVelocity';
 import { calculateFinancialPlanningSuite } from '../../src/finance/financialPlanningTools';
 
-// ----------------------------------------------------
-// Master Datasets
-// ----------------------------------------------------
+// Master Initial Datasets
 const initialAssets: AssetItem[] = [
   {
     id: 'AST-101',
@@ -114,10 +118,10 @@ const initialAssets: AssetItem[] = [
 const initialPolicies: LifeInsurancePolicy[] = [
   {
     id: 'INS-001',
-    policyName: 'MetLife DPS Guaranteed Savings Plan',
+    policyName: 'MetLife Guaranteed Savings Plan',
     insurer: 'MetLife Bangladesh',
     policyNumber: 'POL-992014-BD',
-    sumAssured: 10000000, // ৳ 1.0 Crore
+    sumAssured: 10000000,
     premiumAmount: 85000,
     premiumFrequency: 'annual',
     policyTermYears: 15,
@@ -131,10 +135,10 @@ const initialPolicies: LifeInsurancePolicy[] = [
   },
   {
     id: 'INS-002',
-    policyName: 'Delta Life Child Education Endowment',
+    policyName: 'Delta Life Child Endowment',
     insurer: 'Delta Life Insurance Ltd.',
     policyNumber: 'POL-330192-DL',
-    sumAssured: 5000000, // ৳ 50 Lakhs
+    sumAssured: 5000000,
     premiumAmount: 48000,
     premiumFrequency: 'annual',
     policyTermYears: 18,
@@ -153,10 +157,8 @@ const initialBirthdays: BirthdayEvent[] = [
     id: 'BD-001',
     personName: 'Sarah Rahman',
     relation: 'Spouse',
-    birthDate: '1994-08-24', // in 6 days!
+    birthDate: '1994-08-24',
     giftBudget: 15000,
-    customGreetingMessage:
-      'Happy Birthday to my incredible wife Sarah! ❤️ May your day be as radiant and lovely as you are! 🎂💐',
     notifyDaysBefore: 7,
   },
   {
@@ -165,31 +167,21 @@ const initialBirthdays: BirthdayEvent[] = [
     relation: 'Child',
     birthDate: '2019-09-08',
     giftBudget: 8000,
-    customGreetingMessage:
-      'Happy 7th Birthday to our little champion Ayan! 🚀 Keep shining bright and dreaming big! 🎁🎈',
     notifyDaysBefore: 5,
-  },
-  {
-    id: 'BD-003',
-    personName: 'Mom',
-    relation: 'Parent',
-    birthDate: '1965-10-14',
-    giftBudget: 10000,
-    notifyDaysBefore: 7,
   },
 ];
 
 const initialCash = [
-  { id: '1', label: 'City Bank Savings', amount: 650000, color: '#00E5B3' },
-  { id: '2', label: 'BRAC Bank Salary A/C', amount: 450000, color: '#00B4D8' },
-  { id: '3', label: 'Cash in Hand (Physical)', amount: 65000, color: '#FFB547' },
-  { id: '4', label: 'bKash Wallet (MFS)', amount: 35000, color: '#FF4757' },
+  { id: '1', label: 'City Bank Savings', amount: 650000, color: '#00F5A0' },
+  { id: '2', label: 'BRAC Bank Salary A/C', amount: 450000, color: '#00D2FF' },
+  { id: '3', label: 'Cash in Hand (Physical)', amount: 65000, color: '#F59E0B' },
+  { id: '4', label: 'bKash Wallet (MFS)', amount: 35000, color: '#EF4444' },
 ];
 
 const initialLoans = [
-  { id: '1', name: 'Apartment Home Loan', sub: 'City Bank Ltd. (226 mos left)', amount: 4250000, color: '#FF4757' },
-  { id: '2', name: 'Vehicle Auto Loan', sub: 'Eastern Bank Ltd. (24 mos left)', amount: 540000, color: '#FF6B35' },
-  { id: '3', name: 'Personal Loan (Outside Bank)', sub: 'Private Family / Direct Loan', amount: 250000, color: '#FFB547' },
+  { id: '1', name: 'Apartment Home Loan', sub: 'City Bank Ltd. (226 mos left)', amount: 4250000, color: '#EF4444' },
+  { id: '2', name: 'Vehicle Auto Loan', sub: 'Eastern Bank Ltd. (24 mos left)', amount: 540000, color: '#F59E0B' },
+  { id: '3', name: 'Personal Loan (Outside Bank)', sub: 'Private Family Debt', amount: 250000, color: '#8B5CF6' },
 ];
 
 const upcomingSchedules: ScheduleEvent[] = [
@@ -236,11 +228,15 @@ const upcomingSchedules: ScheduleEvent[] = [
   },
 ];
 
-export default function DashboardScreen() {
-  const [refreshing, setRefreshing] = useState(false);
-  const [activeTab, setActiveTab] = useState<'overview' | 'velocity' | 'planning' | 'assets' | 'insurance_bday' | 'history' | 'cash_debt' | 'income_expense' | 'schedules'>('overview');
+export default function MasterDashboardScreen() {
+  const { width } = useWindowDimensions();
+  const isWide = width >= 768;
 
-  // Master Reactive States
+  const [activeTab, setActiveTab] = useState<MainTabType>('dashboard');
+  const [refreshing, setRefreshing] = useState(false);
+  const [birthDate, setBirthDate] = useState('1992-05-15');
+
+  // Master State
   const [assets, setAssets] = useState<AssetItem[]>(initialAssets);
   const [cashList, setCashList] = useState(initialCash);
   const [loanList, setLoanList] = useState(initialLoans);
@@ -251,41 +247,38 @@ export default function DashboardScreen() {
   const [entryModalVisible, setEntryModalVisible] = useState(false);
   const [modalInitialType, setModalInitialType] = useState<EntryType>('income');
 
-  // Calculated Summaries
+  // Computed Values
   const totalCashInHand = cashList.reduce((sum, item) => sum + item.amount, 0);
   const totalLoans = loanList.reduce((sum, item) => sum + item.amount, 0);
   const assetSummary = evaluateAssets(assets);
   const insuranceSummary = calculateInsuranceSummary(policies, totalLoans);
-  const birthdayReminders = calculateBirthdayReminders(birthdays);
 
-  // Dynamic Current Month Income
   const currentIncomeItems = [
-    { id: '1', name: 'Monthly Employment Salary', sub: 'Primary Tech Work', amount: 135000, color: '#00E5B3' },
+    { id: '1', name: 'Employment Tech Salary', sub: 'Primary Income', amount: 135000, color: '#00F5A0' },
     {
       id: '2',
-      name: 'Asset Cash Flow (Rent/Yield)',
+      name: 'Asset Cash Flow (Rent)',
       sub: `${assetSummary.incomeGeneratingCount} Active Assets (AST-101, AST-104)`,
       amount: assetSummary.totalMonthlyAssetIncome,
-      color: '#7B6EF6',
+      color: '#8B5CF6',
     },
-    { id: '3', name: '3-Mo Sanchaypatra Coupon', sub: 'National Savings', amount: 21500, color: '#00B4D8' },
-    { id: '4', name: 'FDR Monthly Return', sub: 'DBBL Fixed Deposit', amount: 18500, color: '#FFB547' },
+    { id: '3', name: '3-Mo Sanchaypatra Coupon', sub: 'National Savings', amount: 21500, color: '#00D2FF' },
+    { id: '4', name: 'FDR Monthly Return', sub: 'DBBL Fixed Deposit', amount: 18500, color: '#F59E0B' },
   ];
 
   const totalCurrentIncome = currentIncomeItems.reduce((sum, item) => sum + item.amount, 0);
 
   const currentExpenseItems = [
-    { id: '1', name: 'City Bank Home Loan EMI', sub: 'Debt Service • Bank Loan', amount: 45000, color: '#FF4757' },
-    { id: '2', name: 'Household & Groceries', sub: 'Family Living & Supplies', amount: 28000, color: '#FFB547' },
-    { id: '3', name: 'EBL Vehicle Auto Loan EMI', sub: 'Debt Service • Asset EMI', amount: 22500, color: '#FF6B35' },
-    { id: '4', name: 'Utilities & Subscriptions', sub: 'Electricity, Gas, Internet', amount: 7000, color: '#00B4D8' },
+    { id: '1', name: 'City Bank Home Loan EMI', sub: 'Debt Service • Bank Loan', amount: 45000, color: '#EF4444' },
+    { id: '2', name: 'Household Living & Food', sub: 'Family Living & Supplies', amount: 28000, color: '#F59E0B' },
+    { id: '3', name: 'EBL Vehicle Auto Loan EMI', sub: 'Debt Service • Asset EMI', amount: 22500, color: '#EF4444' },
+    { id: '4', name: 'Utilities & Telecom', sub: 'Electricity, Gas, Internet', amount: 7000, color: '#00D2FF' },
   ];
 
   const totalCurrentExpense = currentExpenseItems.reduce((sum, item) => sum + item.amount, 0);
 
-  // Real-Time Wealth Velocity & Financial Planning Suites
   const wealthVelocity = calculateWealthVelocity(
-    '1992-05-15',
+    birthDate,
     totalCurrentIncome,
     totalCurrentExpense,
     assetSummary.totalAssetValuation + totalCashInHand - totalLoans
@@ -302,202 +295,100 @@ export default function DashboardScreen() {
   );
 
   const handleUniversalSave = (type: EntryType, data: any) => {
-    if (type === 'asset') {
-      setAssets((prev) => [data, ...prev]);
-    } else if (type === 'insurance') {
-      setPolicies((prev) => [data, ...prev]);
-    } else if (type === 'birthday') {
-      setBirthdays((prev) => [data, ...prev]);
-    } else if (type === 'bank') {
-      setCashList((prev) => [...prev, { id: data.id, label: data.title, amount: data.amount, color: '#00E5B3' }]);
-    } else if (type === 'loan') {
-      setLoanList((prev) => [...prev, { id: data.id, name: data.title, sub: data.category, amount: data.amount, color: '#FF4757' }]);
-    }
+    if (type === 'asset') setAssets((prev) => [data, ...prev]);
+    else if (type === 'insurance') setPolicies((prev) => [data, ...prev]);
+    else if (type === 'birthday') setBirthdays((prev) => [data, ...prev]);
+    else if (type === 'bank') setCashList((prev) => [...prev, { id: data.id, label: data.title, amount: data.amount, color: '#00F5A0' }]);
+    else if (type === 'loan') setLoanList((prev) => [...prev, { id: data.id, name: data.title, sub: data.category, amount: data.amount, color: '#EF4444' }]);
   };
 
-  const openModalWithType = (type: EntryType) => {
+  const openModal = (type: EntryType) => {
     setModalInitialType(type);
     setEntryModalVisible(true);
   };
 
   const onRefresh = () => {
     setRefreshing(true);
-    setTimeout(() => setRefreshing(false), 1000);
-  };
-
-  const getGreeting = () => {
-    const hour = new Date().getHours();
-    if (hour < 12) return 'Good Morning';
-    if (hour < 18) return 'Good Afternoon';
-    return 'Good Evening';
+    setTimeout(() => setRefreshing(false), 800);
   };
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <StatusBar barStyle="light-content" backgroundColor="#080B14" />
-      <ScrollView
-        style={styles.container}
-        contentContainerStyle={styles.contentContainer}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={Colors.primary} />}
-      >
-        {/* Top Header */}
-        <View style={styles.header}>
-          <View>
-            <Text style={styles.greeting}>{getGreeting()} 👋</Text>
-            <Text style={styles.date}>{format(new Date(), 'EEEE, d MMMM yyyy')}</Text>
-          </View>
-          <TouchableOpacity style={styles.quickAddBtn} onPress={() => openModalWithType('income')}>
-            <Ionicons name="add" size={18} color="#000" />
-            <Text style={styles.quickAddText}>+ Data Entry</Text>
-          </TouchableOpacity>
-        </View>
+      <StatusBar barStyle="light-content" backgroundColor="#0B0F19" />
 
-        {/* Navigation Filter Pills */}
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.navBar}>
-          {[
-            { id: 'overview', label: '👑 Master Overview' },
-            { id: 'velocity', label: '⏱️ Wealth Velocity (Min/Hr/Yr)' },
-            { id: 'planning', label: '🧠 Consultant & Rule of 72' },
-            { id: 'assets', label: '🏰 Asset Valuation & Idle Audit' },
-            { id: 'insurance_bday', label: '🛡️ Insurance & Birthdays' },
-            { id: 'history', label: '📈 Historical Trends' },
-            { id: 'cash_debt', label: '💵 Cash & Loans' },
-            { id: 'income_expense', label: '📊 Income & Expenses' },
-            { id: 'schedules', label: '📅 Schedules & Reminders' },
-          ].map((tab) => (
-            <TouchableOpacity
-              key={tab.id}
-              onPress={() => setActiveTab(tab.id as any)}
-              style={[
-                styles.navBtn,
-                activeTab === tab.id && styles.navBtnActive,
-              ]}
-            >
-              <Text
-                style={[
-                  styles.navBtnText,
-                  activeTab === tab.id && styles.navBtnTextActive,
-                ]}
-              >
-                {tab.label}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
+      {/* Top Universal Modern Navigation Bar */}
+      <TopNavBar
+        activeTab={activeTab}
+        onSelectTab={setActiveTab}
+        onQuickEntryPress={() => openModal('income')}
+      />
 
-        {/* ================================================================= */}
-        {/* REQUIREMENT #3: Current Financial Status (Cash in Hand - Loan)   */}
-        {/* ================================================================= */}
-        <HealthStatusMeter
-          totalCashInHand={totalCashInHand}
-          totalLoans={totalLoans}
+      {/* Main View Router */}
+      {activeTab === 'accounts' && <AccountsScreen />}
+      {activeTab === 'loans' && <LoansScreen />}
+      {activeTab === 'paper_assets' && <PaperAssetsScreen />}
+      {activeTab === 'physical_assets' && (
+        <PhysicalAssetsScreen assets={assets} onAddAsset={(a) => setAssets([a, ...assets])} />
+      )}
+      {activeTab === 'expenses' && <ExpensesScreen />}
+      {activeTab === 'settings' && (
+        <SettingsScreen
+          birthDate={birthDate}
+          onUpdateBirthDate={setBirthDate}
+          policies={policies}
+          birthdays={birthdays}
+          onAddPolicy={() => openModal('insurance')}
+          onAddBirthday={() => openModal('birthday')}
         />
+      )}
 
-        {/* ================================================================= */}
-        {/* SECTION: WEALTH VELOCITY & TIME VALUE OF LIFE (YEAR/DAY/MIN)      */}
-        {/* ================================================================= */}
-        {(activeTab === 'overview' || activeTab === 'velocity') && (
+      {/* Default Tab: Master Executive Multi-Column Dashboard */}
+      {activeTab === 'dashboard' && (
+        <ScrollView
+          style={styles.container}
+          contentContainerStyle={styles.content}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={Colors.primary} />}
+        >
+          {/* 1. Net Financial Health Status (Cash in Hand − Total Loans) */}
+          <HealthStatusMeter totalCashInHand={totalCashInHand} totalLoans={totalLoans} />
+
+          {/* 2. Real-Time Wealth Velocity Clock (Min/Hr/Day/Yr) */}
           <WealthVelocityCard velocity={wealthVelocity} />
-        )}
 
-        {/* ================================================================= */}
-        {/* SECTION: FINANCIAL CONSULTANT SUITE, RULE OF 72 & FIRE 4% RULE    */}
-        {/* ================================================================= */}
-        {(activeTab === 'overview' || activeTab === 'planning') && (
-          <FinancialConsultantToolsCard planning={planningSuite} />
-        )}
-
-        {/* ================================================================= */}
-        {/* SECTION: ASSET PORTFOLIO, IDLE ASSET AUDIT & ADVANCED EVALUATION  */}
-        {/* ================================================================= */}
-        {(activeTab === 'overview' || activeTab === 'assets') && (
-          <>
-            <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>
-                ASSET VALUATION, INCOME AUDIT & IDLE ASSET INTELLIGENCE
-              </Text>
-              <TouchableOpacity onPress={() => openModalWithType('asset')}>
-                <Text style={styles.seeAll}>+ Add Asset →</Text>
-              </TouchableOpacity>
-            </View>
-
-            <AssetEvaluationCard
-              assets={assets}
-              summary={assetSummary}
-              onAddAssetPress={() => openModalWithType('asset')}
-            />
-          </>
-        )}
-
-        {/* ================================================================= */}
-        {/* SECTION: LIFE INSURANCE VAULT & BIRTHDAY CELEBRATIONS             */}
-        {/* ================================================================= */}
-        {(activeTab === 'overview' || activeTab === 'insurance_bday') && (
-          <>
-            <View style={styles.sectionHeader}>
-              <Text style={[styles.sectionTitle, { color: Colors.secondary }]}>
-                LIFE INSURANCE COVERAGE & BIRTHDAY MILESTONES
-              </Text>
-            </View>
-
-            <InsuranceBirthdayCards
-              policies={policies}
-              insuranceSummary={insuranceSummary}
-              birthdayReminders={birthdayReminders}
-              onAddPolicyPress={() => openModalWithType('insurance')}
-              onAddBirthdayPress={() => openModalWithType('birthday')}
-            />
-          </>
-        )}
-
-        {/* ================================================================= */}
-        {/* SECTION: HISTORICAL FINANCIAL INTELLIGENCE & PARAMETER AUDIT     */}
-        {/* ================================================================= */}
-        {(activeTab === 'overview' || activeTab === 'history') && (
-          <>
-            <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>
-                HISTORICAL MULTI-MONTH FINANCIAL TRENDS
-              </Text>
-            </View>
-
-            <HistoricalAnalyticsView />
-          </>
-        )}
-
-        {/* ================================================================= */}
-        {/* SECTION: CASH IN HAND & LOAN BREAKDOWN (BANK & OUTSIDE BANK)     */}
-        {/* ================================================================= */}
-        {(activeTab === 'overview' || activeTab === 'cash_debt') && (
-          <>
-            <View style={styles.twoColRow}>
-              {/* Cash in Hand Radial Donut */}
-              <GlassCard style={styles.halfCard} padding={16} glowColor={Colors.primary}>
-                <Text style={styles.cardHeaderTitle}>1. CASH IN HAND</Text>
+          {/* 3. Responsive 2-Column Grid: Cash in Hand & Loan Liabilities */}
+          <View style={[styles.gridRow, isWide && styles.gridRowWide]}>
+            {/* Cash in Hand */}
+            <View style={[styles.gridCol, isWide && styles.gridColHalf]}>
+              <GlassCard style={styles.cardFull} padding={18} glowColor={Colors.primary}>
+                <Text style={styles.cardLabel}>1. CURRENT CASH IN HAND</Text>
                 <SegmentedDonut
                   segments={cashList}
                   totalLabel="Total Liquid"
                   totalFormatted={`৳ ${(totalCashInHand / 100000).toFixed(1)}L`}
-                  size={140}
-                />
-              </GlassCard>
-
-              {/* Debt Distribution Radial Gauge */}
-              <GlassCard style={styles.halfCard} padding={16} glowColor={Colors.danger}>
-                <Text style={[styles.cardHeaderTitle, { color: Colors.danger }]}>2. LOAN LIABILITIES</Text>
-                <RadialGauge
-                  score={84}
-                  title={`৳ ${(totalLoans / 100000).toFixed(1)} Lakhs`}
-                  subtitle="84% Bank • 5% Private"
-                  statusLabel="Debt Load"
-                  statusColor={Colors.danger}
-                  size={140}
+                  size={150}
                 />
               </GlassCard>
             </View>
 
-            {/* Detailed Loan Bank-Wise & Outside-Bank Breakdown */}
-            <GlassCard style={styles.fullCard} padding={16}>
+            {/* Loan Liabilities */}
+            <View style={[styles.gridCol, isWide && styles.gridColHalf]}>
+              <GlassCard style={styles.cardFull} padding={18} glowColor={Colors.danger}>
+                <Text style={[styles.cardLabel, { color: Colors.danger }]}>2. OUTSTANDING LOANS</Text>
+                <RadialGauge
+                  score={84}
+                  title={`৳ ${(totalLoans / 100000).toFixed(1)} Lakhs`}
+                  subtitle="84% Institutional • 5% Private"
+                  statusLabel="Debt Load"
+                  statusColor={Colors.danger}
+                  size={150}
+                />
+              </GlassCard>
+            </View>
+          </View>
+
+          {/* Detailed Loan Bank & Outside Bank Breakdown Bar */}
+          <View style={styles.fullWidthItem}>
+            <GlassCard style={styles.cardFull} padding={18}>
               <FlowBreakdownBar
                 items={loanList}
                 total={totalLoans}
@@ -505,45 +396,37 @@ export default function DashboardScreen() {
                 totalFormatted={`৳ ${totalLoans.toLocaleString('en-IN')}`}
               />
             </GlassCard>
-          </>
-        )}
+          </View>
 
-        {/* ================================================================= */}
-        {/* SECTION: INCOME & EXPENSES CURRENT MONTH (SOURCES & SECTOR %)    */}
-        {/* ================================================================= */}
-        {(activeTab === 'overview' || activeTab === 'income_expense') && (
-          <>
-            <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>4. CURRENT MONTH INCOME (SOURCES & %)</Text>
+          {/* 4. Responsive 2-Column Grid: Income Sources & Expenses by Sector */}
+          <View style={[styles.gridRow, isWide && styles.gridRowWide]}>
+            {/* Income Sources with Asset Rental Yield */}
+            <View style={[styles.gridCol, isWide && styles.gridColHalf]}>
+              <GlassCard style={styles.cardFull} padding={18} glowColor={Colors.primary}>
+                <FlowBreakdownBar
+                  items={currentIncomeItems}
+                  total={totalCurrentIncome}
+                  title="4. INCOME SOURCES WITH ASSET RENTAL YIELD"
+                  totalFormatted={`৳ ${totalCurrentIncome.toLocaleString('en-IN')}`}
+                />
+              </GlassCard>
             </View>
 
-            <GlassCard style={styles.fullCard} padding={16} glowColor={Colors.primary}>
-              <FlowBreakdownBar
-                items={currentIncomeItems}
-                total={totalCurrentIncome}
-                title="INCOME SOURCES WITH ASSET YIELD & ALLOCATION %"
-                totalFormatted={`৳ ${totalCurrentIncome.toLocaleString('en-IN')}`}
-              />
-            </GlassCard>
-
-            <View style={styles.sectionHeader}>
-              <Text style={[styles.sectionTitle, { color: Colors.danger }]}>
-                5. CURRENT MONTH EXPENSES (SECTOR-WISE BREAKDOWN & %)
-              </Text>
+            {/* Expenses by Sector */}
+            <View style={[styles.gridCol, isWide && styles.gridColHalf]}>
+              <GlassCard style={styles.cardFull} padding={18} glowColor={Colors.danger}>
+                <FlowBreakdownBar
+                  items={currentExpenseItems}
+                  total={totalCurrentExpense}
+                  title="5. EXPENSES BY SECTOR & FIXED DEBT EMIs"
+                  totalFormatted={`৳ ${totalCurrentExpense.toLocaleString('en-IN')}`}
+                />
+              </GlassCard>
             </View>
+          </View>
 
-            <GlassCard style={styles.fullCard} padding={16} glowColor={Colors.danger}>
-              <FlowBreakdownBar
-                items={currentExpenseItems}
-                total={totalCurrentExpense}
-                title="SECTOR-WISE EXPENSE DISTRIBUTION"
-                totalFormatted={`৳ ${totalCurrentExpense.toLocaleString('en-IN')}`}
-              />
-            </GlassCard>
-
-            {/* ============================================================= */}
-            {/* REQUIREMENTS #6 & #7: Projected Income & Expenses Next Month  */}
-            {/* ============================================================= */}
+          {/* 5. Next Month Cash Flow Forecasting Card */}
+          <View style={styles.fullWidthItem}>
             <ProjectionComparisonCard
               currentMonthName="August"
               nextMonthName="September 2026"
@@ -552,105 +435,102 @@ export default function DashboardScreen() {
               currentExpense={totalCurrentExpense}
               projectedExpenseNextMonth={104000}
               projectedIncomeBreakdown={[
-                { name: 'Salary', amount: 135000, color: '#00E5B3' },
-                { name: 'Asset Rent (AST-101, 104)', amount: assetSummary.totalMonthlyAssetIncome, color: '#7B6EF6' },
-                { name: 'Sanchaypatra (Q)', amount: 28500, color: '#00B4D8' },
-                { name: 'FDR Returns', amount: 18500, color: '#FFB547' },
+                { name: 'Salary', amount: 135000, color: '#00F5A0' },
+                { name: 'Asset Rent (AST-101, 104)', amount: assetSummary.totalMonthlyAssetIncome, color: '#8B5CF6' },
+                { name: 'Sanchaypatra (Q)', amount: 28500, color: '#00D2FF' },
+                { name: 'FDR Returns', amount: 18500, color: '#F59E0B' },
               ]}
               projectedExpenseBreakdown={[
-                { name: 'Fixed EMIs (Home + Auto)', amount: 67500, color: '#FF4757' },
-                { name: 'House Rent & Living', amount: 28000, color: '#FFB547' },
-                { name: 'Scheduled Utilities & Bills', amount: 8500, color: '#00B4D8' },
+                { name: 'Fixed EMIs (Home + Auto)', amount: 67500, color: '#EF4444' },
+                { name: 'Household Living', amount: 28000, color: '#F59E0B' },
+                { name: 'Scheduled Utilities & Bills', amount: 8500, color: '#00D2FF' },
               ]}
             />
-          </>
-        )}
+          </View>
 
-        {/* ================================================================= */}
-        {/* REQUIREMENTS #8 & #9: Schedules, Reminders & 3-Week Alerts       */}
-        {/* ================================================================= */}
-        {(activeTab === 'overview' || activeTab === 'schedules') && (
-          <>
-            <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>8. SCHEDULES & UPCOMING CASH MOVEMENTS</Text>
-              <Text style={styles.seeAll}>Full Calendar →</Text>
-            </View>
+          {/* 6. Financial Planning Suite, Rule of 72 & FIRE Freedom Number */}
+          <FinancialConsultantToolsCard planning={planningSuite} />
 
+          {/* 7. Schedules & Reminders */}
+          <View style={styles.sectionHeadingRow}>
+            <Text style={styles.sectionHeadingText}>8. SCHEDULES & UPCOMING DISBURSEMENTS</Text>
+          </View>
+          <View style={styles.fullWidthItem}>
             <ScheduleTimeline events={upcomingSchedules} />
+          </View>
 
-            <View style={[styles.sectionHeader, { marginTop: Spacing.lg }]}>
-              <Text style={[styles.sectionTitle, { color: Colors.accent }]}>
-                9. 3-WEEK MATURITY COUNTDOWN REMINDERS
-              </Text>
-            </View>
+          {/* 8. 3-Week Maturity Countdowns */}
+          <View style={styles.sectionHeadingRow}>
+            <Text style={[styles.sectionHeadingText, { color: Colors.accent }]}>
+              9. 3-WEEK MATURITY COUNTDOWN ALERTS
+            </Text>
+          </View>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.hScroll}>
+            <CountdownCard
+              title="3-Month Sanchaypatra Coupon"
+              subtitle="Certificate #SC-99201 • 11.04%"
+              daysRemaining={6}
+              targetDate={new Date(2026, 7, 24)}
+              amount={28500}
+              amountLabel="Net Coupon Payout"
+              type="sanchaypatra"
+              urgencyLevel="critical"
+              percentageElapsed={98}
+            />
+            <CountdownCard
+              title="Dutch-Bangla Bank FDR Maturity"
+              subtitle="FDR #8839201 • 3 Years @ 9.5%"
+              daysRemaining={19}
+              targetDate={new Date(2026, 8, 6)}
+              amount={1500000}
+              amountLabel="Maturity Value"
+              type="fdr"
+              urgencyLevel="warning"
+              percentageElapsed={92}
+            />
+            <CountdownCard
+              title="City Bank Home Loan EMI"
+              subtitle="EMI #14 of 240 • Next Due"
+              daysRemaining={7}
+              targetDate={new Date(2026, 7, 25)}
+              amount={45000}
+              amountLabel="Exact EMI Due"
+              type="emi"
+              urgencyLevel="warning"
+              percentageElapsed={80}
+            />
+          </ScrollView>
 
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.hScroll}>
-              <CountdownCard
-                title="3-Month Sanchaypatra Coupon"
-                subtitle="Certificate #SC-99201 • 11.04%"
-                daysRemaining={6}
-                targetDate={new Date(2026, 7, 24)}
-                amount={28500}
-                amountLabel="Net Coupon Payout"
-                type="sanchaypatra"
-                urgencyLevel="critical"
-                percentageElapsed={98}
-              />
-              <CountdownCard
-                title="Dutch-Bangla Bank FDR Maturity"
-                subtitle="FDR #8839201 • 3 Years @ 9.5%"
-                daysRemaining={19}
-                targetDate={new Date(2026, 8, 6)}
-                amount={1500000}
-                amountLabel="Maturity Value"
-                type="fdr"
-                urgencyLevel="warning"
-                percentageElapsed={92}
-              />
-              <CountdownCard
-                title="City Bank Home Loan EMI"
-                subtitle="EMI #14 of 240 • Next Due"
-                daysRemaining={7}
-                targetDate={new Date(2026, 7, 25)}
-                amount={45000}
-                amountLabel="Exact EMI Due"
-                type="emi"
-                urgencyLevel="warning"
-                percentageElapsed={80}
-              />
-            </ScrollView>
+          {/* 9. Pending EMI Action Reminders */}
+          <View style={styles.sectionHeadingRow}>
+            <Text style={[styles.sectionHeadingText, { color: Colors.danger }]}>
+              PENDING EMI ACTIONS
+            </Text>
+          </View>
+          <View style={styles.emiList}>
+            <EMIReminderCard
+              loanTitle="Apartment Home Loan Mortgage"
+              bankName="City Bank Ltd."
+              emiAmount={45000}
+              dueDate={new Date(2026, 7, 25)}
+              paymentNumber={14}
+              totalPayments={240}
+              outstandingPrincipal={4250000}
+            />
+            <EMIReminderCard
+              loanTitle="Vehicle Auto Loan (Toyota Harrier)"
+              bankName="Eastern Bank Ltd."
+              emiAmount={22500}
+              dueDate={new Date(2026, 8, 5)}
+              paymentNumber={36}
+              totalPayments={60}
+              outstandingPrincipal={540000}
+            />
+          </View>
+        </ScrollView>
+      )}
 
-            <View style={[styles.sectionHeader, { marginTop: Spacing.lg }]}>
-              <Text style={[styles.sectionTitle, { color: Colors.danger }]}>
-                PENDING EMI ACTION REMINDERS
-              </Text>
-            </View>
-
-            <View style={{ paddingHorizontal: Spacing.md, gap: Spacing.sm }}>
-              <EMIReminderCard
-                loanTitle="Apartment Home Loan"
-                bankName="City Bank Ltd."
-                emiAmount={45000}
-                dueDate={new Date(2026, 7, 25)}
-                paymentNumber={14}
-                totalPayments={240}
-                outstandingPrincipal={4250000}
-              />
-              <EMIReminderCard
-                loanTitle="Vehicle Auto Loan"
-                bankName="Eastern Bank Ltd."
-                emiAmount={22500}
-                dueDate={new Date(2026, 8, 5)}
-                paymentNumber={36}
-                totalPayments={60}
-                outstandingPrincipal={540000}
-              />
-            </View>
-          </>
-        )}
-      </ScrollView>
-
-      {/* Master Universal Entry Modal */}
+      {/* Universal Quick Data Entry Modal */}
       <UniversalEntryModal
         visible={entryModalVisible}
         initialType={modalInitialType}
@@ -664,111 +544,61 @@ export default function DashboardScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#080B14',
+    backgroundColor: '#0B0F19',
   },
   container: {
     flex: 1,
+    backgroundColor: '#0B0F19',
   },
-  contentContainer: {
+  content: {
+    paddingTop: Spacing.md,
     paddingBottom: 120,
   },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: Spacing.md,
-    paddingTop: Spacing.sm,
-    paddingBottom: Spacing.xs,
-  },
-  greeting: {
-    ...Typography.displayM,
-    color: Colors.textPrimary,
-  },
-  date: {
-    ...Typography.caption,
-    color: Colors.textSecondary,
-    marginTop: 2,
-  },
-  quickAddBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    backgroundColor: Colors.primary,
-    paddingHorizontal: 12,
-    paddingVertical: 7,
-    borderRadius: Radius.full,
-  },
-  quickAddText: {
-    fontSize: 12,
-    fontWeight: '800',
-    color: '#000',
-  },
-  navBar: {
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.sm,
-    gap: 8,
-    marginBottom: Spacing.xs,
-  },
-  navBtn: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: Radius.full,
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
-  },
-  navBtnActive: {
-    backgroundColor: 'rgba(0, 229, 179, 0.15)',
-    borderWidth: 1,
-    borderColor: 'rgba(0, 229, 179, 0.4)',
-  },
-  navBtnText: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: Colors.textMuted,
-  },
-  navBtnTextActive: {
-    color: Colors.primary,
-  },
-  twoColRow: {
-    flexDirection: 'row',
+  gridRow: {
+    flexDirection: 'column',
     paddingHorizontal: Spacing.md,
     gap: Spacing.md,
     marginBottom: Spacing.md,
   },
-  halfCard: {
+  gridRowWide: {
+    flexDirection: 'row',
+  },
+  gridCol: {
+    width: '100%',
+  },
+  gridColHalf: {
     flex: 1,
   },
-  fullCard: {
-    marginHorizontal: Spacing.md,
+  cardFull: {
+    width: '100%',
+  },
+  fullWidthItem: {
+    paddingHorizontal: Spacing.md,
     marginBottom: Spacing.md,
   },
-  cardHeaderTitle: {
+  cardLabel: {
     ...Typography.label,
     fontSize: 10,
     color: Colors.primary,
     marginBottom: Spacing.sm,
   },
-  sectionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+  sectionHeadingRow: {
     paddingHorizontal: Spacing.md,
-    marginTop: Spacing.sm,
+    marginTop: Spacing.md,
     marginBottom: Spacing.xs,
   },
-  sectionTitle: {
+  sectionHeadingText: {
     ...Typography.label,
     fontSize: 10,
     color: Colors.primary,
     fontWeight: '800',
-    flex: 1,
-  },
-  seeAll: {
-    ...Typography.caption,
-    color: Colors.textSecondary,
-    fontSize: 11,
   },
   hScroll: {
     paddingHorizontal: Spacing.md,
     paddingBottom: Spacing.xs,
+  },
+  emiList: {
+    paddingHorizontal: Spacing.md,
+    gap: Spacing.sm,
   },
 });
