@@ -34,18 +34,18 @@ export const NetWorthMeter: React.FC<NetWorthMeterProps> = ({
 
   return (
     <View style={styles.container}>
-      <LinearGradient colors={['#0F1320', '#161C2D']} style={styles.card}>
+      <LinearGradient colors={['#FFFFFF', '#F0F9FF']} style={styles.card}>
         <View style={styles.content}>
-          <Text style={styles.label}>NET WORTH</Text>
+          <Text style={styles.label}>TOTAL CONSOLIDATED NET WORTH</Text>
           <Text style={styles.amount}>৳ {formatBDT(netWorth)}</Text>
 
           <View style={styles.badges}>
-            <View style={[styles.badge, { backgroundColor: 'rgba(0,229,179,0.1)' }]}>
-              <Text style={[styles.badgeText, { color: Colors.primary }]}>
+            <View style={[styles.badge, { backgroundColor: 'rgba(2, 132, 199, 0.12)', borderColor: '#BAE6FD' }]}>
+              <Text style={[styles.badgeText, { color: '#0284C7' }]}>
                 ▲ Assets: ৳ {formatBDT(totalAssets)}
               </Text>
             </View>
-            <View style={[styles.badge, { backgroundColor: 'rgba(255,71,87,0.1)' }]}>
+            <View style={[styles.badge, { backgroundColor: 'rgba(239, 68, 68, 0.12)', borderColor: 'rgba(239, 68, 68, 0.25)' }]}>
               <Text style={[styles.badgeText, { color: Colors.danger }]}>
                 ▼ Liabilities: ৳ {formatBDT(totalLiabilities)}
               </Text>
@@ -55,21 +55,21 @@ export const NetWorthMeter: React.FC<NetWorthMeterProps> = ({
           <View style={styles.divider} />
 
           <View style={styles.barContainer}>
-            <View style={[styles.barSegment, { flex: Math.max(1, allocation.cash), backgroundColor: Colors.primary }]}>
-              {cashPct > 15 && <Text style={styles.barText}>{cashPct}%</Text>}
+            <View style={[styles.barSegment, { flex: Math.max(1, allocation.cash), backgroundColor: '#0284C7' }]}>
+              {cashPct > 12 && <Text style={styles.barText}>{cashPct}%</Text>}
             </View>
-            <View style={[styles.barSegment, { flex: Math.max(1, allocation.fixedDeposits), backgroundColor: Colors.secondary }]}>
-              {fdrPct > 15 && <Text style={styles.barText}>{fdrPct}%</Text>}
+            <View style={[styles.barSegment, { flex: Math.max(1, allocation.fixedDeposits), backgroundColor: '#6366F1' }]}>
+              {fdrPct > 12 && <Text style={styles.barText}>{fdrPct}%</Text>}
             </View>
-            <View style={[styles.barSegment, { flex: Math.max(1, allocation.savings), backgroundColor: Colors.accent }]}>
-              {savingsPct > 15 && <Text style={styles.barText}>{savingsPct}%</Text>}
+            <View style={[styles.barSegment, { flex: Math.max(1, allocation.savings), backgroundColor: '#F59E0B' }]}>
+              {savingsPct > 12 && <Text style={styles.barText}>{savingsPct}%</Text>}
             </View>
           </View>
 
           <View style={styles.legend}>
-            <LegendItem color={Colors.primary} label="Cash" value={`${cashPct}%`} />
-            <LegendItem color={Colors.secondary} label="FDR" value={`${fdrPct}%`} />
-            <LegendItem color={Colors.accent} label="Savings" value={`${savingsPct}%`} />
+            <LegendItem color="#0284C7" label="Liquid Cash" value={`${cashPct}%`} />
+            <LegendItem color="#6366F1" label="Paper/FDR" value={`${fdrPct}%`} />
+            <LegendItem color="#F59E0B" label="Govt Savings" value={`${savingsPct}%`} />
           </View>
         </View>
       </LinearGradient>
@@ -87,49 +87,63 @@ const LegendItem = ({ color, label, value }: { color: string; label: string; val
 
 const styles = StyleSheet.create({
   container: {
-    marginHorizontal: Spacing.md,
-    borderRadius: Radius.lg,
-    overflow: 'hidden',
-  },
-  card: {
+    marginHorizontal: 0,
+    marginBottom: Spacing.md,
     width: '100%',
   },
+  card: {
+    borderRadius: Radius.lg,
+    borderWidth: 2,
+    borderColor: '#BAE6FD',
+    overflow: 'hidden',
+    shadowColor: '#0369A1',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 16,
+    elevation: 4,
+  },
   content: {
-    padding: Spacing.lg,
+    padding: Spacing.xl,
   },
   label: {
-    ...Typography.label,
-    color: Colors.primary,
-    marginBottom: Spacing.sm,
+    fontSize: 12,
+    fontWeight: '800',
+    color: '#0284C7',
+    letterSpacing: 0.8,
+    marginBottom: 4,
   },
   amount: {
-    ...Typography.displayXL,
-    color: Colors.textPrimary,
+    fontSize: 38,
+    fontWeight: '900',
+    color: '#0F172A',
+    letterSpacing: -1,
     marginBottom: Spacing.md,
   },
   badges: {
     flexDirection: 'row',
-    gap: Spacing.sm,
+    gap: 12,
     marginBottom: Spacing.md,
+    flexWrap: 'wrap',
   },
   badge: {
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: 4,
+    paddingHorizontal: 14,
+    paddingVertical: 7,
     borderRadius: Radius.full,
+    borderWidth: 1,
   },
   badgeText: {
-    ...Typography.caption,
-    fontWeight: '600',
+    fontSize: 13,
+    fontWeight: '800',
   },
   divider: {
-    height: 1,
-    backgroundColor: Colors.border,
+    height: 1.5,
+    backgroundColor: '#E2E8F0',
     marginBottom: Spacing.md,
   },
   barContainer: {
     height: 24,
-    flexDirection: 'row',
     borderRadius: Radius.full,
+    flexDirection: 'row',
     overflow: 'hidden',
     marginBottom: Spacing.md,
     gap: 2,
@@ -140,31 +154,33 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   barText: {
-    color: '#000',
-    fontSize: 10,
-    fontWeight: 'bold',
+    color: '#FFFFFF',
+    fontSize: 11,
+    fontWeight: '800',
   },
   legend: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    justifyContent: 'space-around',
+    paddingTop: Spacing.xs,
   },
   legendItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    gap: 8,
   },
   legendDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
+    width: 10,
+    height: 10,
+    borderRadius: 5,
   },
   legendLabel: {
-    ...Typography.caption,
-    color: Colors.textMuted,
+    fontSize: 13,
+    color: '#475569',
+    fontWeight: '600',
   },
   legendValue: {
-    ...Typography.caption,
-    color: Colors.textPrimary,
-    fontWeight: '600',
+    fontSize: 13,
+    fontWeight: '800',
+    color: '#0F172A',
   },
 });

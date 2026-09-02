@@ -5,11 +5,11 @@
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
-    "userInterfaceStyle": "dark",
+    "userInterfaceStyle": "light",
     "splash": {
       "image": "./assets/splash.png",
       "resizeMode": "contain",
-      "backgroundColor": "#080B14"
+      "backgroundColor": "#E0F2FE"
     },
     "assetBundlePatterns": ["**/*"],
     "ios": {
@@ -20,7 +20,7 @@
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#080B14"
+        "backgroundColor": "#E0F2FE"
       },
       "package": "com.moneyhoney.app",
       "versionCode": 1,
@@ -39,8 +39,8 @@
       "name": "Money-Honey",
       "shortName": "MoneyHoney",
       "description": "Local-first personal finance manager",
-      "themeColor": "#00E5B3",
-      "backgroundColor": "#080B14"
+      "themeColor": "#0284C7",
+      "backgroundColor": "#E0F2FE"
     },
     "plugins": [
       "expo-router",

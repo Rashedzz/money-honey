@@ -1,11 +1,10 @@
-import React, { useState } from 'react';
+import React from 'react';
 import {
   View,
   Text,
   StyleSheet,
   TouchableOpacity,
   ScrollView,
-  Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, Typography, Spacing, Radius } from '../../theme';
@@ -63,18 +62,18 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
         {!isCollapsed && (
           <View style={styles.brandRow}>
             <View style={styles.logoBadge}>
-              <Text style={{ fontSize: 18 }}>🍯</Text>
+              <Text style={{ fontSize: 22 }}>🍯</Text>
             </View>
             <View style={styles.brandTextCol}>
               <Text style={styles.brandTitle}>Money-Honey</Text>
-              <Text style={styles.brandTag}>AFIL Wealth Suite</Text>
+              <Text style={styles.brandTag}>Sky Blue Wealth Suite</Text>
             </View>
           </View>
         )}
 
         {isCollapsed && (
           <View style={styles.logoBadge}>
-            <Text style={{ fontSize: 18 }}>🍯</Text>
+            <Text style={{ fontSize: 22 }}>🍯</Text>
           </View>
         )}
 
@@ -85,25 +84,25 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
         >
           <Ionicons
             name={isCollapsed ? 'chevron-forward' : 'chevron-back'}
-            size={16}
-            color={Colors.textSecondary}
+            size={18}
+            color="#FFFFFF"
           />
         </TouchableOpacity>
       </View>
 
-      {/* Quick Entry Button */}
+      {/* Quick Entry Button (Larger) */}
       <View style={styles.quickEntryWrapper}>
         <TouchableOpacity
           style={[styles.quickEntryBtn, isCollapsed && styles.quickEntryBtnCollapsed]}
           onPress={onQuickEntryPress}
           activeOpacity={0.85}
         >
-          <Ionicons name="add-circle" size={18} color="#020617" />
-          {!isCollapsed && <Text style={styles.quickEntryText}>+ Data Entry</Text>}
+          <Ionicons name="add-circle" size={20} color="#0369A1" />
+          {!isCollapsed && <Text style={styles.quickEntryText}>+ New Data Entry</Text>}
         </TouchableOpacity>
       </View>
 
-      {/* Navigation Links */}
+      {/* Navigation Links (Larger font, larger icons, larger padding) */}
       <ScrollView showsVerticalScrollIndicator={false} style={styles.menuList}>
         {menuItems.map((item) => {
           const isActive = activeTab === item.id;
@@ -121,8 +120,8 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
             >
               <Ionicons
                 name={item.icon}
-                size={18}
-                color={isActive ? Colors.primary : Colors.textSecondary}
+                size={22}
+                color={isActive ? '#FFFFFF' : '#BAE6FD'}
               />
 
               {!isCollapsed && (
@@ -131,7 +130,7 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
                     {item.label}
                   </Text>
                   {item.badge && (
-                    <View style={styles.badge}>
+                    <View style={[styles.badge, isActive && styles.badgeActive]}>
                       <Text style={styles.badgeText}>{item.badge}</Text>
                     </View>
                   )}
@@ -146,36 +145,36 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
 
       {/* Bottom Actions: Install QR Code + User Profile */}
       <View style={styles.footerSection}>
-        {/* Mobile App Install Button */}
+        {/* Mobile App Install Button (Larger) */}
         <TouchableOpacity
           style={[styles.installBtn, isCollapsed && styles.installBtnCollapsed]}
           onPress={onOpenQrModal}
           activeOpacity={0.85}
         >
-          <Ionicons name="qr-code-outline" size={16} color={Colors.primary} />
+          <Ionicons name="qr-code-outline" size={20} color="#FFFFFF" />
           {!isCollapsed && (
             <View style={{ flex: 1 }}>
-              <Text style={styles.installTitle}>Install on Mobile</Text>
-              <Text style={styles.installSubtitle}>Scan Phone QR Code</Text>
+              <Text style={styles.installTitle}>Install on Phone</Text>
+              <Text style={styles.installSubtitle}>Scan Mobile QR Code</Text>
             </View>
           )}
         </TouchableOpacity>
 
-        {/* User Profile Pill */}
+        {/* User Profile Pill (Larger) */}
         <TouchableOpacity
           style={[styles.userPill, isCollapsed && styles.userPillCollapsed]}
           onPress={() => onSelectTab('settings')}
           activeOpacity={0.85}
         >
           <View style={styles.avatar}>
-            <Text style={{ fontSize: 16 }}>{userProfile.avatar || '👨‍💼'}</Text>
+            <Text style={{ fontSize: 18 }}>{userProfile.avatar || '👨‍💼'}</Text>
           </View>
           {!isCollapsed && (
             <View style={styles.userMeta}>
               <Text style={styles.userName} numberOfLines={1}>
                 {userProfile.name}
               </Text>
-              <Text style={styles.userRole}>Executive Portfolio</Text>
+              <Text style={styles.userRole}>Principal Wealth Owner</Text>
             </View>
           )}
         </TouchableOpacity>
@@ -186,10 +185,10 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
 
 const styles = StyleSheet.create({
   sidebar: {
-    width: 250,
-    backgroundColor: '#0F172A',
-    borderRightWidth: 1,
-    borderRightColor: 'rgba(255, 255, 255, 0.08)',
+    width: 290,
+    backgroundColor: '#0369A1', // Sky 700 Royal Blue
+    borderRightWidth: 1.5,
+    borderRightColor: 'rgba(255, 255, 255, 0.18)',
     display: 'flex',
     flexDirection: 'column',
     height: '100%',
@@ -197,60 +196,60 @@ const styles = StyleSheet.create({
     zIndex: 40,
   },
   sidebarCollapsed: {
-    width: 68,
+    width: 76,
   },
   brandHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: Spacing.md,
-    paddingBottom: Spacing.sm,
+    paddingBottom: Spacing.md,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255, 255, 255, 0.06)',
+    borderBottomColor: 'rgba(255, 255, 255, 0.15)',
     marginBottom: Spacing.sm,
   },
   brandHeaderCollapsed: {
     justifyContent: 'center',
     paddingHorizontal: 6,
     flexDirection: 'column',
-    gap: 8,
+    gap: 10,
   },
   brandRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
+    gap: 12,
     flex: 1,
   },
   logoBadge: {
-    width: 34,
-    height: 34,
+    width: 42,
+    height: 42,
     borderRadius: Radius.md,
-    backgroundColor: 'rgba(34, 197, 94, 0.15)',
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: 'rgba(34, 197, 94, 0.3)',
+    borderColor: 'rgba(255, 255, 255, 0.35)',
   },
   brandTextCol: {
     flex: 1,
   },
   brandTitle: {
-    ...Typography.heading,
-    fontSize: 15,
+    fontSize: 18,
     fontWeight: '800',
-    color: Colors.textPrimary,
+    color: '#FFFFFF',
+    letterSpacing: -0.3,
   },
   brandTag: {
-    ...Typography.caption,
-    fontSize: 9,
-    color: Colors.primary,
+    fontSize: 11,
+    color: '#BAE6FD',
     fontWeight: '700',
     letterSpacing: 0.5,
+    marginTop: 1,
   },
   collapseBtn: {
-    padding: 6,
-    borderRadius: Radius.sm,
-    backgroundColor: 'rgba(255, 255, 255, 0.04)',
+    padding: 8,
+    borderRadius: Radius.md,
+    backgroundColor: 'rgba(255, 255, 255, 0.12)',
   },
   quickEntryWrapper: {
     paddingHorizontal: Spacing.md,
@@ -261,32 +260,37 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    backgroundColor: Colors.primary,
-    paddingVertical: 9,
-    paddingHorizontal: 12,
+    backgroundColor: '#FFFFFF',
+    paddingVertical: 12,
+    paddingHorizontal: 14,
     borderRadius: Radius.md,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.12,
+    shadowRadius: 6,
+    elevation: 3,
   },
   quickEntryBtnCollapsed: {
     paddingHorizontal: 0,
   },
   quickEntryText: {
-    fontSize: 12,
+    fontSize: 15,
     fontWeight: '800',
-    color: '#020617',
+    color: '#0369A1',
   },
   menuList: {
     flex: 1,
-    paddingHorizontal: Spacing.xs,
+    paddingHorizontal: Spacing.sm,
     marginTop: Spacing.sm,
   },
   navItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
-    paddingHorizontal: Spacing.md,
-    paddingVertical: 10,
+    gap: 14,
+    paddingHorizontal: 16,
+    paddingVertical: 13,
     borderRadius: Radius.md,
-    marginBottom: 4,
+    marginBottom: 5,
     position: 'relative',
   },
   navItemCollapsed: {
@@ -294,7 +298,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 0,
   },
   navItemActive: {
-    backgroundColor: 'rgba(34, 197, 94, 0.12)',
+    backgroundColor: 'rgba(255, 255, 255, 0.22)',
   },
   labelRow: {
     flex: 1,
@@ -303,84 +307,87 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   navLabel: {
-    fontSize: 12,
+    fontSize: 15,
     fontWeight: '600',
-    color: Colors.textSecondary,
+    color: '#E0F2FE',
   },
   navLabelActive: {
-    color: Colors.textPrimary,
-    fontWeight: '700',
+    color: '#FFFFFF',
+    fontWeight: '800',
   },
   badge: {
-    backgroundColor: 'rgba(255, 255, 255, 0.06)',
-    paddingHorizontal: 6,
-    paddingVertical: 2,
+    backgroundColor: 'rgba(255, 255, 255, 0.18)',
+    paddingHorizontal: 7,
+    paddingVertical: 3,
     borderRadius: Radius.sm,
   },
+  badgeActive: {
+    backgroundColor: '#FFFFFF',
+  },
   badgeText: {
-    fontSize: 8,
-    fontWeight: '700',
-    color: Colors.textMuted,
+    fontSize: 10,
+    fontWeight: '800',
+    color: '#FFFFFF',
   },
   activeBar: {
     position: 'absolute',
     left: 0,
     top: 6,
     bottom: 6,
-    width: 3,
-    backgroundColor: Colors.primary,
+    width: 4,
+    backgroundColor: '#FFFFFF',
     borderRadius: 2,
   },
   footerSection: {
-    paddingHorizontal: Spacing.sm,
-    paddingTop: Spacing.sm,
+    paddingHorizontal: Spacing.md,
+    paddingTop: Spacing.md,
     borderTopWidth: 1,
-    borderTopColor: 'rgba(255, 255, 255, 0.06)',
-    gap: 8,
+    borderTopColor: 'rgba(255, 255, 255, 0.15)',
+    gap: 10,
   },
   installBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    backgroundColor: 'rgba(34, 197, 94, 0.08)',
+    gap: 10,
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
     borderWidth: 1,
-    borderColor: 'rgba(34, 197, 94, 0.2)',
+    borderColor: 'rgba(255, 255, 255, 0.3)',
     borderRadius: Radius.md,
-    padding: 8,
+    padding: 10,
   },
   installBtnCollapsed: {
     justifyContent: 'center',
     padding: 10,
   },
   installTitle: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: Colors.textPrimary,
+    fontSize: 13,
+    fontWeight: '800',
+    color: '#FFFFFF',
   },
   installSubtitle: {
-    fontSize: 9,
-    color: Colors.primary,
+    fontSize: 11,
+    color: '#BAE6FD',
     fontWeight: '600',
   },
   userPill: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    backgroundColor: 'rgba(255, 255, 255, 0.03)',
+    gap: 10,
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
     borderRadius: Radius.md,
-    padding: 6,
+    padding: 8,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.05)',
+    borderColor: 'rgba(255, 255, 255, 0.18)',
   },
   userPillCollapsed: {
     justifyContent: 'center',
-    padding: 6,
+    padding: 8,
   },
   avatar: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -388,12 +395,12 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   userName: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: Colors.textPrimary,
+    fontSize: 14,
+    fontWeight: '800',
+    color: '#FFFFFF',
   },
   userRole: {
-    fontSize: 9,
-    color: Colors.textMuted,
+    fontSize: 11,
+    color: '#BAE6FD',
   },
 });

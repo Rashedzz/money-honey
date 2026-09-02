@@ -20,28 +20,28 @@ export const HealthStatusMeter: React.FC<HealthStatusMeterProps> = ({
   return (
     <GlassCard
       style={styles.card}
-      padding={16}
-      glowColor={isSolvent ? Colors.primary : Colors.danger}
+      padding={20}
+      glowColor={isSolvent ? Colors.success : Colors.danger}
     >
       <View style={styles.header}>
         <View style={styles.titleRow}>
           <Ionicons
             name={isSolvent ? 'shield-checkmark' : 'alert-circle'}
-            size={18}
-            color={isSolvent ? Colors.primary : Colors.danger}
+            size={22}
+            color={isSolvent ? Colors.success : Colors.danger}
           />
           <Text style={styles.title}>CURRENT FINANCIAL SOLVENCY STATUS</Text>
         </View>
         <View
           style={[
             styles.statusPill,
-            { backgroundColor: isSolvent ? 'rgba(34, 197, 94, 0.15)' : 'rgba(239, 68, 68, 0.15)' },
+            { backgroundColor: isSolvent ? 'rgba(16, 185, 129, 0.15)' : 'rgba(239, 68, 68, 0.15)' },
           ]}
         >
           <Text
             style={[
               styles.statusText,
-              { color: isSolvent ? Colors.primary : Colors.danger },
+              { color: isSolvent ? Colors.success : Colors.danger },
             ]}
           >
             {isSolvent ? 'SOLVENT' : 'DEBT EXCEEDS CASH'}
@@ -56,19 +56,19 @@ export const HealthStatusMeter: React.FC<HealthStatusMeterProps> = ({
           <Text
             style={[
               styles.netAmount,
-              { color: isSolvent ? Colors.primary : Colors.danger },
+              { color: isSolvent ? Colors.success : Colors.danger },
             ]}
           >
             {isSolvent ? '+' : '−'}৳ {Math.abs(netStatus).toLocaleString('en-IN')}
           </Text>
           <Text style={styles.netAmountSub}>
-            {isSolvent ? 'Net Liquid Capital Surplus' : 'Net Deficit (Debt higher than liquid reserves)'}
+            {isSolvent ? 'Net Liquid Capital Surplus' : 'Net Deficit (Total Debt exceeds liquid bank reserves)'}
           </Text>
         </View>
 
         <View style={styles.coverageBox}>
           <Text style={styles.coverageLabel}>Debt Coverage</Text>
-          <Text style={[styles.coverageValue, { color: isSolvent ? Colors.primary : Colors.accent }]}>
+          <Text style={[styles.coverageValue, { color: isSolvent ? Colors.success : Colors.accent }]}>
             {coverageRatio}%
           </Text>
         </View>
@@ -82,7 +82,7 @@ export const HealthStatusMeter: React.FC<HealthStatusMeterProps> = ({
             { flex: Math.max(1, totalCashInHand) },
           ]}
         >
-          <Text style={styles.barInsideText}>Cash ৳{(totalCashInHand / 100000).toFixed(1)}L</Text>
+          <Text style={styles.barInsideText}>Cash: ৳{(totalCashInHand / 100000).toFixed(1)}L</Text>
         </View>
         <View
           style={[
@@ -90,7 +90,7 @@ export const HealthStatusMeter: React.FC<HealthStatusMeterProps> = ({
             { flex: Math.max(1, totalLoans) },
           ]}
         >
-          <Text style={styles.barInsideText}>Loan ৳{(totalLoans / 100000).toFixed(1)}L</Text>
+          <Text style={styles.barInsideText}>Loan: ৳{(totalLoans / 100000).toFixed(1)}L</Text>
         </View>
       </View>
 
@@ -114,78 +114,75 @@ const styles = StyleSheet.create({
   card: {
     marginBottom: Spacing.md,
     borderRadius: Radius.lg,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.08)',
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 2,
+    marginBottom: 4,
   },
   titleRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: 8,
   },
   title: {
-    ...Typography.label,
-    fontSize: 10,
-    color: Colors.textPrimary,
+    fontSize: 13,
+    color: '#0F172A',
     fontWeight: '800',
+    letterSpacing: 0.5,
   },
   statusPill: {
-    paddingHorizontal: 8,
-    paddingVertical: 2,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
     borderRadius: Radius.full,
   },
   statusText: {
-    fontSize: 9,
+    fontSize: 11,
     fontWeight: '800',
     letterSpacing: 0.5,
   },
   subFormula: {
-    ...Typography.caption,
-    color: Colors.textMuted,
-    fontSize: 10,
+    color: '#64748B',
+    fontSize: 13,
     marginBottom: Spacing.sm,
   },
   mainValueRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-end',
-    marginBottom: Spacing.sm,
+    marginBottom: Spacing.md,
   },
   netAmount: {
-    fontSize: 26,
-    fontWeight: '800',
+    fontSize: 32,
+    fontWeight: '900',
     letterSpacing: -0.5,
   },
   netAmountSub: {
-    fontSize: 10,
-    color: Colors.textMuted,
-    marginTop: 1,
+    fontSize: 13,
+    color: '#64748B',
+    marginTop: 2,
   },
   coverageBox: {
     alignItems: 'flex-end',
   },
   coverageLabel: {
-    ...Typography.caption,
-    fontSize: 9,
-    color: Colors.textMuted,
+    fontSize: 11,
+    color: '#64748B',
     textTransform: 'uppercase',
+    fontWeight: '700',
   },
   coverageValue: {
-    fontSize: 16,
+    fontSize: 20,
     fontWeight: '800',
-    marginTop: 1,
+    marginTop: 2,
   },
   streamBar: {
-    height: 18,
+    height: 24,
     flexDirection: 'row',
     borderRadius: Radius.full,
     overflow: 'hidden',
-    marginBottom: Spacing.sm,
+    marginBottom: Spacing.md,
     gap: 2,
   },
   cashPortion: {
@@ -199,34 +196,34 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   barInsideText: {
-    fontSize: 9,
+    fontSize: 12,
     fontWeight: '800',
-    color: '#020617',
+    color: '#FFFFFF',
   },
   footerRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    paddingTop: Spacing.xs,
+    paddingTop: Spacing.sm,
     borderTopWidth: 1,
-    borderTopColor: 'rgba(255, 255, 255, 0.05)',
+    borderTopColor: '#E2E8F0',
   },
   footerItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    gap: 6,
   },
   dot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
   },
   footerLabel: {
-    fontSize: 10,
-    color: Colors.textSecondary,
+    fontSize: 13,
+    color: '#334155',
   },
   footerVal: {
-    fontSize: 10,
-    fontWeight: '700',
-    color: Colors.textPrimary,
+    fontSize: 13,
+    fontWeight: '800',
+    color: '#0F172A',
   },
 });

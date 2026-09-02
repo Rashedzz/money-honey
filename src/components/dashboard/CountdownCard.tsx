@@ -92,8 +92,8 @@ export const CountdownCard: React.FC<CountdownCardProps> = ({
 
 const styles = StyleSheet.create({
   card: {
-    width: 240,
-    height: 160,
+    width: 270,
+    height: 175,
     marginRight: Spacing.md,
   },
   container: {
@@ -101,7 +101,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
   },
   accentBar: {
-    width: 4,
+    width: 5,
     height: '100%',
   },
   content: {
@@ -115,25 +115,26 @@ const styles = StyleSheet.create({
     gap: Spacing.sm,
   },
   emoji: {
-    fontSize: 16,
+    fontSize: 18,
   },
   typeLabel: {
-    ...Typography.caption,
-    color: Colors.textMuted,
-    fontWeight: '700',
+    fontSize: 11,
+    color: '#0284C7',
+    fontWeight: '800',
     letterSpacing: 1,
   },
   centerSection: {
     marginTop: Spacing.xs,
   },
   title: {
-    ...Typography.body,
-    color: Colors.textPrimary,
-    fontWeight: '700',
+    fontSize: 15,
+    color: '#0F172A',
+    fontWeight: '800',
+    lineHeight: 20,
   },
   subtitle: {
-    ...Typography.caption,
-    color: Colors.textSecondary,
+    fontSize: 12,
+    color: '#64748B',
     marginTop: 2,
   },
   bottomRow: {
@@ -148,30 +149,32 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   daysNumber: {
-    fontSize: 40,
-    fontWeight: '800',
-    lineHeight: 44,
+    fontSize: 42,
+    fontWeight: '900',
+    lineHeight: 46,
   },
   daysLabel: {
-    ...Typography.caption,
-    color: Colors.textSecondary,
+    fontSize: 12,
+    color: '#64748B',
+    fontWeight: '600',
   },
   amountBlock: {
     alignItems: 'flex-end',
   },
   amountLabelText: {
-    ...Typography.label,
-    fontSize: 9,
-    color: Colors.textMuted,
-  },
-  amount: {
-    ...Typography.body,
-    color: Colors.primary,
+    fontSize: 11,
+    color: '#64748B',
     fontWeight: '700',
   },
+  amount: {
+    fontSize: 16,
+    color: '#0284C7',
+    fontWeight: '900',
+    marginTop: 2,
+  },
   progressBg: {
-    height: 3,
-    backgroundColor: 'rgba(255,255,255,0.1)',
+    height: 4,
+    backgroundColor: '#E2E8F0',
     width: '100%',
   },
   progressFill: {

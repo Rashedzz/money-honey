@@ -82,7 +82,7 @@ export default function RootLayout() {
   return (
     <AppErrorBoundary>
       <DatabaseProvider>
-        <Stack screenOptions={{ headerShown: false }}>
+        <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: '#E0F2FE' } }}>
           <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         </Stack>
       </DatabaseProvider>
