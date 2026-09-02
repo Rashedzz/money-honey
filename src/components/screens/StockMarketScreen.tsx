@@ -49,6 +49,13 @@ import { BACKTEST_STRATEGIES, getBacktestStrategy } from '../../finance/backtest
 import { performForensicAccountingAudit } from '../../finance/accountingFraudDetection';
 import { analyzeStockNewsSentiment } from '../../finance/aiNewsSentimentEngine';
 import { processAiInvestmentQuery, AssistantQueryResponse } from '../../finance/aiInvestmentAssistant';
+import { StockCandleChart } from '../stock/StockCandleChart';
+import { StockComparisonGraph } from '../stock/StockComparisonGraph';
+import {
+  getMarketDepthLadder,
+  getDseShareholding,
+  getDseRegulatoryStatus,
+} from '../../finance/advancedStockFeatures';
 
 interface StockMarketScreenProps {
   stocks: StockHolding[];
@@ -57,7 +64,15 @@ interface StockMarketScreenProps {
   onUpdatePrice: (id: string, newPrice: number) => void;
 }
 
-type MainTabType = 'ai_intelligence' | 'screener' | 'ai_assistant' | 'portfolio_optimizer' | 'backtest' | 'paper_trading' | 'my_holdings';
+type MainTabType =
+  | 'ai_intelligence'
+  | 'screener'
+  | 'ai_assistant'
+  | 'comparison_tool'
+  | 'portfolio_optimizer'
+  | 'backtest'
+  | 'paper_trading'
+  | 'my_holdings';
 
 export const StockMarketScreen: React.FC<StockMarketScreenProps> = ({
   stocks,
@@ -88,7 +103,19 @@ export const StockMarketScreen: React.FC<StockMarketScreenProps> = ({
   const [selectedStock, setSelectedStock] = useState<DseStockItem | null>(null);
   const [histTimeframe, setHistTimeframe] = useState<HistoricalTimeframe>('1Y');
   const [modalSubTab, setModalSubTab] = useState<
-    'dossier' | 'ai_models' | 'dcf_waterfall' | 'dividends' | 'fraud_radar' | 'news_sentiment' | 'technical' | 'patterns' | 'fundamentals' | 'historical'
+    | 'dossier'
+    | 'candlestick_chart'
+    | 'order_book'
+    | 'shareholding'
+    | 'ai_models'
+    | 'dcf_waterfall'
+    | 'dividends'
+    | 'fraud_radar'
+    | 'news_sentiment'
+    | 'technical'
+    | 'patterns'
+    | 'fundamentals'
+    | 'historical'
   >('dossier');
 
   // Sector Drilldown, Find Best Modal & Market Movers State
@@ -249,6 +276,7 @@ export const StockMarketScreen: React.FC<StockMarketScreenProps> = ({
             { id: 'ai_intelligence', label: '🧠 AI Intelligence & Top Picks' },
             { id: 'screener', label: '📊 DSE Stock Screener' },
             { id: 'ai_assistant', label: '🤖 Live AI Assistant' },
+            { id: 'comparison_tool', label: '⚖️ Multi-Stock Comparison' },
             { id: 'portfolio_optimizer', label: '💼 AI Portfolio Optimizer' },
             { id: 'backtest', label: '🔬 Patterns & Backtesting' },
             { id: 'paper_trading', label: '🎮 Virtual Paper Trading' },
@@ -881,6 +909,13 @@ export const StockMarketScreen: React.FC<StockMarketScreenProps> = ({
         </View>
       )}
 
+      {/* TAB: MULTI-STOCK RELATIVE PERFORMANCE COMPARISON TOOL */}
+      {activeTab === 'comparison_tool' && (
+        <View style={{ gap: Spacing.md }}>
+          <StockComparisonGraph />
+        </View>
+      )}
+
       {/* TAB 3: AI PORTFOLIO OPTIMIZER */}
       {activeTab === 'portfolio_optimizer' && (
         <View style={{ gap: Spacing.md }}>
@@ -1505,18 +1540,21 @@ export const StockMarketScreen: React.FC<StockMarketScreenProps> = ({
                     </View>
                   </View>
 
-                  {/* 10 Sub-Tabs Navigation */}
+                  {/* Advanced Sub-Tabs Navigation */}
                   <View style={{ flexDirection: 'row', gap: 6, flexWrap: 'wrap', marginTop: 12, marginBottom: 12, borderBottomWidth: 1, borderBottomColor: '#E2E8F0', paddingBottom: 8 }}>
                     {[
                       { id: 'dossier', label: '📋 One-Page Dossier' },
+                      { id: 'candlestick_chart', label: '📈 TradingView Chart' },
+                      { id: 'order_book', label: '📊 Level 2 Order Depth' },
+                      { id: 'shareholding', label: '🏛️ Shareholding & BSEC' },
                       { id: 'ai_models', label: '🧠 5-Model AI Ensemble' },
                       { id: 'dcf_waterfall', label: '💎 DCF Waterfall' },
                       { id: 'dividends', label: '💰 Dividend & Growth' },
-                      { id: 'fraud_radar', label: '🛡️ Fraud & Accounting Radar' },
-                      { id: 'news_sentiment', label: '📰 News & AI Sentiment' },
+                      { id: 'fraud_radar', label: '🛡️ Fraud Radar' },
+                      { id: 'news_sentiment', label: '📰 News Sentiment' },
                       { id: 'technical', label: '📐 Technicals' },
                       { id: 'patterns', label: '🕯️ Candlestick Win-Rates' },
-                      { id: 'fundamentals', label: '📊 Fundamentals & BD Macro' },
+                      { id: 'fundamentals', label: '📊 Fundamentals' },
                       { id: 'historical', label: '🏛️ 10-Yr Historical' },
                     ].map((tab) => (
                       <TouchableOpacity
@@ -1563,6 +1601,16 @@ export const StockMarketScreen: React.FC<StockMarketScreenProps> = ({
                             <Text style={{ fontSize: 13, fontWeight: '700', color: '#B45309' }}>Risk: Medium</Text>
                           </View>
                         </View>
+
+                        {/* Interactive Candlestick & Volume Chart Embedded directly in Dossier */}
+                        <StockCandleChart
+                          symbol={selectedStock.symbol}
+                          currentPrice={selectedStock.ltp}
+                          timeframe={histTimeframe}
+                          onTimeframeChange={setHistTimeframe}
+                          supportLevel={selectedStock.supportLevel}
+                          resistanceLevel={selectedStock.resistanceLevel}
+                        />
 
                         {/* 1. TECHNICAL OVERVIEW */}
                         <Text style={[styles.sectionHeading, { marginTop: Spacing.md }]}>📐 TECHNICAL DIMENSION</Text>
@@ -1662,6 +1710,162 @@ export const StockMarketScreen: React.FC<StockMarketScreenProps> = ({
                           <Text style={{ fontSize: 11, color: '#EF4444', marginTop: 6 }}>
                             ⚠️ Risk Factors: {selectedStock.riskFactors} • Reference Stop-Loss: ৳{selectedStock.supportLevel}
                           </Text>
+                        </View>
+                      </>
+                    );
+                  })()}
+
+                  {/* TAB: Dedicated Full-Scale TradingView Candlestick Chart */}
+                  {modalSubTab === 'candlestick_chart' && (
+                    <StockCandleChart
+                      symbol={selectedStock.symbol}
+                      currentPrice={selectedStock.ltp}
+                      timeframe={histTimeframe}
+                      onTimeframeChange={setHistTimeframe}
+                      supportLevel={selectedStock.supportLevel}
+                      resistanceLevel={selectedStock.resistanceLevel}
+                    />
+                  )}
+
+                  {/* TAB: Level 2 Market Depth & Order Book Ladder */}
+                  {modalSubTab === 'order_book' && (() => {
+                    const depth = getMarketDepthLadder(selectedStock.symbol, selectedStock.ltp);
+                    return (
+                      <>
+                        <View style={[styles.thesisBox, { backgroundColor: '#F8FAFC', borderColor: '#E2E8F0' }]}>
+                          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <Text style={{ fontSize: 14, fontWeight: '900', color: '#0F172A' }}>
+                              LEVEL 2 MARKET DEPTH (DSE ORDER BOOK LADDER)
+                            </Text>
+                            <Text style={{ fontSize: 12, fontWeight: '800', color: depth.buyPressurePercent > 50 ? '#16A34A' : '#EF4444' }}>
+                              Order Flow: {depth.buyPressurePercent}% Buyers vs {depth.sellPressurePercent}% Sellers
+                            </Text>
+                          </View>
+                          {/* Pressure Visual Bar */}
+                          <View style={{ height: 8, flexDirection: 'row', borderRadius: 4, overflow: 'hidden', marginTop: 8 }}>
+                            <View style={{ flex: depth.buyPressurePercent, backgroundColor: '#16A34A' }} />
+                            <View style={{ flex: depth.sellPressurePercent, backgroundColor: '#EF4444' }} />
+                          </View>
+                        </View>
+
+                        {/* 5-Level Bid vs Ask Ladder Table */}
+                        <Text style={[styles.sectionHeading, { marginTop: Spacing.md }]}>
+                          📋 5-TIER REAL-TIME BUY & SELL LIQUIDITY LADDER
+                        </Text>
+                        <View style={styles.table}>
+                          <View style={styles.tableHeader}>
+                            <Text style={[styles.th, { width: 60 }]}>ORDERS</Text>
+                            <Text style={[styles.th, { flex: 1 }]}>BID QTY</Text>
+                            <Text style={[styles.th, { flex: 1, color: '#16A34A' }]}>BID PRICE</Text>
+                            <Text style={[styles.th, { flex: 1, color: '#EF4444' }]}>ASK PRICE</Text>
+                            <Text style={[styles.th, { flex: 1 }]}>ASK QTY</Text>
+                            <Text style={[styles.th, { width: 60 }]}>ORDERS</Text>
+                          </View>
+                          {[0, 1, 2, 3, 4].map((i) => {
+                            const b = depth.bids[i];
+                            const a = depth.asks[i];
+                            return (
+                              <View key={i} style={styles.tableRow}>
+                                <Text style={[styles.td, { width: 60, fontSize: 11, color: '#64748B' }]}>{b.ordersCount}</Text>
+                                <Text style={[styles.td, { flex: 1, fontWeight: '700' }]}>{b.quantity.toLocaleString()}</Text>
+                                <Text style={[styles.td, { flex: 1, fontWeight: '900', color: '#16A34A' }]}>৳{b.price}</Text>
+                                <Text style={[styles.td, { flex: 1, fontWeight: '900', color: '#EF4444' }]}>৳{a.price}</Text>
+                                <Text style={[styles.td, { flex: 1, fontWeight: '700' }]}>{a.quantity.toLocaleString()}</Text>
+                                <Text style={[styles.td, { width: 60, fontSize: 11, color: '#64748B' }]}>{a.ordersCount}</Text>
+                              </View>
+                            );
+                          })}
+                          <View style={[styles.tableRow, { backgroundColor: '#F1F5F9' }]}>
+                            <Text style={[styles.td, { width: 60, fontWeight: '800' }]}>Total</Text>
+                            <Text style={[styles.td, { flex: 1, fontWeight: '900', color: '#16A34A' }]}>{depth.totalBidQuantity.toLocaleString()}</Text>
+                            <Text style={[styles.td, { flex: 1 }]}>Shares</Text>
+                            <Text style={[styles.td, { flex: 1 }]}>Shares</Text>
+                            <Text style={[styles.td, { flex: 1, fontWeight: '900', color: '#EF4444' }]}>{depth.totalAskQuantity.toLocaleString()}</Text>
+                            <Text style={[styles.td, { width: 60, fontWeight: '800' }]}>Total</Text>
+                          </View>
+                        </View>
+                      </>
+                    );
+                  })()}
+
+                  {/* TAB: Bangladesh DSE Shareholding Pattern & Regulatory Rules */}
+                  {modalSubTab === 'shareholding' && (() => {
+                    const sh = getDseShareholding(selectedStock.symbol);
+                    const reg = getDseRegulatoryStatus(selectedStock.symbol, selectedStock.ltp);
+
+                    return (
+                      <>
+                        {/* Regulatory Classification Banner */}
+                        <View style={[styles.thesisBox, { backgroundColor: '#F0F9FF', borderColor: '#BAE6FD' }]}>
+                          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <Text style={{ fontSize: 14, fontWeight: '900', color: '#0369A1' }}>
+                              DSE TRADING CATEGORY: CATEGORY {reg.category}
+                            </Text>
+                            <View style={{ backgroundColor: reg.marginLoanEligibility ? '#DCFCE7' : '#FEE2E2', paddingHorizontal: 8, paddingVertical: 3, borderRadius: Radius.sm }}>
+                              <Text style={{ fontSize: 11, fontWeight: '800', color: reg.marginLoanEligibility ? '#16A34A' : '#EF4444' }}>
+                                {reg.marginLoanEligibility ? `MARGINABLE (${reg.marginHaircutPercent}% HAIRCUT)` : 'NON-MARGINABLE'}
+                              </Text>
+                            </View>
+                          </View>
+                          <Text style={{ fontSize: 12, color: '#0F172A', marginTop: 4 }}>
+                            {reg.categoryReason} • Settlement: {reg.settlementCycle} • Face Value: ৳{reg.faceValue} • Market Lot: {reg.marketLot}
+                          </Text>
+                        </View>
+
+                        {/* Circuit Breaker Limits */}
+                        <Text style={[styles.sectionHeading, { marginTop: Spacing.md }]}>
+                          ⚡ DSE DAILY CIRCUIT BREAKER PRICE LIMIT BANDS (±{reg.circuitBreakerPercent}%)
+                        </Text>
+                        <View style={styles.kpiGrid}>
+                          <View style={styles.kpiItem}>
+                            <Text style={styles.kpiLabel}>LOWER LIMIT (FLOOR PRICE)</Text>
+                            <Text style={[styles.kpiVal, { color: '#EF4444' }]}>৳{reg.floorPrice}</Text>
+                            <Text style={{ fontSize: 10, color: '#64748B' }}>-10% Maximum Daily Drop</Text>
+                          </View>
+                          <View style={styles.kpiItem}>
+                            <Text style={styles.kpiLabel}>CURRENT LTP</Text>
+                            <Text style={styles.kpiVal}>৳{selectedStock.ltp}</Text>
+                            <Text style={{ fontSize: 10, color: '#64748B' }}>Last Executed Trade</Text>
+                          </View>
+                          <View style={styles.kpiItem}>
+                            <Text style={styles.kpiLabel}>UPPER LIMIT (CEILING PRICE)</Text>
+                            <Text style={[styles.kpiVal, { color: '#16A34A' }]}>৳{reg.ceilingPrice}</Text>
+                            <Text style={{ fontSize: 10, color: '#64748B' }}>+10% Maximum Daily Surge</Text>
+                          </View>
+                        </View>
+
+                        {/* Shareholding Breakdown */}
+                        <Text style={[styles.sectionHeading, { marginTop: Spacing.md }]}>
+                          🏛️ AUDITED SHAREHOLDING STRUCTURE & BSEC 30% RULE
+                        </Text>
+                        <View style={styles.table}>
+                          <View style={styles.tableRow}>
+                            <Text style={[styles.td, { flex: 1.5, fontWeight: '800' }]}>Sponsors & Directors:</Text>
+                            <Text style={[styles.td, { flex: 1, fontWeight: '900', color: '#0F172A' }]}>{sh.sponsorsDirectorsPercent}%</Text>
+                            <Text style={[styles.td, { flex: 1.5, fontWeight: '800', color: sh.bsec30PercentRuleCompliant ? '#16A34A' : '#EF4444' }]}>
+                              {sh.bsec30PercentRuleCompliant ? '✓ BSEC ≥30% Compliant' : '⚠ Non-compliant (<30%)'}
+                            </Text>
+                          </View>
+                          <View style={styles.tableRow}>
+                            <Text style={[styles.td, { flex: 1.5, fontWeight: '800' }]}>Foreign Institutional Investors:</Text>
+                            <Text style={[styles.td, { flex: 1, fontWeight: '900', color: '#0284C7' }]}>{sh.foreignPercent}%</Text>
+                            <Text style={[styles.td, { flex: 1.5, fontSize: 11, color: '#64748B' }]}>Trend: {sh.foreignInflowTrend}</Text>
+                          </View>
+                          <View style={styles.tableRow}>
+                            <Text style={[styles.td, { flex: 1.5, fontWeight: '800' }]}>Local Financial Institutions:</Text>
+                            <Text style={[styles.td, { flex: 1, fontWeight: '900' }]}>{sh.institutionsPercent}%</Text>
+                            <Text style={[styles.td, { flex: 1.5, fontSize: 11, color: '#64748B' }]}>Banks, ICB, Asset Mgrs</Text>
+                          </View>
+                          <View style={styles.tableRow}>
+                            <Text style={[styles.td, { flex: 1.5, fontWeight: '800' }]}>Government of Bangladesh:</Text>
+                            <Text style={[styles.td, { flex: 1 }]}>{sh.govtPercent}%</Text>
+                            <Text style={[styles.td, { flex: 1.5, fontSize: 11, color: '#64748B' }]}>State Holding</Text>
+                          </View>
+                          <View style={styles.tableRow}>
+                            <Text style={[styles.td, { flex: 1.5, fontWeight: '800' }]}>General Public / Retail:</Text>
+                            <Text style={[styles.td, { flex: 1, fontWeight: '900', color: '#F59E0B' }]}>{sh.generalPublicPercent}%</Text>
+                            <Text style={[styles.td, { flex: 1.5, fontSize: 11, color: '#64748B' }]}>Free Float Retail</Text>
+                          </View>
                         </View>
                       </>
                     );
