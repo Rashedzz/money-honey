@@ -1569,7 +1569,12 @@ export const StockMarketScreen: React.FC<StockMarketScreenProps> = ({
                   </View>
                 </View>
 
-                <ScrollView style={{ maxHeight: '82vh' }} showsVerticalScrollIndicator={false}>
+                <ScrollView
+                  style={[styles.modalScrollView, { overflowY: 'auto' as any }]}
+                  contentContainerStyle={styles.modalScrollContent}
+                  showsVerticalScrollIndicator={true}
+                  scrollEnabled={true}
+                >
                   {/* Score & Pricing Header */}
                   <View style={styles.scoreRow}>
                     <View style={styles.bigScoreBox}>
@@ -3402,12 +3407,26 @@ const styles = StyleSheet.create({
   modalCardLarge: {
     width: '96%',
     maxWidth: 1260,
+    height: '92vh',
     maxHeight: '94vh',
     backgroundColor: '#FFFFFF',
     borderRadius: Radius.xl,
-    padding: Spacing.xl,
+    paddingHorizontal: Spacing.lg,
+    paddingTop: Spacing.lg,
+    paddingBottom: 0,
     borderWidth: 2,
     borderColor: '#BAE6FD',
+    display: 'flex',
+    flexDirection: 'column',
+    overflow: 'hidden',
+  },
+  modalScrollView: {
+    flex: 1,
+    width: '100%',
+  },
+  modalScrollContent: {
+    paddingBottom: 60,
+    flexGrow: 1,
   },
   modalCard: {
     width: '100%',
