@@ -61,7 +61,11 @@ export const PwaInstallModal: React.FC<PwaInstallModalProps> = ({
             </TouchableOpacity>
           </View>
 
-          <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.body}>
+          <ScrollView
+            showsVerticalScrollIndicator={true}
+            style={{ flex: 1, width: '100%', overflowY: 'auto' as any }}
+            contentContainerStyle={styles.body}
+          >
             {/* QR Code Container */}
             <View style={styles.qrCard}>
               <Image
@@ -130,14 +134,18 @@ const styles = StyleSheet.create({
     padding: Spacing.md,
   },
   modalCard: {
-    width: '100%',
+    width: '96%',
     maxWidth: 480,
+    maxHeight: '90vh',
     backgroundColor: '#FFFFFF',
     borderRadius: Radius.xl,
     borderWidth: 2,
     borderColor: '#BAE6FD',
     padding: Spacing.xl,
     alignItems: 'center',
+    display: 'flex',
+    flexDirection: 'column',
+    overflow: 'hidden',
     shadowColor: '#0369A1',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.15,

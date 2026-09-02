@@ -91,7 +91,11 @@ export const AddAssetModal: React.FC<AddAssetModalProps> = ({
             </TouchableOpacity>
           </View>
 
-          <ScrollView style={styles.formScroll} showsVerticalScrollIndicator={false}>
+          <ScrollView
+            style={[styles.formScroll, { flex: 1, overflowY: 'auto' as any }]}
+            contentContainerStyle={{ paddingBottom: 40 }}
+            showsVerticalScrollIndicator={true}
+          >
             {/* Asset Name */}
             <Text style={styles.label}>ASSET NAME & DESCRIPTION *</Text>
             <TextInput
@@ -236,7 +240,11 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: Radius.xl,
     borderTopRightRadius: Radius.xl,
     padding: Spacing.lg,
-    maxHeight: '90%',
+    height: '88vh',
+    maxHeight: '90vh',
+    display: 'flex',
+    flexDirection: 'column',
+    overflow: 'hidden',
     borderWidth: 1,
     borderColor: 'rgba(255, 255, 255, 0.08)',
   },

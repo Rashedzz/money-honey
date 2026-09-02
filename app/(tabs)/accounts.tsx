@@ -13,6 +13,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Colors, Typography, Spacing, Radius } from '../../src/theme';
 import { GlassCard } from '../../src/components/shared/GlassCard';
 import { useAuth } from '../../src/auth/AuthContext';
+import { FirebaseSyncService } from '../../src/services/firebaseSync';
 
 export interface BankAccountItem {
   id: string;
@@ -80,6 +81,7 @@ export default function AccountsScreen() {
   const updateAccountsList = (updated: BankAccountItem[]) => {
     setAccounts(updated);
     saveStoredBankAccounts(updated);
+    FirebaseSyncService.pushCategory(user?.id || 'rashed01', 'bank_accounts', updated);
   };
 
   const totalBalance = accounts.reduce((sum, a) => sum + a.currentBalance, 0);

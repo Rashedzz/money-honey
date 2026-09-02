@@ -555,7 +555,12 @@ export const PaperAssetsScreen: React.FC = () => {
               ))}
             </View>
 
-            <ScrollView style={{ maxHeight: 460 }} showsVerticalScrollIndicator={false}>
+            <ScrollView
+              style={[styles.modalScrollView, { overflowY: 'auto' as any }]}
+              contentContainerStyle={styles.modalScrollContent}
+              showsVerticalScrollIndicator={true}
+              scrollEnabled={true}
+            >
               {/* Sanchaypatra Form */}
               {assetFormType === 'Sanchaypatra' && (
                 <>
@@ -1120,13 +1125,28 @@ const styles = StyleSheet.create({
     padding: Spacing.md,
   },
   modalCard: {
-    width: '100%',
-    maxWidth: 620,
+    width: '96%',
+    maxWidth: 680,
+    height: '90vh',
+    maxHeight: '92vh',
     backgroundColor: '#FFFFFF',
     borderRadius: Radius.xl,
-    padding: Spacing.xl,
+    paddingHorizontal: Spacing.lg,
+    paddingTop: Spacing.lg,
+    paddingBottom: Spacing.xs,
     borderWidth: 2,
     borderColor: '#BAE6FD',
+    display: 'flex',
+    flexDirection: 'column',
+    overflow: 'hidden',
+  },
+  modalScrollView: {
+    flex: 1,
+    width: '100%',
+  },
+  modalScrollContent: {
+    paddingBottom: 40,
+    flexGrow: 1,
   },
   modalHeader: {
     flexDirection: 'row',

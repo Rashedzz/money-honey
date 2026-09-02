@@ -17,6 +17,8 @@ import { AppSidebar, SidebarTabType } from '../../src/components/navigation/AppS
 import { MobileDrawer } from '../../src/components/navigation/MobileDrawer';
 import { MobileBottomNav } from '../../src/components/navigation/MobileBottomNav';
 import { PwaInstallModal } from '../../src/components/modals/PwaInstallModal';
+import { FirebaseSyncModal } from '../../src/components/modals/FirebaseSyncModal';
+import { FirebaseSyncService } from '../../src/services/firebaseSync';
 import { RadialGauge } from '../../src/components/visuals/RadialGauge';
 import { SegmentedDonut } from '../../src/components/visuals/SegmentedDonut';
 import { FlowBreakdownBar } from '../../src/components/visuals/FlowBreakdownBar';
@@ -149,6 +151,7 @@ export default function MasterDashboardScreen() {
   const [modalInitialType, setModalInitialType] = useState<EntryType>('stock');
   const [qrModalVisible, setQrModalVisible] = useState(false);
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
+  const [firebaseModalVisible, setFirebaseModalVisible] = useState(false);
 
   // Computed Values
   const totalCashInHand = cashList.reduce((sum, item) => sum + (item.amount || item.currentBalance || 0), 0);
@@ -222,14 +225,53 @@ export default function MasterDashboardScreen() {
   );
 
   const handleUniversalSave = (type: EntryType, data: any) => {
-    if (type === 'asset') setAssets((prev: any) => [data, ...prev]);
-    else if (type === 'stock') addStock(data);
-    else if (type === 'income') setIncomes((prev: any) => [data, ...prev]);
-    else if (type === 'expense') setExpenses((prev: any) => [data, ...prev]);
-    else if (type === 'insurance') setPolicies((prev: any) => [data, ...prev]);
-    else if (type === 'birthday') setBirthdays((prev: any) => [data, ...prev]);
-    else if (type === 'bank') setCashList((prev: any) => [...prev, { id: data.id, label: data.title, amount: data.amount, color: '#22C55E' }]);
-    else if (type === 'loan') setLoanList((prev: any) => [...prev, { id: data.id, name: data.title, sub: data.category, amount: data.amount, color: '#EF4444' }]);
+    const currentUid = user?.id || 'rashed01';
+    if (type === 'asset') {
+      setAssets((prev: any) => {
+        const next = [data, ...prev];
+        FirebaseSyncService.pushCategory(currentUid, 'physical_assets', next);
+        return next;
+      });
+    } else if (type === 'stock') {
+      addStock(data);
+      FirebaseSyncService.pushCategory(currentUid, 'stocks', [data, ...stocks]);
+    } else if (type === 'income') {
+      setIncomes((prev: any) => {
+        const next = [data, ...prev];
+        FirebaseSyncService.pushCategory(currentUid, 'incomes', next);
+        return next;
+      });
+    } else if (type === 'expense') {
+      setExpenses((prev: any) => {
+        const next = [data, ...prev];
+        FirebaseSyncService.pushCategory(currentUid, 'expenses', next);
+        return next;
+      });
+    } else if (type === 'insurance') {
+      setPolicies((prev: any) => {
+        const next = [data, ...prev];
+        FirebaseSyncService.pushCategory(currentUid, 'policies', next);
+        return next;
+      });
+    } else if (type === 'birthday') {
+      setBirthdays((prev: any) => {
+        const next = [data, ...prev];
+        FirebaseSyncService.pushCategory(currentUid, 'birthdays', next);
+        return next;
+      });
+    } else if (type === 'bank') {
+      setCashList((prev: any) => {
+        const next = [...prev, { id: data.id, label: data.title, amount: data.amount, color: '#22C55E' }];
+        FirebaseSyncService.pushCategory(currentUid, 'bank_accounts', next);
+        return next;
+      });
+    } else if (type === 'loan') {
+      setLoanList((prev: any) => {
+        const next = [...prev, { id: data.id, name: data.title, sub: data.category, amount: data.amount, color: '#EF4444' }];
+        FirebaseSyncService.pushCategory(currentUid, 'loans', next);
+        return next;
+      });
+    }
   };
 
   const openModal = (type: EntryType) => {
@@ -313,6 +355,15 @@ export default function MasterDashboardScreen() {
               >
                 <Ionicons name="qr-code-outline" size={15} color={Colors.primary} />
                 <Text style={styles.qrHeaderBtnText}>📱 Phone QR</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.firebaseHeaderBtn}
+                onPress={() => setFirebaseModalVisible(true)}
+                activeOpacity={0.8}
+              >
+                <Ionicons name="flame" size={16} color="#EA580C" />
+                <Text style={styles.firebaseHeaderBtnText}>🔥 Firebase</Text>
               </TouchableOpacity>
 
               <TouchableOpacity
@@ -530,6 +581,22 @@ export default function MasterDashboardScreen() {
 
       {/* User ID & Password Auth Modal */}
       <AuthModal visible={isAuthModalVisible} onClose={closeAuthModal} />
+
+      {/* Firebase Cloud Sync Engine Modal */}
+      <FirebaseSyncModal
+        visible={firebaseModalVisible}
+        onClose={() => setFirebaseModalVisible(false)}
+        userId={user?.id || 'rashed01'}
+        onDataRestored={() => {
+          setAssetsState(getStoredData('mh_user_assets', []));
+          setCashListState(getStoredData('mh_user_cash', []));
+          setLoanListState(getStoredData('mh_user_loans', []));
+          setIncomesState(getStoredData('mh_user_incomes', []));
+          setExpensesState(getStoredData('mh_user_expenses', []));
+          setPoliciesState(getStoredData('mh_user_policies', []));
+          setBirthdaysState(getStoredData('mh_user_birthdays', []));
+        }}
+      />
     </SafeAreaView>
   );
 }
@@ -618,6 +685,22 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '700',
     color: '#0284C7',
+  },
+  firebaseHeaderBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: Radius.full,
+    backgroundColor: '#FFF7ED',
+    borderWidth: 1.5,
+    borderColor: '#FED7AA',
+  },
+  firebaseHeaderBtnText: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: '#EA580C',
   },
   quickEntryHeaderBtn: {
     flexDirection: 'row',

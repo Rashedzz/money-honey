@@ -16,6 +16,7 @@ import {
   generateAmortizationSchedule,
   AmortizationRow,
 } from '../../src/finance/amortization';
+import { FirebaseSyncService } from '../../src/services/firebaseSync';
 
 export interface LoanItem {
   id: string;
@@ -114,6 +115,7 @@ export default function LoansScreen() {
   const updateLoansList = (updated: LoanItem[]) => {
     setLoans(updated);
     saveStoredLoans(updated);
+    FirebaseSyncService.pushCategory('rashed01', 'loans', updated);
   };
 
   // Live Auto-calculate EMI when principal, rate, or tenor changes
@@ -954,31 +956,33 @@ export default function LoansScreen() {
               </Text>
             </View>
 
-            <View style={styles.scheduleTable}>
-              <View style={styles.tableHeader}>
-                <Text style={[styles.th, { width: 50 }]}>MONTH</Text>
-                <Text style={[styles.th, { flex: 1 }]}>OPENING PRINCIPAL</Text>
-                <Text style={[styles.th, { flex: 1 }]}>EMI AMOUNT</Text>
-                <Text style={[styles.th, { flex: 1, color: '#16A34A' }]}>PRINCIPAL (PAYDOWN)</Text>
-                <Text style={[styles.th, { flex: 1, color: '#EF4444' }]}>INTEREST (BANK)</Text>
-                <Text style={[styles.th, { flex: 1 }]}>CLOSING BALANCE</Text>
-              </View>
-
-              {schedulePreview.map((row) => (
-                <View key={row.paymentNumber} style={styles.tableRow}>
-                  <Text style={[styles.td, { width: 50, fontWeight: '800' }]}>#{row.paymentNumber}</Text>
-                  <Text style={[styles.td, { flex: 1 }]}>৳ {Math.round(row.openingPrincipal).toLocaleString('en-IN')}</Text>
-                  <Text style={[styles.td, { flex: 1, fontWeight: '800' }]}>৳ {Math.round(row.emiAmount).toLocaleString('en-IN')}</Text>
-                  <Text style={[styles.td, { flex: 1, fontWeight: '700', color: '#16A34A' }]}>
-                    ৳ {Math.round(row.principalComponent).toLocaleString('en-IN')}
-                  </Text>
-                  <Text style={[styles.td, { flex: 1, fontWeight: '700', color: '#EF4444' }]}>
-                    ৳ {Math.round(row.interestComponent).toLocaleString('en-IN')}
-                  </Text>
-                  <Text style={[styles.td, { flex: 1, fontWeight: '800' }]}>৳ {Math.round(row.closingPrincipal).toLocaleString('en-IN')}</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={true}>
+              <View style={[styles.scheduleTable, { minWidth: 640 }]}>
+                <View style={styles.tableHeader}>
+                  <Text style={[styles.th, { width: 60 }]}>MONTH</Text>
+                  <Text style={[styles.th, { width: 130 }]}>OPENING PRINCIPAL</Text>
+                  <Text style={[styles.th, { width: 110 }]}>EMI AMOUNT</Text>
+                  <Text style={[styles.th, { width: 130, color: '#16A34A' }]}>PRINCIPAL (PAYDOWN)</Text>
+                  <Text style={[styles.th, { width: 120, color: '#EF4444' }]}>INTEREST (BANK)</Text>
+                  <Text style={[styles.th, { width: 130 }]}>CLOSING BALANCE</Text>
                 </View>
-              ))}
-            </View>
+
+                {schedulePreview.map((row) => (
+                  <View key={row.paymentNumber} style={styles.tableRow}>
+                    <Text style={[styles.td, { width: 60, fontWeight: '800' }]}>#{row.paymentNumber}</Text>
+                    <Text style={[styles.td, { width: 130 }]}>৳ {Math.round(row.openingPrincipal).toLocaleString('en-IN')}</Text>
+                    <Text style={[styles.td, { width: 110, fontWeight: '800' }]}>৳ {Math.round(row.emiAmount).toLocaleString('en-IN')}</Text>
+                    <Text style={[styles.td, { width: 130, fontWeight: '700', color: '#16A34A' }]}>
+                      ৳ {Math.round(row.principalComponent).toLocaleString('en-IN')}
+                    </Text>
+                    <Text style={[styles.td, { width: 120, fontWeight: '700', color: '#EF4444' }]}>
+                      ৳ {Math.round(row.interestComponent).toLocaleString('en-IN')}
+                    </Text>
+                    <Text style={[styles.td, { width: 130, fontWeight: '800' }]}>৳ {Math.round(row.closingPrincipal).toLocaleString('en-IN')}</Text>
+                  </View>
+                ))}
+              </View>
+            </ScrollView>
           </GlassCard>
         </View>
       )}

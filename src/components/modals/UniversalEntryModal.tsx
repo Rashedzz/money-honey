@@ -172,7 +172,11 @@ export const UniversalEntryModal: React.FC<UniversalEntryModalProps> = ({
           </ScrollView>
 
           {/* Dynamic Form Content */}
-          <ScrollView showsVerticalScrollIndicator={false} style={styles.formScroll}>
+          <ScrollView
+            showsVerticalScrollIndicator={true}
+            style={[styles.formScroll, { overflowY: 'auto' as any }]}
+            contentContainerStyle={{ paddingBottom: 40, flexGrow: 1 }}
+          >
             {selectedType === 'income' && (
               <>
                 <Text style={styles.label}>INCOME TITLE / SOURCE *</Text>
@@ -593,19 +597,29 @@ const styles = StyleSheet.create({
     padding: Spacing.md,
   },
   modalCard: {
-    width: '100%',
-    maxWidth: 620,
+    width: '96%',
+    maxWidth: 640,
+    height: '90vh',
+    maxHeight: '92vh',
     backgroundColor: '#FFFFFF',
     borderRadius: Radius.xl,
     borderWidth: 2,
     borderColor: '#BAE6FD',
-    padding: Spacing.xl,
-    maxHeight: '92%',
+    paddingHorizontal: Spacing.lg,
+    paddingTop: Spacing.lg,
+    paddingBottom: Spacing.sm,
+    display: 'flex',
+    flexDirection: 'column',
+    overflow: 'hidden',
     shadowColor: '#0369A1',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.15,
     shadowRadius: 16,
     elevation: 5,
+  },
+  formScroll: {
+    flex: 1,
+    width: '100%',
   },
   header: {
     flexDirection: 'row',
