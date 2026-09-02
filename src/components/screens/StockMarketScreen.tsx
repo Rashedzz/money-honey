@@ -33,6 +33,12 @@ import {
   resetPaperPortfolio,
   PaperPortfolioState,
 } from '../../finance/paperTrading';
+import {
+  HistoricalTimeframe,
+  calculateTimeframeAnalytics,
+  DSE_HISTORICAL_DATABASE,
+  generate10YearHistoricalSeries,
+} from '../../finance/dseHistoricalDatabase';
 
 interface StockMarketScreenProps {
   stocks: StockHolding[];
@@ -58,6 +64,7 @@ export const StockMarketScreen: React.FC<StockMarketScreenProps> = ({
 
   // Deep-Dive Modal
   const [selectedStock, setSelectedStock] = useState<DseStockItem | null>(null);
+  const [histTimeframe, setHistTimeframe] = useState<HistoricalTimeframe>('1Y');
 
   // Portfolio Optimizer State
   const [optCapital, setOptCapital] = useState('1000000');
@@ -1028,15 +1035,84 @@ export const StockMarketScreen: React.FC<StockMarketScreenProps> = ({
                     </View>
                   </View>
 
-                  {/* Recent Disclosures */}
-                  {(selectedStock.corporateAnnouncements || [
-                    { date: '2026-08-28', title: 'Board recommended cash dividend & annual disclosures', details: 'Audited annual statements approved by board.' }
-                  ]).map((ann, i) => (
-                    <View key={i} style={{ backgroundColor: '#F8FAFC', borderRadius: Radius.sm, padding: 10, marginTop: 6, borderWidth: 1, borderColor: '#E2E8F0' }}>
-                      <Text style={{ fontSize: 11, fontWeight: '800', color: '#0284C7' }}>{ann.date} • {ann.title}</Text>
-                      <Text style={{ fontSize: 12, color: '#334155', marginTop: 2 }}>{ann.details}</Text>
+                  {/* 10-15 Year Historical Database & Multi-Timeframe Analytics */}
+                  <Text style={[styles.sectionHeading, { marginTop: Spacing.md }]}>
+                    🏛️ 10–15 YEAR HISTORICAL TIME-SERIES & TIMEFRAME ANALYTICS
+                  </Text>
+                  <Text style={{ fontSize: 12, color: '#64748B', marginBottom: 6 }}>
+                    Analyze historical returns, EPS CAGR, dividend growth, and historical P/E bands (DSE & ICE Data Services EOD Archive):
+                  </Text>
+
+                  {/* Timeframe Selector */}
+                  <View style={{ flexDirection: 'row', gap: 6, flexWrap: 'wrap', marginBottom: 10 }}>
+                    {(['1D', '1W', '1M', '3M', '6M', '1Y', '3Y', '5Y', '10Y'] as const).map((tf) => (
+                      <TouchableOpacity
+                        key={tf}
+                        style={[styles.optPill, histTimeframe === tf && styles.optPillActive]}
+                        onPress={() => setHistTimeframe(tf)}
+                      >
+                        <Text style={[styles.optPillText, histTimeframe === tf && styles.optPillTextActive]}>{tf}</Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+
+                  {/* Calculated metrics for this timeframe */}
+                  {(() => {
+                    const tfMetrics = calculateTimeframeAnalytics(selectedStock.symbol, histTimeframe, selectedStock.ltp);
+                    const isUp = tfMetrics.percentageReturn >= 0;
+                    return (
+                      <View style={styles.kpiGrid}>
+                        <View style={styles.kpiItem}>
+                          <Text style={styles.kpiLabel}>{histTimeframe} TOTAL RETURN</Text>
+                          <Text style={[styles.kpiVal, { color: isUp ? '#16A34A' : '#EF4444' }]}>
+                            {isUp ? '+' : ''}{tfMetrics.percentageReturn}%
+                            {histTimeframe !== '1D' && histTimeframe !== '1W' && histTimeframe !== '1M' ? ` (${tfMetrics.cagrReturnPercent}% CAGR)` : ''}
+                          </Text>
+                        </View>
+                        <View style={styles.kpiItem}>
+                          <Text style={styles.kpiLabel}>PERIOD RANGE (HIGH / LOW)</Text>
+                          <Text style={styles.kpiVal}>৳{tfMetrics.periodHigh} / ৳{tfMetrics.periodLow}</Text>
+                        </View>
+                        <View style={styles.kpiItem}>
+                          <Text style={styles.kpiLabel}>EPS / DIVIDEND CAGR</Text>
+                          <Text style={[styles.kpiVal, { color: '#0284C7' }]}>+{tfMetrics.epsCagrPercent}% / +{tfMetrics.dividendCagrPercent}%</Text>
+                        </View>
+                        <View style={styles.kpiItem}>
+                          <Text style={styles.kpiLabel}>HISTORICAL P/E RANGE</Text>
+                          <Text style={styles.kpiVal}>{tfMetrics.peMin}x – {tfMetrics.medianPeRatio}x – {tfMetrics.peMax}x</Text>
+                        </View>
+                      </View>
+                    );
+                  })()}
+
+                  {/* Historical Data Table (Date, Open, High, Low, Close, Adj Close, Volume, EPS, NAV, Dividend, Corporate Action) */}
+                  <View style={styles.table}>
+                    <View style={styles.tableHeader}>
+                      <Text style={[styles.th, { width: 80 }]}>DATE</Text>
+                      <Text style={[styles.th, { width: 55 }]}>OPEN</Text>
+                      <Text style={[styles.th, { width: 55 }]}>HIGH</Text>
+                      <Text style={[styles.th, { width: 55 }]}>LOW</Text>
+                      <Text style={[styles.th, { width: 60 }]}>CLOSE</Text>
+                      <Text style={[styles.th, { width: 65 }]}>ADJ CLS</Text>
+                      <Text style={[styles.th, { width: 55 }]}>EPS</Text>
+                      <Text style={[styles.th, { width: 55 }]}>NAV</Text>
+                      <Text style={[styles.th, { flex: 1 }]}>DIVIDEND & ACTION</Text>
                     </View>
-                  ))}
+
+                    {((DSE_HISTORICAL_DATABASE[selectedStock.symbol] || generate10YearHistoricalSeries(selectedStock.symbol, selectedStock.ltp, selectedStock.eps, selectedStock.nav)).slice(0, 6)).map((row, idx) => (
+                      <View key={idx} style={styles.tableRow}>
+                        <Text style={[styles.td, { width: 80, fontSize: 11, fontWeight: '700' }]}>{row.date}</Text>
+                        <Text style={[styles.td, { width: 55, fontSize: 11 }]}>৳{row.open}</Text>
+                        <Text style={[styles.td, { width: 55, fontSize: 11, color: '#16A34A' }]}>৳{row.high}</Text>
+                        <Text style={[styles.td, { width: 55, fontSize: 11, color: '#EF4444' }]}>৳{row.low}</Text>
+                        <Text style={[styles.td, { width: 60, fontSize: 11, fontWeight: '800' }]}>৳{row.close}</Text>
+                        <Text style={[styles.td, { width: 65, fontSize: 11, fontWeight: '700', color: '#0284C7' }]}>৳{row.adjustedClose}</Text>
+                        <Text style={[styles.td, { width: 55, fontSize: 11 }]}>৳{row.eps}</Text>
+                        <Text style={[styles.td, { width: 55, fontSize: 11 }]}>৳{row.nav}</Text>
+                        <Text style={[styles.td, { flex: 1, fontSize: 11, color: '#334155' }]}>{row.dividend !== 'None' ? row.dividend : row.corporateActions}</Text>
+                      </View>
+                    ))}
+                  </View>
 
                   {/* Actions */}
                   <View style={{ flexDirection: 'row', gap: 10, marginTop: Spacing.lg }}>
