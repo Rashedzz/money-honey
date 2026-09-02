@@ -42,6 +42,9 @@ import {
 import { generateTechnicalIndicators } from '../../finance/technicalAnalysisEngine';
 import { generateFundamentalDossier } from '../../finance/fundamentalAnalysisEngine';
 import { getCompanyCandlestickPatterns } from '../../finance/candlestickPatternEngine';
+import { calculateDetailedDCF } from '../../finance/dcfValuationEngine';
+import { getDividendProfileForStock } from '../../finance/dividendAnalysisEngine';
+import { generate5ModelAiEnsemble } from '../../finance/aiMultiModelEnsemble';
 
 interface StockMarketScreenProps {
   stocks: StockHolding[];
@@ -63,12 +66,16 @@ export const StockMarketScreen: React.FC<StockMarketScreenProps> = ({
   // Screener Filters
   const [searchQuery, setSearchQuery] = useState('');
   const [sectorFilter, setSectorFilter] = useState('All');
-  const [valuationFilter, setValuationFilter] = useState<'All' | 'Undervalued' | 'Low PE' | 'High Dividend'>('All');
+  const [valuationFilter, setValuationFilter] = useState<
+    'All' | '🏆 Best Dividend Stocks' | '🚀 Best Growth Stocks' | '🟢 Undervalued (DCF)' | 'Low PE'
+  >('All');
 
   // Deep-Dive Modal
   const [selectedStock, setSelectedStock] = useState<DseStockItem | null>(null);
   const [histTimeframe, setHistTimeframe] = useState<HistoricalTimeframe>('1Y');
-  const [modalSubTab, setModalSubTab] = useState<'ai_thesis' | 'technical' | 'patterns' | 'fundamentals' | 'historical'>('ai_thesis');
+  const [modalSubTab, setModalSubTab] = useState<
+    'ai_models' | 'dcf_waterfall' | 'dividends' | 'technical' | 'patterns' | 'fundamentals' | 'historical'
+  >('ai_models');
 
   // Portfolio Optimizer State
   const [optCapital, setOptCapital] = useState('1000000');
@@ -95,9 +102,15 @@ export const StockMarketScreen: React.FC<StockMarketScreenProps> = ({
       s.companyName.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesSector = sectorFilter === 'All' || s.sector === sectorFilter;
     let matchesVal = true;
-    if (valuationFilter === 'Undervalued') matchesVal = s.valuationStatus === 'Undervalued';
-    if (valuationFilter === 'Low PE') matchesVal = s.peRatio <= 12;
-    if (valuationFilter === 'High Dividend') matchesVal = s.dividendYieldPercent >= 5.0;
+    if (valuationFilter === '🏆 Best Dividend Stocks') {
+      matchesVal = s.dividendYieldPercent >= 5.0 && s.operatingMarginPercent >= 20;
+    } else if (valuationFilter === '🚀 Best Growth Stocks') {
+      matchesVal = s.eps >= 5 && s.roePercent >= 16;
+    } else if (valuationFilter === '🟢 Undervalued (DCF)') {
+      matchesVal = s.marginOfSafetyPercent >= 15;
+    } else if (valuationFilter === 'Low PE') {
+      matchesVal = s.peRatio <= 12;
+    }
 
     return matchesSearch && matchesSector && matchesVal;
   });
@@ -353,14 +366,14 @@ export const StockMarketScreen: React.FC<StockMarketScreenProps> = ({
 
             {/* Filter Pills */}
             <View style={{ flexDirection: 'row', gap: 8, marginTop: 10, flexWrap: 'wrap' }}>
-              {(['All', 'Undervalued', 'Low PE', 'High Dividend'] as const).map((v) => (
+              {(['All', '🏆 Best Dividend Stocks', '🚀 Best Growth Stocks', '🟢 Undervalued (DCF)', 'Low PE'] as const).map((v) => (
                 <TouchableOpacity
                   key={v}
                   style={[styles.miniFilterPill, valuationFilter === v && styles.miniFilterPillActive]}
                   onPress={() => setValuationFilter(v)}
                 >
                   <Text style={[styles.miniFilterText, valuationFilter === v && styles.miniFilterTextActive]}>
-                    {v === 'All' ? 'All Valuations' : v}
+                    {v === 'All' ? 'All Equities' : v}
                   </Text>
                 </TouchableOpacity>
               ))}
@@ -897,12 +910,14 @@ export const StockMarketScreen: React.FC<StockMarketScreenProps> = ({
                     </View>
                   </View>
 
-                  {/* 5 Sub-Tabs Navigation */}
+                  {/* 7 Sub-Tabs Navigation */}
                   <View style={{ flexDirection: 'row', gap: 6, flexWrap: 'wrap', marginTop: 12, marginBottom: 12, borderBottomWidth: 1, borderBottomColor: '#E2E8F0', paddingBottom: 8 }}>
                     {[
-                      { id: 'ai_thesis', label: '🧠 AI Thesis & Models' },
-                      { id: 'technical', label: '📐 Technical Indicators' },
-                      { id: 'patterns', label: '🕯️ Candlestick Patterns' },
+                      { id: 'ai_models', label: '🧠 5-Model AI Ensemble' },
+                      { id: 'dcf_waterfall', label: '💎 DCF Waterfall' },
+                      { id: 'dividends', label: '💰 Dividend & Growth' },
+                      { id: 'technical', label: '📐 Technicals' },
+                      { id: 'patterns', label: '🕯️ Candlestick Win-Rates' },
                       { id: 'fundamentals', label: '📊 Fundamentals & BD Macro' },
                       { id: 'historical', label: '🏛️ 10-Yr Historical' },
                     ].map((tab) => (
@@ -918,95 +933,221 @@ export const StockMarketScreen: React.FC<StockMarketScreenProps> = ({
                     ))}
                   </View>
 
-                  {/* TAB 1: AI Thesis & Competing Models */}
-                  {modalSubTab === 'ai_thesis' && (
-                    <>
-                      {/* AI Investment Thesis */}
-                      <View style={styles.thesisBox}>
-                        <Text style={{ fontSize: 12, fontWeight: '800', color: '#0369A1', marginBottom: 4 }}>
-                          AI INVESTMENT RESEARCH THESIS
+                  {/* TAB 1: 5-Model Competing AI Forecasting Ensemble (Model A, B, C, D, E) */}
+                  {modalSubTab === 'ai_models' && (() => {
+                    const ens = generate5ModelAiEnsemble(selectedStock.symbol, selectedStock.ltp);
+                    return (
+                      <>
+                        {/* Consensus Target Card */}
+                        <View style={[styles.thesisBox, { backgroundColor: '#F0FDF4', borderColor: '#BBF7D0' }]}>
+                          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <Text style={{ fontSize: 13, fontWeight: '900', color: '#16A34A' }}>
+                              🎯 AI ENSEMBLE CONSENSUS TARGET: ৳{ens.ensembleTargetPrice} (+{ens.potentialUpsidePercent}%)
+                            </Text>
+                            <Text style={{ fontSize: 11, fontWeight: '800', color: '#15803D' }}>{ens.overallConfidencePercent}% Conf.</Text>
+                          </View>
+                          <Text style={{ fontSize: 12, color: '#166534', marginTop: 4 }}>
+                            {ens.modelAgreementRating} • Horizon: {ens.forecastHorizon}
+                          </Text>
+                          <Text style={{ fontSize: 12, color: '#0F172A', marginTop: 6, lineHeight: 18 }}>
+                            {ens.executiveSynthesis}
+                          </Text>
+                        </View>
+
+                        {/* 5 Competing Models Table */}
+                        <Text style={[styles.sectionHeading, { marginTop: Spacing.md }]}>
+                          🤖 5 COMPETING AI FORECASTING ARCHITECTURES (MULTI-MODEL ENSEMBLE)
                         </Text>
-                        <Text style={{ fontSize: 13, color: '#0F172A', lineHeight: 18 }}>
-                          {selectedStock.aiInvestmentThesis}
+                        <View style={styles.table}>
+                          <View style={styles.tableHeader}>
+                            <Text style={[styles.th, { width: 85 }]}>MODEL</Text>
+                            <Text style={[styles.th, { flex: 1.5 }]}>TECH STACK</Text>
+                            <Text style={[styles.th, { width: 75 }]}>TARGET</Text>
+                            <Text style={[styles.th, { width: 65 }]}>UPSIDE</Text>
+                            <Text style={[styles.th, { width: 60 }]}>WEIGHT</Text>
+                          </View>
+
+                          {[ens.modelA_TimeSeries, ens.modelB_MachineLearning, ens.modelC_DeepLearning, ens.modelD_MarketRegime, ens.modelE_NlpLlmSentiment].map((m) => (
+                            <View key={m.modelGroup} style={styles.tableRow}>
+                              <View style={{ width: 85 }}>
+                                <Text style={{ fontSize: 12, fontWeight: '800', color: '#0F172A' }}>{m.modelGroup}</Text>
+                                <Text style={{ fontSize: 10, color: '#64748B' }}>{m.modelTitle}</Text>
+                              </View>
+                              <Text style={[styles.td, { flex: 1.5, fontSize: 11 }]}>{m.technologiesUsed}</Text>
+                              <Text style={[styles.td, { width: 75, fontWeight: '900' }]}>৳{m.forecastPrice}</Text>
+                              <Text style={[styles.td, { width: 65, fontWeight: '800', color: '#16A34A' }]}>+{m.expectedReturnPercent}%</Text>
+                              <Text style={[styles.td, { width: 60, fontWeight: '800', color: '#0284C7' }]}>{m.weightInEnsemblePercent}%</Text>
+                            </View>
+                          ))}
+                        </View>
+
+                        {/* Model E NLP Sentiment Highlights */}
+                        <View style={{ backgroundColor: '#F8FAFC', borderRadius: Radius.sm, padding: 12, marginTop: 8, borderWidth: 1, borderColor: '#E2E8F0' }}>
+                          <Text style={{ fontSize: 11, fontWeight: '800', color: '#0284C7' }}>
+                            📰 MODEL E: NLP & LLM TEXTUAL SENTIMENT SIGNALS
+                          </Text>
+                          <Text style={{ fontSize: 12, color: '#334155', marginTop: 4 }}>
+                            • {ens.modelE_NlpLlmSentiment.signals[0]}
+                          </Text>
+                          <Text style={{ fontSize: 12, color: '#334155', marginTop: 2 }}>
+                            • {ens.modelE_NlpLlmSentiment.signals[1]}
+                          </Text>
+                        </View>
+
+                        {/* AI Research Thesis */}
+                        <Text style={[styles.sectionHeading, { marginTop: Spacing.md }]}>
+                          🧠 EXPLAINABLE RESEARCH THESIS & RISK FACTORS
                         </Text>
-                        <Text style={{ fontSize: 12, color: '#EF4444', marginTop: 6 }}>
-                          ⚠️ Key Risks: {selectedStock.riskFactors}
+                        <View style={styles.thesisBox}>
+                          <Text style={{ fontSize: 13, color: '#0F172A', lineHeight: 18 }}>
+                            {selectedStock.aiInvestmentThesis}
+                          </Text>
+                          <Text style={{ fontSize: 12, color: '#EF4444', marginTop: 6 }}>
+                            ⚠️ Key Risks: {selectedStock.riskFactors}
+                          </Text>
+                        </View>
+                      </>
+                    );
+                  })()}
+
+                  {/* TAB 2: Full Step-by-Step DCF Valuation Waterfall */}
+                  {modalSubTab === 'dcf_waterfall' && (() => {
+                    const dcf = calculateDetailedDCF(selectedStock.symbol, selectedStock.ltp, 886.45);
+                    return (
+                      <>
+                        {/* DCF Valuation Status Banner */}
+                        <View style={[styles.thesisBox, { backgroundColor: '#F0F9FF', borderColor: '#BAE6FD' }]}>
+                          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <View>
+                              <Text style={{ fontSize: 16, fontWeight: '900', color: '#0284C7' }}>
+                                DCF INTRINSIC VALUE: ৳{dcf.intrinsicValuePerShare}
+                              </Text>
+                              <Text style={{ fontSize: 12, color: '#0369A1' }}>
+                                Current Price: ৳{dcf.currentPrice} • Margin of Safety: {dcf.marginOfSafetyPercent}%
+                              </Text>
+                            </View>
+                            <View style={{ backgroundColor: '#FFFFFF', paddingHorizontal: 10, paddingVertical: 6, borderRadius: Radius.sm, borderWidth: 1, borderColor: '#0284C7' }}>
+                              <Text style={{ fontSize: 12, fontWeight: '900', color: '#0284C7' }}>{dcf.classification}</Text>
+                            </View>
+                          </View>
+                        </View>
+
+                        {/* Step-by-Step Waterfall Table */}
+                        <Text style={[styles.sectionHeading, { marginTop: Spacing.md }]}>
+                          💎 STEP-BY-STEP DCF WATERFALL (REVENUE TO INTRINSIC VALUE)
                         </Text>
-                      </View>
+                        <View style={styles.table}>
+                          <View style={styles.tableHeader}>
+                            <Text style={[styles.th, { flex: 1.5 }]}>FINANCIAL WATERFALL STEP</Text>
+                            <Text style={[styles.th, { flex: 1 }]}>AMOUNT (৳ CRORE)</Text>
+                            <Text style={[styles.th, { flex: 1.8 }]}>FINANCIAL FORMULA / BASIS</Text>
+                          </View>
 
-                      {/* Competing AI Forecasting Ensemble Models */}
-                      <Text style={[styles.sectionHeading, { marginTop: Spacing.md }]}>
-                        🤖 COMPETING AI PREDICTION MODELS (ENSEMBLE ARCHITECTURE)
-                      </Text>
-                      <View style={styles.table}>
-                        <View style={styles.tableHeader}>
-                          <Text style={[styles.th, { flex: 1.5 }]}>MODEL ARCHITECTURE</Text>
-                          <Text style={[styles.th, { flex: 1 }]}>PRICE TARGET</Text>
-                          <Text style={[styles.th, { flex: 1 }]}>UPSIDE %</Text>
-                          <Text style={[styles.th, { flex: 1 }]}>HORIZON</Text>
+                          {dcf.waterfallSteps.map((s, idx) => (
+                            <View key={idx} style={[styles.tableRow, idx === dcf.waterfallSteps.length - 1 && { backgroundColor: '#F0FDF4' }]}>
+                              <Text style={[styles.td, { flex: 1.5, fontWeight: idx === dcf.waterfallSteps.length - 1 ? '900' : '700', color: idx === dcf.waterfallSteps.length - 1 ? '#16A34A' : '#0F172A' }]}>
+                                {s.stepName}
+                              </Text>
+                              <Text style={[styles.td, { flex: 1, fontWeight: '800', color: s.amountCrore < 0 ? '#EF4444' : '#0F172A' }]}>
+                                {s.amountCrore < 0 ? `-৳${Math.abs(s.amountCrore)} Cr` : `৳${s.amountCrore} Cr`}
+                              </Text>
+                              <Text style={[styles.td, { flex: 1.8, fontSize: 11, color: '#64748B' }]}>{s.formulaDescription}</Text>
+                            </View>
+                          ))}
                         </View>
 
-                        <View style={styles.tableRow}>
-                          <Text style={[styles.td, { flex: 1.5, fontWeight: '700' }]}>XGBoost Gradient Boosted</Text>
-                          <Text style={[styles.td, { flex: 1 }]}>৳{selectedStock.xgboostPrediction}</Text>
-                          <Text style={[styles.td, { flex: 1, color: '#16A34A', fontWeight: '800' }]}>+22.7%</Text>
-                          <Text style={[styles.td, { flex: 1 }]}>90-Day</Text>
+                        {/* Key Valuation Inputs */}
+                        <View style={[styles.kpiGrid, { marginTop: Spacing.sm }]}>
+                          <View style={styles.kpiItem}>
+                            <Text style={styles.kpiLabel}>DISCOUNT RATE (WACC)</Text>
+                            <Text style={styles.kpiVal}>{dcf.waccPercent}%</Text>
+                          </View>
+                          <View style={styles.kpiItem}>
+                            <Text style={styles.kpiLabel}>TERMINAL GROWTH (G)</Text>
+                            <Text style={styles.kpiVal}>{dcf.terminalGrowthRatePercent}%</Text>
+                          </View>
+                          <View style={styles.kpiItem}>
+                            <Text style={styles.kpiLabel}>ENTERPRISE VALUE</Text>
+                            <Text style={styles.kpiVal}>৳{dcf.enterpriseValueCrore} Cr</Text>
+                          </View>
+                          <View style={styles.kpiItem}>
+                            <Text style={styles.kpiLabel}>MARGIN OF SAFETY</Text>
+                            <Text style={[styles.kpiVal, { color: dcf.marginOfSafetyPercent >= 15 ? '#16A34A' : '#EF4444' }]}>
+                              {dcf.marginOfSafetyPercent}%
+                            </Text>
+                          </View>
                         </View>
+                      </>
+                    );
+                  })()}
 
-                        <View style={styles.tableRow}>
-                          <Text style={[styles.td, { flex: 1.5, fontWeight: '700' }]}>LSTM Deep Neural Network</Text>
-                          <Text style={[styles.td, { flex: 1 }]}>৳{selectedStock.lstmPrediction}</Text>
-                          <Text style={[styles.td, { flex: 1, color: '#16A34A', fontWeight: '800' }]}>+25.9%</Text>
-                          <Text style={[styles.td, { flex: 1 }]}>90-Day</Text>
-                        </View>
-
-                        <View style={styles.tableRow}>
-                          <Text style={[styles.td, { flex: 1.5, fontWeight: '700' }]}>DCF Valuation Model</Text>
-                          <Text style={[styles.td, { flex: 1 }]}>৳{selectedStock.dcfModelPrediction}</Text>
-                          <Text style={[styles.td, { flex: 1, color: '#16A34A', fontWeight: '800' }]}>+30.5%</Text>
-                          <Text style={[styles.td, { flex: 1 }]}>Intrinsic</Text>
-                        </View>
-
-                        <View style={[styles.tableRow, { backgroundColor: '#F0FDF4' }]}>
-                          <Text style={[styles.td, { flex: 1.5, fontWeight: '900', color: '#16A34A' }]}>
-                            AI WEIGHTED ENSEMBLE
+                  {/* TAB 3: Dividend & Growth Analysis */}
+                  {modalSubTab === 'dividends' && (() => {
+                    const divProfile = getDividendProfileForStock(selectedStock.symbol);
+                    return (
+                      <>
+                        {/* Dividend Category & Verdict */}
+                        <View style={[styles.thesisBox, { backgroundColor: '#FEF3C7', borderColor: '#FDE68A' }]}>
+                          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <Text style={{ fontSize: 14, fontWeight: '900', color: '#B45309' }}>
+                              {divProfile.category.toUpperCase()}
+                            </Text>
+                            <Text style={{ fontSize: 12, fontWeight: '800', color: '#92400E' }}>
+                              {divProfile.cashSustainabilityScore}
+                            </Text>
+                          </View>
+                          <Text style={{ fontSize: 12, color: '#78350F', marginTop: 4, lineHeight: 18 }}>
+                            {divProfile.verdict}
                           </Text>
-                          <Text style={[styles.td, { flex: 1, fontWeight: '900', color: '#16A34A' }]}>
-                            ৳{selectedStock.ensembleTargetPrice}
-                          </Text>
-                          <Text style={[styles.td, { flex: 1, fontWeight: '900', color: '#16A34A' }]}>
-                            +{selectedStock.potentialUpsidePercent}%
-                          </Text>
-                          <Text style={[styles.td, { flex: 1, fontWeight: '800' }]}>
-                            {selectedStock.modelConfidencePercent}% Conf.
-                          </Text>
                         </View>
-                      </View>
 
-                      {/* Accounting Integrity */}
-                      <Text style={[styles.sectionHeading, { marginTop: Spacing.md }]}>
-                        🛡️ ACCOUNTING INTEGRITY & RISK
-                      </Text>
-                      <View style={styles.kpiGrid}>
-                        <View style={styles.kpiItem}>
-                          <Text style={styles.kpiLabel}>PIOTROSKI F-SCORE</Text>
-                          <Text style={[styles.kpiVal, { color: '#16A34A' }]}>{selectedStock.piotroskiScore} / 9 (Pristine)</Text>
+                        {/* Dividend Metrics Grid */}
+                        <Text style={[styles.sectionHeading, { marginTop: Spacing.md }]}>
+                          💰 CASH DIVIDEND SUSTAINABILITY & COVERAGE METRICS
+                        </Text>
+                        <View style={styles.kpiGrid}>
+                          <View style={styles.kpiItem}>
+                            <Text style={styles.kpiLabel}>DIVIDEND YIELD</Text>
+                            <Text style={[styles.kpiVal, { color: '#B45309' }]}>{divProfile.dividendYieldPercent}%</Text>
+                          </View>
+                          <View style={styles.kpiItem}>
+                            <Text style={styles.kpiLabel}>PAYOUT RATIO</Text>
+                            <Text style={styles.kpiVal}>{divProfile.dividendPayoutRatioPercent}%</Text>
+                          </View>
+                          <View style={styles.kpiItem}>
+                            <Text style={styles.kpiLabel}>5-YR DIVIDEND CAGR</Text>
+                            <Text style={[styles.kpiVal, { color: '#16A34A' }]}>+{divProfile.dividendCagr5YrPercent}%</Text>
+                          </View>
+                          <View style={styles.kpiItem}>
+                            <Text style={styles.kpiLabel}>CONSECUTIVE YEARS</Text>
+                            <Text style={styles.kpiVal}>{divProfile.consecutiveYearsPaid} Years Unbroken</Text>
+                          </View>
                         </View>
-                        <View style={styles.kpiItem}>
-                          <Text style={styles.kpiLabel}>ALTMAN Z-SCORE</Text>
-                          <Text style={[styles.kpiVal, { color: '#16A34A' }]}>{selectedStock.altmanZScore} (Safe Zone)</Text>
+
+                        {/* Coverage Ratios */}
+                        <View style={styles.table}>
+                          <View style={styles.tableRow}>
+                            <Text style={[styles.td, { flex: 1, fontWeight: '800' }]}>EPS Coverage Ratio:</Text>
+                            <Text style={[styles.td, { flex: 1, fontWeight: '900', color: '#16A34A' }]}>{divProfile.epsCoverageRatio}x Coverage</Text>
+                            <Text style={[styles.td, { flex: 1, fontWeight: '800' }]}>FCF Coverage Ratio:</Text>
+                            <Text style={[styles.td, { flex: 1, fontWeight: '900', color: '#16A34A' }]}>{divProfile.fcfCoverageRatio}x Coverage</Text>
+                          </View>
+                          <View style={styles.tableRow}>
+                            <Text style={[styles.td, { flex: 1, fontWeight: '800' }]}>Latest Cash Dividend:</Text>
+                            <Text style={[styles.td, { flex: 1, fontWeight: '900', color: '#16A34A' }]}>{divProfile.lastCashDividendPercent}% Cash</Text>
+                            <Text style={[styles.td, { flex: 1, fontWeight: '800' }]}>Bonus / Stock Dividend:</Text>
+                            <Text style={[styles.td, { flex: 1, fontWeight: '800', color: '#0284C7' }]}>{divProfile.lastBonusDividendPercent}% Stock</Text>
+                          </View>
+                          <View style={styles.tableRow}>
+                            <Text style={[styles.td, { flex: 1, fontWeight: '800' }]}>Upcoming Record Date:</Text>
+                            <Text style={[styles.td, { flex: 1 }]}>{divProfile.recordDate}</Text>
+                            <Text style={[styles.td, { flex: 1, fontWeight: '800' }]}>Income Style:</Text>
+                            <Text style={[styles.td, { flex: 1 }]}>{divProfile.category}</Text>
+                          </View>
                         </View>
-                        <View style={styles.kpiItem}>
-                          <Text style={styles.kpiLabel}>ROE %</Text>
-                          <Text style={styles.kpiVal}>{selectedStock.roePercent}%</Text>
-                        </View>
-                        <View style={styles.kpiItem}>
-                          <Text style={styles.kpiLabel}>DIVIDEND YIELD</Text>
-                          <Text style={[styles.kpiVal, { color: '#F59E0B' }]}>{selectedStock.dividendYieldPercent}%</Text>
-                        </View>
-                      </View>
-                    </>
-                  )}
+                      </>
+                    );
+                  })()}
 
                   {/* TAB 2: Full Technical Analysis Engine */}
                   {modalSubTab === 'technical' && (() => {
