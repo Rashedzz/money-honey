@@ -91,8 +91,19 @@ export const PhysicalAssetsScreen: React.FC<PhysicalAssetsScreenProps> = ({
         </View>
       </View>
 
-      {/* Asset Cards Grid */}
-      <View style={styles.assetList}>
+      {/* Asset List Cards */}
+      {filteredAssets.length === 0 ? (
+        <GlassCard style={{ alignItems: 'center', padding: 32 }} padding={32}>
+          <Ionicons name="business-outline" size={44} color="#0284C7" />
+          <Text style={{ fontSize: 17, fontWeight: '800', color: '#0F172A', marginTop: 10 }}>
+            No Physical Assets Recorded Yet
+          </Text>
+          <Text style={{ fontSize: 13, color: '#64748B', textAlign: 'center', marginTop: 4, maxWidth: 380 }}>
+            Click "+ Add Physical Asset" above to enlist your Land, Gold, Commercial spaces, or Flats.
+          </Text>
+        </GlassCard>
+      ) : (
+        <View style={styles.assetList}>
         {filteredAssets.map((asset) => {
           const isIdle = asset.monthlyIncome === 0;
 
@@ -174,6 +185,7 @@ export const PhysicalAssetsScreen: React.FC<PhysicalAssetsScreenProps> = ({
           );
         })}
       </View>
+      )}
     </ScrollView>
   );
 };

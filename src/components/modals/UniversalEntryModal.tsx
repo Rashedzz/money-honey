@@ -12,7 +12,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, Typography, Spacing, Radius } from '../../theme';
 
-export type EntryType = 'bank' | 'loan' | 'income' | 'expense' | 'asset' | 'insurance' | 'birthday';
+export type EntryType = 'bank' | 'loan' | 'income' | 'expense' | 'asset' | 'stock' | 'insurance' | 'birthday';
 
 interface UniversalEntryModalProps {
   visible: boolean;
@@ -92,17 +92,33 @@ export const UniversalEntryModal: React.FC<UniversalEntryModalProps> = ({
       };
     }
 
+    if (selectedType === 'stock') {
+      const qty = parseFloat(subInfo) || 1;
+      const bPrice = parsedAmount || 0;
+      const cPrice = parseFloat(extraField) || bPrice;
+      payload = {
+        symbol: title.trim().toUpperCase(),
+        companyName: category.trim() || title.trim(),
+        exchange: 'DSE',
+        quantity: qty,
+        buyPrice: bPrice,
+        currentPrice: cPrice,
+        sector: 'Equities',
+      };
+    }
+
     onSave(selectedType, payload);
     resetForm();
     onClose();
   };
 
   const tabs: Array<{ id: EntryType; label: string; icon: keyof typeof Ionicons.glyphMap; color: string }> = [
-    { id: 'income', label: 'Income', icon: 'trending-up', color: Colors.primary },
-    { id: 'expense', label: 'Expense', icon: 'trending-down', color: Colors.danger },
-    { id: 'asset', label: 'Asset', icon: 'business', color: Colors.secondary },
+    { id: 'stock', label: 'Stock / Equity', icon: 'trending-up', color: '#16A34A' },
+    { id: 'income', label: 'Income', icon: 'wallet', color: Colors.primary },
+    { id: 'expense', label: 'Expense', icon: 'receipt', color: Colors.danger },
+    { id: 'asset', label: 'Physical Asset', icon: 'business', color: Colors.secondary },
     { id: 'loan', label: 'Loan / Debt', icon: 'card', color: Colors.danger },
-    { id: 'bank', label: 'Bank / Cash', icon: 'wallet', color: Colors.primary },
+    { id: 'bank', label: 'Bank / Cash', icon: 'wallet-outline', color: Colors.primary },
     { id: 'insurance', label: 'Insurance', icon: 'shield-checkmark', color: Colors.secondary },
     { id: 'birthday', label: 'Birthday', icon: 'gift', color: Colors.accent },
   ];
@@ -460,6 +476,68 @@ export const UniversalEntryModal: React.FC<UniversalEntryModalProps> = ({
                     <TextInput
                       style={styles.input}
                       placeholder="e.g. 15000"
+                      placeholderTextColor={Colors.textMuted}
+                      keyboardType="numeric"
+                      value={amount}
+                      onChangeText={setAmount}
+                    />
+                  </View>
+                </View>
+              </>
+            )}
+
+            {selectedType === 'stock' && (
+              <>
+                <View style={styles.twoCol}>
+                  <View style={styles.col}>
+                    <Text style={styles.label}>STOCK TICKER / SYMBOL *</Text>
+                    <TextInput
+                      style={styles.input}
+                      placeholder="e.g. GP, BEXIMCO, BATBC"
+                      placeholderTextColor={Colors.textMuted}
+                      autoCapitalize="characters"
+                      value={title}
+                      onChangeText={setTitle}
+                    />
+                  </View>
+                  <View style={styles.col}>
+                    <Text style={styles.label}>EXCHANGE</Text>
+                    <TextInput
+                      style={styles.input}
+                      placeholder="DSE, CSE, or GLOBAL"
+                      placeholderTextColor={Colors.textMuted}
+                      value={extraField}
+                      onChangeText={setExtraField}
+                    />
+                  </View>
+                </View>
+
+                <Text style={styles.label}>COMPANY NAME / SECTOR</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="e.g. Grameenphone Ltd. (Telecommunication)"
+                  placeholderTextColor={Colors.textMuted}
+                  value={category}
+                  onChangeText={setCategory}
+                />
+
+                <View style={styles.twoCol}>
+                  <View style={styles.col}>
+                    <Text style={styles.label}>TOTAL SHARES / QUANTITY *</Text>
+                    <TextInput
+                      style={styles.input}
+                      placeholder="e.g. 500"
+                      placeholderTextColor={Colors.textMuted}
+                      keyboardType="numeric"
+                      value={subInfo}
+                      onChangeText={setSubInfo}
+                    />
+                  </View>
+                  <View style={styles.col}>
+                    <Text style={styles.label}>BUY PRICE PER SHARE (৳) *</Text>
+                    <TextInput
+                      style={styles.input}
+                      placeholder="e.g. 286.50"
                       placeholderTextColor={Colors.textMuted}
                       keyboardType="numeric"
                       value={amount}

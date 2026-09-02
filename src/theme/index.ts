@@ -1,14 +1,12 @@
 /**
- * Sky Blue Executive Fintech Theme
- * Vibrant Sky Blue 100 Canvas + Sky 700 Sidebar + Clean White Cards
- * Significantly Increased Font Sizes & Menu Sizing
+ * Sky Blue Executive Fintech Theme with Solid Black/White/Green/Gold Sidebar
+ * Whole Software: Sky Blue 100 (#E0F2FE) Canvas & Clean White Cards
+ * Sidebar/Menubar: Pure Black (#000000), White Text, Vibrant Green Selected Button, Golden Hover
  */
 export const Colors = {
-  // Backgrounds - Modern Sky Blue Palette
+  // Whole Software Canvas
   bg: '#E0F2FE',           // Pure Sky Blue 100 canvas (whole software)
   bgLight: '#F0F9FF',      // Sky Blue 50
-  bgSidebar: '#0369A1',    // Deep Royal Sky 700 sidebar
-  bgSidebarActive: '#0284C7', // Sky 600 active menu
   bgCard: '#FFFFFF',       // Clean white card surfaces
   bgCardHover: '#F8FAFC',  // Subtle card hover
   bgSurface: '#F0F9FF',    // Elevated sky surface
@@ -16,43 +14,52 @@ export const Colors = {
   bgInput: '#FFFFFF',      // Crisp input background
   bgGlass: 'rgba(255, 255, 255, 0.85)',
   
-  // Brand Accents - Sky Blue & Vibrant Accents
+  // Navigation Bar (Solid Black, White Text, Green Button, Gold Hover)
+  bgSidebar: '#000000',       // Pure Sleek Black
+  sidebarBorder: '#181C26',   // Deep Charcoal Divider
+  sidebarText: '#FFFFFF',     // Pure Crisp White Font
+  sidebarTextMuted: '#94A3B8', // Slate 400 Inactive
+  sidebarActiveBg: '#16A34A', // Vibrant Green Selected Menu Button
+  sidebarActiveText: '#FFFFFF', // White text on Green
+  sidebarHoverBorder: '#F59E0B', // Golden Hover Border
+  sidebarHoverText: '#FBBF24',   // Golden Hover Text
+  sidebarHoverBg: 'rgba(245, 158, 11, 0.12)', // Golden Tint Hover
+  
+  // Brand Accents
   primary: '#0284C7',      // Sky Blue 600 primary
   primaryDark: '#0369A1',  // Sky Blue 700
   primaryLight: '#38BDF8', // Sky Blue 400
   primaryGlow: 'rgba(2, 132, 199, 0.25)',
   cyan: '#0EA5E9',         // Sky 500
   secondary: '#6366F1',    // Indigo 500
-  accent: '#F59E0B',       // Amber 500
+  accent: '#F59E0B',       // Amber 500 Gold
+  gold: '#F59E0B',         // Golden Accent
+  goldLight: '#FBBF24',    // Bright Gold
   danger: '#EF4444',       // Rose 500
-  success: '#10B981',      // Emerald 500
+  success: '#16A34A',      // Vibrant Green 600
   
-  // High-Contrast Dark Slate Typography (maximum readability on light/sky)
+  // Typography
   textPrimary: '#0F172A',  // Slate 900 crisp heading & numbers
   textSecondary: '#334155', // Slate 700 readable body
   textMuted: '#64748B',    // Slate 500 labels
-  textOnDark: '#FFFFFF',   // White text on sidebar/badges
+  textOnDark: '#FFFFFF',   // White text
   
-  // Crisp Borders & Dividers
+  // Borders & Dividers
   border: '#BAE6FD',       // Sky 200 border
   borderLight: '#E2E8F0',  // Slate 200
   borderActive: '#0284C7', // Sky 600
   
-  // Navigation States
-  navActiveBg: 'rgba(255, 255, 255, 0.22)',
-  navHoverBg: 'rgba(255, 255, 255, 0.12)',
-  
   // Gradients
-  gradientGreen: ['#0284C7', '#38BDF8'],
+  gradientGreen: ['#16A34A', '#22C55E'],
+  gradientGold: ['#F59E0B', '#FBBF24'],
   gradientPurple: ['#6366F1', '#A855F7'],
-  gradientAmber: ['#F59E0B', '#EF4444'],
   gradientDanger: ['#EF4444', '#DC2626'],
   gradientCard: ['#FFFFFF', '#F8FAFC'],
   gradientHero: ['#E0F2FE', '#BAE6FD'],
 };
 
 export const Typography = {
-  // Significantly increased font sizes across the whole software
+  // Sizable readable typography
   displayXL: { fontSize: 38, fontWeight: '800' as const, letterSpacing: -1.0, color: '#0F172A' },
   displayL: { fontSize: 28, fontWeight: '800' as const, letterSpacing: -0.6, color: '#0F172A' },
   displayM: { fontSize: 24, fontWeight: '700' as const, letterSpacing: -0.3, color: '#0F172A' },
@@ -69,9 +76,16 @@ export const Radius = { sm: 8, md: 12, lg: 16, xl: 20, full: 999 };
 
 export const Shadows = {
   glow: {
-    shadowColor: '#0284C7',
+    shadowColor: '#16A34A',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
+    shadowOpacity: 0.3,
+    shadowRadius: 12,
+    elevation: 4,
+  },
+  goldGlow: {
+    shadowColor: '#F59E0B',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.35,
     shadowRadius: 14,
     elevation: 4,
   },

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -12,6 +12,7 @@ import { DynamicMoneyTree } from '../visuals/DynamicMoneyTree';
 
 export type SidebarTabType =
   | 'dashboard'
+  | 'stocks'
   | 'accounts'
   | 'loans'
   | 'paper_assets'
@@ -24,12 +25,15 @@ interface AppSidebarProps {
   onSelectTab: (tab: SidebarTabType) => void;
   onQuickEntryPress: () => void;
   onOpenQrModal: () => void;
+  onOpenAuthModal?: () => void;
   isCollapsed: boolean;
   onToggleCollapse: () => void;
   userProfile?: {
+    id?: string;
     name: string;
     avatar?: string;
   };
+  isOnline?: boolean;
 }
 
 export const AppSidebar: React.FC<AppSidebarProps> = ({
@@ -37,10 +41,14 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
   onSelectTab,
   onQuickEntryPress,
   onOpenQrModal,
+  onOpenAuthModal,
   isCollapsed,
   onToggleCollapse,
-  userProfile = { name: 'Rashed Rahman', avatar: '👨‍💼' },
+  userProfile = { id: 'rashed01', name: 'Rashed Rahman', avatar: '👨‍💼' },
+  isOnline = true,
 }) => {
+  const [hoveredTab, setHoveredTab] = useState<string | null>(null);
+
   const menuItems: Array<{
     id: SidebarTabType;
     label: string;
@@ -48,6 +56,7 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
     badge?: string;
   }> = [
     { id: 'dashboard', label: 'Dashboard', icon: 'grid-outline' },
+    { id: 'stocks', label: 'Stock Market', icon: 'trending-up-outline', badge: 'DSE/CSE' },
     { id: 'accounts', label: 'Bank Accounts', icon: 'wallet-outline' },
     { id: 'loans', label: 'Loans & Debts', icon: 'card-outline' },
     { id: 'paper_assets', label: 'Paper Assets', icon: 'document-text-outline', badge: 'Govt' },
@@ -62,10 +71,10 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
       <View style={[styles.brandHeader, isCollapsed && styles.brandHeaderCollapsed]}>
         {!isCollapsed && (
           <View style={styles.brandRow}>
-            <DynamicMoneyTree size={42} />
+            <DynamicMoneyTree size={44} />
             <View style={styles.brandTextCol}>
               <Text style={styles.brandTitle}>Money-Honey</Text>
-              <Text style={styles.brandTag}>Sky Blue Wealth Suite</Text>
+              <Text style={styles.brandTag}>Private Wealth Architecture</Text>
             </View>
           </View>
         )}
@@ -87,22 +96,23 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
         </TouchableOpacity>
       </View>
 
-      {/* Quick Entry Button (Larger) */}
+      {/* Quick Entry Button */}
       <View style={styles.quickEntryWrapper}>
         <TouchableOpacity
           style={[styles.quickEntryBtn, isCollapsed && styles.quickEntryBtnCollapsed]}
           onPress={onQuickEntryPress}
           activeOpacity={0.85}
         >
-          <Ionicons name="add-circle" size={20} color="#0369A1" />
+          <Ionicons name="add-circle" size={20} color="#16A34A" />
           {!isCollapsed && <Text style={styles.quickEntryText}>+ New Data Entry</Text>}
         </TouchableOpacity>
       </View>
 
-      {/* Navigation Links (Larger font, larger icons, larger padding) */}
+      {/* Navigation Links: Pure Black background, Pure White text, Green selected button, Gold hover */}
       <ScrollView showsVerticalScrollIndicator={false} style={styles.menuList}>
         {menuItems.map((item) => {
           const isActive = activeTab === item.id;
+          const isHovered = hoveredTab === item.id && !isActive;
 
           return (
             <TouchableOpacity
@@ -111,56 +121,95 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
                 styles.navItem,
                 isCollapsed && styles.navItemCollapsed,
                 isActive && styles.navItemActive,
+                isHovered && styles.navItemHovered,
               ]}
               onPress={() => onSelectTab(item.id)}
-              activeOpacity={0.75}
+              activeOpacity={0.8}
+              // @ts-ignore Web hover support
+              onMouseEnter={() => setHoveredTab(item.id)}
+              onMouseLeave={() => setHoveredTab(null)}
             >
               <Ionicons
                 name={item.icon}
                 size={22}
-                color={isActive ? '#FFFFFF' : '#BAE6FD'}
+                color={isActive ? '#FFFFFF' : isHovered ? '#F59E0B' : '#FFFFFF'}
               />
 
               {!isCollapsed && (
                 <View style={styles.labelRow}>
-                  <Text style={[styles.navLabel, isActive && styles.navLabelActive]}>
+                  <Text
+                    style={[
+                      styles.navLabel,
+                      isActive && styles.navLabelActive,
+                      isHovered && styles.navLabelHovered,
+                    ]}
+                  >
                     {item.label}
                   </Text>
                   {item.badge && (
-                    <View style={[styles.badge, isActive && styles.badgeActive]}>
-                      <Text style={styles.badgeText}>{item.badge}</Text>
+                    <View
+                      style={[
+                        styles.badge,
+                        isActive && styles.badgeActive,
+                        isHovered && styles.badgeHovered,
+                      ]}
+                    >
+                      <Text
+                        style={[
+                          styles.badgeText,
+                          isActive && { color: '#FFFFFF' },
+                          isHovered && { color: '#F59E0B' },
+                        ]}
+                      >
+                        {item.badge}
+                      </Text>
                     </View>
                   )}
                 </View>
               )}
 
-              {isActive && <View style={styles.activeBar} />}
+              {isActive && <View style={styles.activeIndicatorBar} />}
             </TouchableOpacity>
           );
         })}
       </ScrollView>
 
-      {/* Bottom Actions: Install QR Code + User Profile */}
+      {/* Bottom Actions: Storage Status, Install QR & User ID Auth */}
       <View style={styles.footerSection}>
-        {/* Mobile App Install Button (Larger) */}
+        {/* Storage State Indicator */}
+        {!isCollapsed && (
+          <View style={styles.storageStatusRow}>
+            <View
+              style={[
+                styles.statusDot,
+                { backgroundColor: isOnline ? '#16A34A' : '#F59E0B' },
+              ]}
+            />
+            <Text style={styles.storageStatusText}>
+              {isOnline ? 'Online Synced' : 'Local Storage Active'}
+            </Text>
+          </View>
+        )}
+
+        {/* Mobile App Install Button */}
         <TouchableOpacity
           style={[styles.installBtn, isCollapsed && styles.installBtnCollapsed]}
           onPress={onOpenQrModal}
           activeOpacity={0.85}
         >
-          <Ionicons name="qr-code-outline" size={20} color="#FFFFFF" />
+          <Ionicons name="qr-code-outline" size={20} color="#F59E0B" />
           {!isCollapsed && (
             <View style={{ flex: 1 }}>
-              <Text style={styles.installTitle}>Install on Phone</Text>
-              <Text style={styles.installSubtitle}>Scan Mobile QR Code</Text>
+              <Text style={styles.installTitle}>Install Mobile App</Text>
+              <Text style={styles.installSubtitle}>Scan Phone QR Code</Text>
             </View>
           )}
         </TouchableOpacity>
 
-        {/* User Profile Pill (Larger) */}
+        {/* User Profile / Auth System Trigger */}
         <TouchableOpacity
           style={[styles.userPill, isCollapsed && styles.userPillCollapsed]}
-          onPress={() => onSelectTab('settings')}
+          onPress={onOpenAuthModal}
           activeOpacity={0.85}
         >
           <View style={styles.avatar}>
@@ -168,10 +217,15 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
           </View>
           {!isCollapsed && (
             <View style={styles.userMeta}>
-              <Text style={styles.userName} numberOfLines={1}>
-                {userProfile.name}
+              <View style={styles.userNameRow}>
+                <Text style={styles.userName} numberOfLines={1}>
+                  {userProfile.name}
+                </Text>
+                <Ionicons name="lock-closed" size={12} color="#16A34A" />
+              </View>
+              <Text style={styles.userRole}>
+                ID: @{userProfile.id || 'rashed01'} • Switch
               </Text>
-              <Text style={styles.userRole}>Principal Wealth Owner</Text>
             </View>
           )}
         </TouchableOpacity>
@@ -183,9 +237,9 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
 const styles = StyleSheet.create({
   sidebar: {
     width: 290,
-    backgroundColor: '#0369A1', // Sky 700 Royal Blue
+    backgroundColor: '#000000', // Pure Solid Black
     borderRightWidth: 1.5,
-    borderRightColor: 'rgba(255, 255, 255, 0.18)',
+    borderRightColor: '#1F2430',
     display: 'flex',
     flexDirection: 'column',
     height: '100%',
@@ -202,7 +256,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.md,
     paddingBottom: Spacing.md,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255, 255, 255, 0.15)',
+    borderBottomColor: '#1F2430',
     marginBottom: Spacing.sm,
   },
   brandHeaderCollapsed: {
@@ -217,28 +271,18 @@ const styles = StyleSheet.create({
     gap: 12,
     flex: 1,
   },
-  logoBadge: {
-    width: 42,
-    height: 42,
-    borderRadius: Radius.md,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.35)',
-  },
   brandTextCol: {
     flex: 1,
   },
   brandTitle: {
     fontSize: 18,
     fontWeight: '800',
-    color: '#FFFFFF',
+    color: '#FFFFFF', // Pure White
     letterSpacing: -0.3,
   },
   brandTag: {
     fontSize: 11,
-    color: '#BAE6FD',
+    color: '#F59E0B', // Gold Subtitle
     fontWeight: '700',
     letterSpacing: 0.5,
     marginTop: 1,
@@ -246,7 +290,7 @@ const styles = StyleSheet.create({
   collapseBtn: {
     padding: 8,
     borderRadius: Radius.md,
-    backgroundColor: 'rgba(255, 255, 255, 0.12)',
+    backgroundColor: '#161922',
   },
   quickEntryWrapper: {
     paddingHorizontal: Spacing.md,
@@ -257,15 +301,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#11141C',
+    borderWidth: 1.5,
+    borderColor: '#16A34A', // Green Border
     paddingVertical: 12,
     paddingHorizontal: 14,
     borderRadius: Radius.md,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.12,
-    shadowRadius: 6,
-    elevation: 3,
   },
   quickEntryBtnCollapsed: {
     paddingHorizontal: 0,
@@ -273,7 +314,7 @@ const styles = StyleSheet.create({
   quickEntryText: {
     fontSize: 15,
     fontWeight: '800',
-    color: '#0369A1',
+    color: '#FFFFFF',
   },
   menuList: {
     flex: 1,
@@ -289,13 +330,25 @@ const styles = StyleSheet.create({
     borderRadius: Radius.md,
     marginBottom: 5,
     position: 'relative',
+    borderWidth: 1,
+    borderColor: 'transparent',
   },
   navItemCollapsed: {
     justifyContent: 'center',
     paddingHorizontal: 0,
   },
   navItemActive: {
-    backgroundColor: 'rgba(255, 255, 255, 0.22)',
+    backgroundColor: '#16A34A', // Vibrant Green Button when selected
+    borderColor: '#22C55E',
+    shadowColor: '#16A34A',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.35,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  navItemHovered: {
+    backgroundColor: 'rgba(245, 158, 11, 0.12)', // Golden Tint Hover
+    borderColor: '#F59E0B', // Golden Border on Hover
   },
   labelRow: {
     flex: 1,
@@ -306,27 +359,34 @@ const styles = StyleSheet.create({
   navLabel: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#E0F2FE',
+    color: '#FFFFFF', // Pure White Font
   },
   navLabelActive: {
     color: '#FFFFFF',
     fontWeight: '800',
   },
+  navLabelHovered: {
+    color: '#FBBF24', // Golden Color on Hover
+    fontWeight: '700',
+  },
   badge: {
-    backgroundColor: 'rgba(255, 255, 255, 0.18)',
-    paddingHorizontal: 7,
+    backgroundColor: 'rgba(255, 255, 255, 0.12)',
+    paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: Radius.sm,
   },
   badgeActive: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: 'rgba(0, 0, 0, 0.25)',
+  },
+  badgeHovered: {
+    backgroundColor: 'rgba(245, 158, 11, 0.25)',
   },
   badgeText: {
     fontSize: 10,
     fontWeight: '800',
-    color: '#FFFFFF',
+    color: '#CBD5E1',
   },
-  activeBar: {
+  activeIndicatorBar: {
     position: 'absolute',
     left: 0,
     top: 6,
@@ -337,18 +397,34 @@ const styles = StyleSheet.create({
   },
   footerSection: {
     paddingHorizontal: Spacing.md,
-    paddingTop: Spacing.md,
+    paddingTop: Spacing.sm,
     borderTopWidth: 1,
-    borderTopColor: 'rgba(255, 255, 255, 0.15)',
+    borderTopColor: '#1F2430',
     gap: 10,
+  },
+  storageStatusRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 4,
+  },
+  statusDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+  },
+  storageStatusText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#94A3B8',
   },
   installBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
-    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+    backgroundColor: '#11141C',
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.3)',
+    borderColor: '#F59E0B', // Gold Border
     borderRadius: Radius.md,
     padding: 10,
   },
@@ -363,33 +439,40 @@ const styles = StyleSheet.create({
   },
   installSubtitle: {
     fontSize: 11,
-    color: '#BAE6FD',
+    color: '#F59E0B',
     fontWeight: '600',
   },
   userPill: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    backgroundColor: '#11141C',
     borderRadius: Radius.md,
-    padding: 8,
+    padding: 10,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.18)',
+    borderColor: '#1F2430',
   },
   userPillCollapsed: {
     justifyContent: 'center',
     padding: 8,
   },
   avatar: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#1F2430',
     justifyContent: 'center',
     alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#16A34A',
   },
   userMeta: {
     flex: 1,
+  },
+  userNameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
   },
   userName: {
     fontSize: 14,
@@ -398,6 +481,7 @@ const styles = StyleSheet.create({
   },
   userRole: {
     fontSize: 11,
-    color: '#BAE6FD',
+    color: '#94A3B8',
+    marginTop: 1,
   },
 });

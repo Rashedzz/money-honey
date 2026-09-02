@@ -51,28 +51,34 @@ export const FlowBreakdownBar: React.FC<FlowBreakdownBarProps> = ({
       </View>
 
       {/* Grid of detailed items */}
-      <View style={styles.itemsGrid}>
-        {items.map((item) => {
-          const pct = Math.round((item.amount / safeTotal) * 100);
-          return (
-            <View key={item.id} style={styles.itemRow}>
-              <View style={styles.itemLeft}>
-                <View style={[styles.itemDot, { backgroundColor: item.color }]} />
-                <View>
-                  <Text style={styles.itemName}>{item.name}</Text>
-                  <Text style={styles.itemSub}>{item.sub}</Text>
+      {items.length === 0 ? (
+        <Text style={{ fontSize: 13, color: '#64748B', fontStyle: 'italic', paddingVertical: 12 }}>
+          No records recorded yet. Click "+ New Data Entry" to add.
+        </Text>
+      ) : (
+        <View style={styles.itemsGrid}>
+          {items.map((item) => {
+            const pct = Math.round((item.amount / safeTotal) * 100);
+            return (
+              <View key={item.id} style={styles.itemRow}>
+                <View style={styles.itemLeft}>
+                  <View style={[styles.itemDot, { backgroundColor: item.color }]} />
+                  <View>
+                    <Text style={styles.itemName}>{item.name}</Text>
+                    <Text style={styles.itemSub}>{item.sub}</Text>
+                  </View>
+                </View>
+                <View style={styles.itemRight}>
+                  <Text style={styles.itemAmount}>৳ {item.amount.toLocaleString('en-IN')}</Text>
+                  <View style={[styles.pctBadge, { backgroundColor: `${item.color}20` }]}>
+                    <Text style={[styles.pctText, { color: item.color }]}>{pct}%</Text>
+                  </View>
                 </View>
               </View>
-              <View style={styles.itemRight}>
-                <Text style={styles.itemAmount}>৳ {item.amount.toLocaleString('en-IN')}</Text>
-                <View style={[styles.pctBadge, { backgroundColor: `${item.color}20` }]}>
-                  <Text style={[styles.pctText, { color: item.color }]}>{pct}%</Text>
-                </View>
-              </View>
-            </View>
-          );
-        })}
-      </View>
+            );
+          })}
+        </View>
+      )}
     </View>
   );
 };

@@ -79,6 +79,7 @@ class AppErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundary
 }
 
 import { initDynamicFavicon } from '../src/utils/dynamicFavicon';
+import { AuthProvider } from '../src/auth/AuthContext';
 
 export default function RootLayout() {
   React.useEffect(() => {
@@ -87,11 +88,13 @@ export default function RootLayout() {
 
   return (
     <AppErrorBoundary>
-      <DatabaseProvider>
-        <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: '#E0F2FE' } }}>
-          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        </Stack>
-      </DatabaseProvider>
+      <AuthProvider>
+        <DatabaseProvider>
+          <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: '#E0F2FE' } }}>
+            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+          </Stack>
+        </DatabaseProvider>
+      </AuthProvider>
     </AppErrorBoundary>
   );
 }

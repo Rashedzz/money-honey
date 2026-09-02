@@ -27,6 +27,12 @@ import { CountdownCard } from '../../src/components/dashboard/CountdownCard';
 import { EMIReminderCard } from '../../src/components/dashboard/EMIReminderCard';
 import { UniversalEntryModal, EntryType } from '../../src/components/modals/UniversalEntryModal';
 
+// Auth System & Stock Market Modules
+import { useAuth } from '../../src/auth/AuthContext';
+import { AuthModal } from '../../src/components/modals/AuthModal';
+import { useStocks } from '../../src/hooks/useStocks';
+import { StockMarketScreen } from '../../src/components/screens/StockMarketScreen';
+
 // Dedicated Screen Views
 import { PhysicalAssetsScreen } from '../../src/components/screens/PhysicalAssetsScreen';
 import { PaperAssetsScreen } from '../../src/components/screens/PaperAssetsScreen';
@@ -45,212 +51,101 @@ import {
 import { calculateWealthVelocity } from '../../src/finance/wealthVelocity';
 import { calculateFinancialPlanningSuite } from '../../src/finance/financialPlanningTools';
 
-// Master Initial Datasets
-const initialAssets: AssetItem[] = [
-  {
-    id: 'AST-101',
-    name: 'Gulshan 2BR Luxury Rental Flat',
-    category: 'Real Estate',
-    purchasePrice: 15000000,
-    currentValuation: 18000000,
-    quantity: 1450,
-    uom: 'Sq. Ft',
-    currentRatePerUoM: 12413,
-    monthlyIncome: 65000,
-    appreciationRateAnnualPct: 8.5,
-    isIdle: false,
-    acquiredDate: '2022-03-15',
-  },
-  {
-    id: 'AST-102',
-    name: 'Purbachal Sector 14 Land Plot',
-    category: 'Real Estate',
-    purchasePrice: 11000000,
-    currentValuation: 17500000,
-    quantity: 5,
-    uom: 'Katha',
-    currentRatePerUoM: 3500000,
-    monthlyIncome: 0, // IDLE ASSET
-    appreciationRateAnnualPct: 15.5,
-    isIdle: true,
-    acquiredDate: '2020-11-10',
-  },
-  {
-    id: 'AST-103',
-    name: '22K Physical Gold Bullion',
-    category: 'Precious Metals',
-    purchasePrice: 1200000,
-    currentValuation: 1875000,
-    quantity: 15,
-    uom: 'Bhori',
-    currentRatePerUoM: 125000,
-    monthlyIncome: 0, // IDLE ASSET
-    appreciationRateAnnualPct: 12.0,
-    isIdle: true,
-    acquiredDate: '2021-06-01',
-  },
-  {
-    id: 'AST-104',
-    name: 'Dhanmondi Commercial Shop Space',
-    category: 'Commercial',
-    purchasePrice: 8000000,
-    currentValuation: 9500000,
-    quantity: 450,
-    uom: 'Sq. Ft',
-    currentRatePerUoM: 21111,
-    monthlyIncome: 38000,
-    appreciationRateAnnualPct: 9.0,
-    isIdle: false,
-    acquiredDate: '2023-01-20',
-  },
-  {
-    id: 'AST-105',
-    name: 'Toyota Harrier Premium SUV',
-    category: 'Vehicles',
-    purchasePrice: 6800000,
-    currentValuation: 6200000,
-    monthlyIncome: 0, // IDLE ASSET
-    appreciationRateAnnualPct: -6.0,
-    isIdle: true,
-    acquiredDate: '2022-08-10',
-  },
-];
+// Local storage helpers for local device persistence
+const getStoredData = <T,>(key: string, fallback: T): T => {
+  try {
+    if (typeof window !== 'undefined' && window.localStorage) {
+      const item = window.localStorage.getItem(key);
+      if (item) return JSON.parse(item);
+    }
+  } catch (e) {}
+  return fallback;
+};
 
-const initialPolicies: LifeInsurancePolicy[] = [
-  {
-    id: 'INS-001',
-    policyName: 'MetLife Guaranteed Savings Plan',
-    insurer: 'MetLife Bangladesh',
-    policyNumber: 'POL-992014-BD',
-    sumAssured: 10000000,
-    premiumAmount: 85000,
-    premiumFrequency: 'annual',
-    policyTermYears: 15,
-    premiumPayingTermYears: 10,
-    paidPremiumsTotal: 425000,
-    projectedMaturityBonus: 4500000,
-    startDate: '2021-04-10',
-    nextPremiumDueDate: '2026-09-15',
-    nomineeName: 'Sarah Rahman (Spouse)',
-    status: 'active',
-  },
-  {
-    id: 'INS-002',
-    policyName: 'Delta Life Child Endowment',
-    insurer: 'Delta Life Insurance Ltd.',
-    policyNumber: 'POL-330192-DL',
-    sumAssured: 5000000,
-    premiumAmount: 48000,
-    premiumFrequency: 'annual',
-    policyTermYears: 18,
-    premiumPayingTermYears: 12,
-    paidPremiumsTotal: 192000,
-    projectedMaturityBonus: 2200000,
-    startDate: '2022-08-01',
-    nextPremiumDueDate: '2026-11-20',
-    nomineeName: 'Ayan Rahman (Son)',
-    status: 'active',
-  },
-];
-
-const initialBirthdays: BirthdayEvent[] = [
-  {
-    id: 'BD-001',
-    personName: 'Sarah Rahman',
-    relation: 'Spouse',
-    birthDate: '1994-08-24',
-    giftBudget: 15000,
-    notifyDaysBefore: 7,
-  },
-  {
-    id: 'BD-002',
-    personName: 'Ayan Rahman',
-    relation: 'Child',
-    birthDate: '2019-09-08',
-    giftBudget: 8000,
-    notifyDaysBefore: 5,
-  },
-];
-
-const initialCash = [
-  { id: '1', label: 'City Bank Savings', amount: 650000, color: '#22C55E' },
-  { id: '2', label: 'BRAC Bank Salary A/C', amount: 450000, color: '#06B6D4' },
-  { id: '3', label: 'Cash in Hand (Physical)', amount: 65000, color: '#F59E0B' },
-  { id: '4', label: 'bKash Wallet (MFS)', amount: 35000, color: '#EF4444' },
-];
-
-const initialLoans = [
-  { id: '1', name: 'Apartment Home Loan', sub: 'City Bank Ltd. (226 mos left)', amount: 4250000, color: '#EF4444' },
-  { id: '2', name: 'Vehicle Auto Loan', sub: 'Eastern Bank Ltd. (24 mos left)', amount: 540000, color: '#F59E0B' },
-  { id: '3', name: 'Personal Loan (Outside Bank)', sub: 'Private Family Debt', amount: 250000, color: '#8B5CF6' },
-];
-
-const upcomingSchedules: ScheduleEvent[] = [
-  {
-    id: '1',
-    title: 'City Bank Home Loan EMI',
-    subtitle: 'Auto-Debit from BRAC Salary A/C #4921',
-    date: '25 Aug 2026',
-    daysRemaining: 7,
-    amount: 45000,
-    type: 'emi',
-    status: 'warning',
-    isAutoDebit: true,
-  },
-  {
-    id: '2',
-    title: 'Gulshan 2BR Monthly Rent Collection',
-    subtitle: 'Credit from Tenant (AST-101)',
-    date: '01 Sep 2026',
-    daysRemaining: 14,
-    amount: 65000,
-    type: 'salary',
-    status: 'safe',
-  },
-  {
-    id: '3',
-    title: '3-Month Sanchaypatra Profit Coupon',
-    subtitle: 'Direct Credit to City Bank A/C #8832',
-    date: '24 Aug 2026',
-    daysRemaining: 6,
-    amount: 28500,
-    type: 'sanchaypatra_coupon',
-    status: 'critical',
-  },
-  {
-    id: '4',
-    title: 'DBBL FDR Monthly Interest Payout',
-    subtitle: 'Auto-disbursement #14 of 36',
-    date: '06 Sep 2026',
-    daysRemaining: 19,
-    amount: 18500,
-    type: 'fdr_payout',
-    status: 'warning',
-  },
-];
+const setStoredData = <T,>(key: string, value: T) => {
+  try {
+    if (typeof window !== 'undefined' && window.localStorage) {
+      window.localStorage.setItem(key, JSON.stringify(value));
+    }
+  } catch (e) {}
+};
 
 export default function MasterDashboardScreen() {
   const { width } = useWindowDimensions();
   const isDesktop = width >= 768;
+
+  const { user, isOnline, openAuthModal, closeAuthModal, isAuthModalVisible } = useAuth();
+  const { stocks, summary: stockSummary, addStock, updateStockPrice, deleteStock } = useStocks();
 
   const [activeTab, setActiveTab] = useState<SidebarTabType>('dashboard');
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [birthDate, setBirthDate] = useState('1992-05-15');
 
-  // Master State
-  const [assets, setAssets] = useState<AssetItem[]>(initialAssets);
-  const [cashList, setCashList] = useState(initialCash);
-  const [loanList, setLoanList] = useState(initialLoans);
-  const [policies, setPolicies] = useState<LifeInsurancePolicy[]>(initialPolicies);
-  const [birthdays, setBirthdays] = useState<BirthdayEvent[]>(initialBirthdays);
+  // Master State - Clean slate without dummy data, persisted to local device storage
+  const [assets, setAssetsState] = useState<AssetItem[]>(() => getStoredData('mh_user_assets', []));
+  const [cashList, setCashListState] = useState<any[]>(() => getStoredData('mh_user_cash', []));
+  const [loanList, setLoanListState] = useState<any[]>(() => getStoredData('mh_user_loans', []));
+  const [incomes, setIncomesState] = useState<any[]>(() => getStoredData('mh_user_incomes', []));
+  const [expenses, setExpensesState] = useState<any[]>(() => getStoredData('mh_user_expenses', []));
+  const [policies, setPoliciesState] = useState<LifeInsurancePolicy[]>(() => getStoredData('mh_user_policies', []));
+  const [birthdays, setBirthdaysState] = useState<BirthdayEvent[]>(() => getStoredData('mh_user_birthdays', []));
+  const [schedules, setSchedulesState] = useState<ScheduleEvent[]>(() => getStoredData('mh_user_schedules', []));
+
+  const setAssets = (updater: any) => {
+    setAssetsState((prev) => {
+      const next = typeof updater === 'function' ? updater(prev) : updater;
+      setStoredData('mh_user_assets', next);
+      return next;
+    });
+  };
+  const setCashList = (updater: any) => {
+    setCashListState((prev) => {
+      const next = typeof updater === 'function' ? updater(prev) : updater;
+      setStoredData('mh_user_cash', next);
+      return next;
+    });
+  };
+  const setLoanList = (updater: any) => {
+    setLoanListState((prev) => {
+      const next = typeof updater === 'function' ? updater(prev) : updater;
+      setStoredData('mh_user_loans', next);
+      return next;
+    });
+  };
+  const setIncomes = (updater: any) => {
+    setIncomesState((prev) => {
+      const next = typeof updater === 'function' ? updater(prev) : updater;
+      setStoredData('mh_user_incomes', next);
+      return next;
+    });
+  };
+  const setExpenses = (updater: any) => {
+    setExpensesState((prev) => {
+      const next = typeof updater === 'function' ? updater(prev) : updater;
+      setStoredData('mh_user_expenses', next);
+      return next;
+    });
+  };
+  const setPolicies = (updater: any) => {
+    setPoliciesState((prev) => {
+      const next = typeof updater === 'function' ? updater(prev) : updater;
+      setStoredData('mh_user_policies', next);
+      return next;
+    });
+  };
+  const setBirthdays = (updater: any) => {
+    setBirthdaysState((prev) => {
+      const next = typeof updater === 'function' ? updater(prev) : updater;
+      setStoredData('mh_user_birthdays', next);
+      return next;
+    });
+  };
 
   // Modals
   const [entryModalVisible, setEntryModalVisible] = useState(false);
-  const [modalInitialType, setModalInitialType] = useState<EntryType>('income');
+  const [modalInitialType, setModalInitialType] = useState<EntryType>('stock');
   const [qrModalVisible, setQrModalVisible] = useState(false);
-
-  // Mobile Drawer State
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
 
   // Computed Values
@@ -260,34 +155,58 @@ export default function MasterDashboardScreen() {
   const insuranceSummary = calculateInsuranceSummary(policies, totalLoans);
 
   const currentIncomeItems = [
-    { id: '1', name: 'Employment Tech Salary', sub: 'Primary Income', amount: 135000, color: '#22C55E' },
-    {
-      id: '2',
-      name: 'Asset Cash Flow (Rent)',
-      sub: `${assetSummary.incomeGeneratingCount} Active Assets (AST-101, AST-104)`,
-      amount: assetSummary.totalMonthlyAssetIncome,
-      color: '#8B5CF6',
-    },
-    { id: '3', name: '3-Mo Sanchaypatra Coupon', sub: 'National Savings', amount: 21500, color: '#06B6D4' },
-    { id: '4', name: 'FDR Monthly Return', sub: 'DBBL Fixed Deposit', amount: 18500, color: '#F59E0B' },
+    ...(assetSummary.totalMonthlyAssetIncome > 0
+      ? [
+          {
+            id: 'asset_rent',
+            name: 'Asset Cash Flow (Rent/Yield)',
+            sub: `${assetSummary.incomeGeneratingCount} Active Generating Assets`,
+            amount: assetSummary.totalMonthlyAssetIncome,
+            color: '#16A34A',
+          },
+        ]
+      : []),
+    ...incomes.map((inc) => ({
+      id: inc.id,
+      name: inc.title || inc.name,
+      sub: inc.category || 'Income',
+      amount: inc.amount,
+      color: '#0284C7',
+    })),
   ];
 
   const totalCurrentIncome = currentIncomeItems.reduce((sum, item) => sum + item.amount, 0);
 
   const currentExpenseItems = [
-    { id: '1', name: 'City Bank Home Loan EMI', sub: 'Debt Service • Bank Loan', amount: 45000, color: '#EF4444' },
-    { id: '2', name: 'Household Living & Food', sub: 'Family Living & Supplies', amount: 28000, color: '#F59E0B' },
-    { id: '3', name: 'EBL Vehicle Auto Loan EMI', sub: 'Debt Service • Asset EMI', amount: 22500, color: '#EF4444' },
-    { id: '4', name: 'Utilities & Telecom', sub: 'Electricity, Gas, Internet', amount: 7000, color: '#06B6D4' },
+    ...loanList.map((loan) => ({
+      id: `loan_${loan.id}`,
+      name: `${loan.name || loan.title || 'Loan'} Debt Service`,
+      sub: loan.sub || 'Bank Liability',
+      amount: loan.amount > 100000 ? Math.round(loan.amount * 0.012) : loan.amount,
+      color: '#EF4444',
+    })),
+    ...expenses.map((exp) => ({
+      id: exp.id,
+      name: exp.title || exp.name,
+      sub: exp.category || 'Expense',
+      amount: exp.amount,
+      color: '#F59E0B',
+    })),
   ];
 
   const totalCurrentExpense = currentExpenseItems.reduce((sum, item) => sum + item.amount, 0);
+
+  const consolidatedNetWorth =
+    totalCashInHand +
+    stockSummary.currentValue +
+    assetSummary.totalAssetValuation -
+    totalLoans;
 
   const wealthVelocity = calculateWealthVelocity(
     birthDate,
     totalCurrentIncome,
     totalCurrentExpense,
-    assetSummary.totalAssetValuation + totalCashInHand - totalLoans
+    consolidatedNetWorth
   );
 
   const planningSuite = calculateFinancialPlanningSuite(
@@ -295,17 +214,20 @@ export default function MasterDashboardScreen() {
     totalCurrentExpense,
     totalCashInHand,
     totalLoans,
-    assetSummary.totalAssetValuation,
+    assetSummary.totalAssetValuation + stockSummary.currentValue,
     insuranceSummary.totalLifeCoverage,
     wealthVelocity.ageYears
   );
 
   const handleUniversalSave = (type: EntryType, data: any) => {
-    if (type === 'asset') setAssets((prev) => [data, ...prev]);
-    else if (type === 'insurance') setPolicies((prev) => [data, ...prev]);
-    else if (type === 'birthday') setBirthdays((prev) => [data, ...prev]);
-    else if (type === 'bank') setCashList((prev) => [...prev, { id: data.id, label: data.title, amount: data.amount, color: '#22C55E' }]);
-    else if (type === 'loan') setLoanList((prev) => [...prev, { id: data.id, name: data.title, sub: data.category, amount: data.amount, color: '#EF4444' }]);
+    if (type === 'asset') setAssets((prev: any) => [data, ...prev]);
+    else if (type === 'stock') addStock(data);
+    else if (type === 'income') setIncomes((prev: any) => [data, ...prev]);
+    else if (type === 'expense') setExpenses((prev: any) => [data, ...prev]);
+    else if (type === 'insurance') setPolicies((prev: any) => [data, ...prev]);
+    else if (type === 'birthday') setBirthdays((prev: any) => [data, ...prev]);
+    else if (type === 'bank') setCashList((prev: any) => [...prev, { id: data.id, label: data.title, amount: data.amount, color: '#22C55E' }]);
+    else if (type === 'loan') setLoanList((prev: any) => [...prev, { id: data.id, name: data.title, sub: data.category, amount: data.amount, color: '#EF4444' }]);
   };
 
   const openModal = (type: EntryType) => {
@@ -315,11 +237,12 @@ export default function MasterDashboardScreen() {
 
   const onRefresh = () => {
     setRefreshing(true);
-    setTimeout(() => setRefreshing(false), 600);
+    setTimeout(() => setRefreshing(false), 500);
   };
 
   const pageTitles: Record<SidebarTabType, string> = {
     dashboard: 'Executive Wealth Dashboard',
+    stocks: 'Stock Market Equities (DSE / CSE & Global)',
     accounts: 'Liquid Bank Accounts & Cash Vault',
     loans: 'Institutional Loans & Debt Service',
     paper_assets: 'Paper Assets (Sanchaypatra / FDR / DPS)',
@@ -330,23 +253,25 @@ export default function MasterDashboardScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <StatusBar barStyle="light-content" backgroundColor="#020617" />
+      <StatusBar barStyle="light-content" backgroundColor="#000000" />
 
       <View style={styles.appShell}>
-        {/* 1. Left Collapsible Sidebar on Desktop / Tablet */}
+        {/* 1. Left Sidebar: Solid Black, White Text, Green Button, Gold Hover */}
         {isDesktop && (
           <AppSidebar
             activeTab={activeTab}
             onSelectTab={setActiveTab}
-            onQuickEntryPress={() => openModal('income')}
+            onQuickEntryPress={() => openModal('stock')}
             onOpenQrModal={() => setQrModalVisible(true)}
+            onOpenAuthModal={openAuthModal}
             isCollapsed={isSidebarCollapsed}
             onToggleCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
-            userProfile={{ name: 'Rashed Rahman', avatar: '👨‍💼' }}
+            userProfile={user || { name: 'Rashed Rahman', avatar: '👨‍💼', id: 'rashed01' }}
+            isOnline={isOnline}
           />
         )}
 
-        {/* 2. Main Content Container */}
+        {/* 2. Main Content Container (Sky Blue Background) */}
         <View style={styles.mainContent}>
           {/* Top Utility Header */}
           <View style={styles.topUtilityBar}>
@@ -361,11 +286,24 @@ export default function MasterDashboardScreen() {
               )}
               <View>
                 <Text style={styles.pageTitle}>{pageTitles[activeTab]}</Text>
-                <Text style={styles.pageSubtitle}>AFIL Agro Hub Standard • Real-Time Engine</Text>
+                <Text style={styles.pageSubtitle}>
+                  {isOnline ? '🌐 Online Available • Local-First Architecture' : '🟢 Offline Mode • Local Storage Active'}
+                </Text>
               </View>
             </View>
 
             <View style={styles.topActions}>
+              <TouchableOpacity
+                style={styles.authHeaderBtn}
+                onPress={openAuthModal}
+                activeOpacity={0.8}
+              >
+                <Ionicons name="person-circle-outline" size={18} color="#0F172A" />
+                <Text style={styles.authHeaderBtnText}>
+                  @{user?.id || 'rashed01'}
+                </Text>
+              </TouchableOpacity>
+
               <TouchableOpacity
                 style={styles.qrHeaderBtn}
                 onPress={() => setQrModalVisible(true)}
@@ -377,16 +315,24 @@ export default function MasterDashboardScreen() {
 
               <TouchableOpacity
                 style={styles.quickEntryHeaderBtn}
-                onPress={() => openModal('income')}
+                onPress={() => openModal('stock')}
                 activeOpacity={0.85}
               >
-                <Ionicons name="add-circle" size={16} color="#020617" />
+                <Ionicons name="add-circle" size={16} color="#FFFFFF" />
                 <Text style={styles.quickEntryHeaderBtnText}>+ Data Entry</Text>
               </TouchableOpacity>
             </View>
           </View>
 
-          {/* Sub-view router */}
+          {/* Screen Routing */}
+          {activeTab === 'stocks' && (
+            <StockMarketScreen
+              stocks={stocks}
+              onAddStockPress={() => openModal('stock')}
+              onDeleteStock={deleteStock}
+              onUpdatePrice={updateStockPrice}
+            />
+          )}
           {activeTab === 'accounts' && <AccountsScreen />}
           {activeTab === 'loans' && <LoansScreen />}
           {activeTab === 'paper_assets' && <PaperAssetsScreen />}
@@ -405,7 +351,7 @@ export default function MasterDashboardScreen() {
             />
           )}
 
-          {/* Master Dashboard Screen (Constrained to max-width 1200) */}
+          {/* Master Dashboard Screen */}
           {activeTab === 'dashboard' && (
             <ScrollView
               style={styles.scrollArea}
@@ -418,17 +364,68 @@ export default function MasterDashboardScreen() {
               {/* 2. Real-Time Wealth Velocity Clock */}
               <WealthVelocityCard velocity={wealthVelocity} />
 
-              {/* 3. Responsive 2-Column Grid: Cash in Hand & Loan Liabilities */}
+              {/* 3. NEW: Stock Market & Equities Portfolio Card */}
+              <View style={styles.fullWidthBox}>
+                <GlassCard style={styles.cardFull} padding={18} glowColor={stockSummary.isProfitable ? Colors.success : Colors.danger}>
+                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 10 }}>
+                    <View>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                        <Text style={{ fontSize: 20 }}>📈</Text>
+                        <Text style={styles.cardLabel}>STOCK MARKET & EQUITIES PORTFOLIO</Text>
+                      </View>
+                      <Text style={{ fontSize: 32, fontWeight: '900', color: '#0F172A', marginTop: 4 }}>
+                        ৳ {stockSummary.currentValue.toLocaleString('en-IN')}
+                      </Text>
+                      <Text style={{ fontSize: 13, color: '#64748B', marginTop: 2 }}>
+                        Capital Invested: ৳ {stockSummary.totalInvested.toLocaleString('en-IN')} • {stockSummary.totalHoldingsCount} Stock Holdings (DSE/CSE)
+                      </Text>
+                    </View>
+
+                    <View style={{ alignItems: 'flex-end', gap: 8 }}>
+                      <View style={{
+                        paddingHorizontal: 14,
+                        paddingVertical: 6,
+                        borderRadius: 20,
+                        backgroundColor: stockSummary.isProfitable ? 'rgba(22, 163, 74, 0.14)' : 'rgba(239, 68, 68, 0.14)'
+                      }}>
+                        <Text style={{
+                          fontSize: 13,
+                          fontWeight: '800',
+                          color: stockSummary.isProfitable ? Colors.success : Colors.danger
+                        }}>
+                          {stockSummary.isProfitable ? '▲ +' : '▼ −'}৳ {Math.abs(stockSummary.totalGainLoss).toLocaleString('en-IN')} ({stockSummary.totalGainLossPercent.toFixed(2)}%)
+                        </Text>
+                      </View>
+                      <TouchableOpacity
+                        onPress={() => setActiveTab('stocks')}
+                        style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}
+                      >
+                        <Text style={{ fontSize: 14, fontWeight: '800', color: '#0284C7' }}>Open Stock Market →</Text>
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                </GlassCard>
+              </View>
+
+              {/* 4. Responsive 2-Column Grid: Cash in Hand & Loan Liabilities */}
               <View style={[styles.gridRow, isDesktop && styles.gridRowTwoCol]}>
                 <View style={[styles.gridCol, isDesktop && styles.colHalf]}>
                   <GlassCard style={styles.cardFull} padding={16} glowColor={Colors.primary}>
                     <Text style={styles.cardLabel}>1. CURRENT CASH IN HAND & LIQUID RESERVES</Text>
-                    <SegmentedDonut
-                      segments={cashList}
-                      totalLabel="Total Liquid"
-                      totalFormatted={`৳ ${(totalCashInHand / 100000).toFixed(1)}L`}
-                      size={140}
-                    />
+                    {cashList.length === 0 ? (
+                      <View style={{ alignItems: 'center', paddingVertical: 20 }}>
+                        <Text style={{ fontSize: 13, color: '#64748B', fontStyle: 'italic' }}>
+                          No cash accounts recorded. Click "+ Data Entry" above.
+                        </Text>
+                      </View>
+                    ) : (
+                      <SegmentedDonut
+                        segments={cashList}
+                        totalLabel="Total Liquid"
+                        totalFormatted={`৳ ${(totalCashInHand / 100000).toFixed(1)}L`}
+                        size={140}
+                      />
+                    )}
                   </GlassCard>
                 </View>
 
@@ -437,38 +434,34 @@ export default function MasterDashboardScreen() {
                     <Text style={[styles.cardLabel, { color: Colors.danger }]}>
                       2. OUTSTANDING LOAN LIABILITIES
                     </Text>
-                    <RadialGauge
-                      score={84}
-                      title={`৳ ${(totalLoans / 100000).toFixed(1)} Lakhs`}
-                      subtitle="84% Institutional • 5% Private"
-                      statusLabel="Debt Load"
-                      statusColor={Colors.danger}
-                      size={140}
-                    />
+                    {loanList.length === 0 ? (
+                      <View style={{ alignItems: 'center', paddingVertical: 20 }}>
+                        <Text style={{ fontSize: 13, color: '#64748B', fontStyle: 'italic' }}>
+                          No debt liabilities recorded.
+                        </Text>
+                      </View>
+                    ) : (
+                      <RadialGauge
+                        score={totalLoans > 0 ? 80 : 0}
+                        title={`৳ ${(totalLoans / 100000).toFixed(1)} Lakhs`}
+                        subtitle="Institutional & Outside Loans"
+                        statusLabel="Debt Load"
+                        statusColor={Colors.danger}
+                        size={140}
+                      />
+                    )}
                   </GlassCard>
                 </View>
               </View>
 
-              {/* Detailed Loan Bank vs Outside-Bank Split Bar */}
-              <View style={styles.fullWidthBox}>
-                <GlassCard style={styles.cardFull} padding={16}>
-                  <FlowBreakdownBar
-                    items={loanList}
-                    total={totalLoans}
-                    title="LOAN BREAKDOWN (BANK-WISE & OUTSIDE OF BANK)"
-                    totalFormatted={`৳ ${totalLoans.toLocaleString('en-IN')}`}
-                  />
-                </GlassCard>
-              </View>
-
-              {/* 4. Responsive 2-Column Grid: Income Sources & Expenses by Sector */}
+              {/* 5. Income Sources & Expenses by Sector */}
               <View style={[styles.gridRow, isDesktop && styles.gridRowTwoCol]}>
                 <View style={[styles.gridCol, isDesktop && styles.colHalf]}>
                   <GlassCard style={styles.cardFull} padding={16} glowColor={Colors.primary}>
                     <FlowBreakdownBar
                       items={currentIncomeItems}
                       total={totalCurrentIncome}
-                      title="4. INCOME SOURCES WITH ASSET RENTAL YIELD"
+                      title="3. INCOME SOURCES WITH ASSET RENTAL YIELD"
                       totalFormatted={`৳ ${totalCurrentIncome.toLocaleString('en-IN')}`}
                     />
                   </GlassCard>
@@ -479,134 +472,33 @@ export default function MasterDashboardScreen() {
                     <FlowBreakdownBar
                       items={currentExpenseItems}
                       total={totalCurrentExpense}
-                      title="5. EXPENSES BY SECTOR & FIXED DEBT EMIs"
+                      title="4. EXPENSES BY SECTOR & FIXED DEBT EMIs"
                       totalFormatted={`৳ ${totalCurrentExpense.toLocaleString('en-IN')}`}
                     />
                   </GlassCard>
                 </View>
               </View>
 
-              {/* 5. Next Month Cash Flow Forecasting Card */}
-              <View style={styles.fullWidthBox}>
-                <ProjectionComparisonCard
-                  currentMonthName="August"
-                  nextMonthName="September 2026"
-                  currentIncome={totalCurrentIncome}
-                  projectedIncomeNextMonth={totalCurrentIncome + 7000}
-                  currentExpense={totalCurrentExpense}
-                  projectedExpenseNextMonth={104000}
-                  projectedIncomeBreakdown={[
-                    { name: 'Salary', amount: 135000, color: '#22C55E' },
-                    { name: 'Asset Rent (AST-101, 104)', amount: assetSummary.totalMonthlyAssetIncome, color: '#8B5CF6' },
-                    { name: 'Sanchaypatra (Q)', amount: 28500, color: '#06B6D4' },
-                    { name: 'FDR Returns', amount: 18500, color: '#F59E0B' },
-                  ]}
-                  projectedExpenseBreakdown={[
-                    { name: 'Fixed EMIs (Home + Auto)', amount: 67500, color: '#EF4444' },
-                    { name: 'Household Living', amount: 28000, color: '#F59E0B' },
-                    { name: 'Scheduled Utilities & Bills', amount: 8500, color: '#06B6D4' },
-                  ]}
-                />
-              </View>
-
-              {/* 6. Financial Planning Suite & Rule of 72 Doubling Time */}
+              {/* 6. Financial Planning Suite */}
               <FinancialConsultantToolsCard planning={planningSuite} />
-
-              {/* 7. Schedules & Upcoming Disbursements */}
-              <View style={styles.sectionTitleRow}>
-                <Text style={styles.sectionTitleText}>8. SCHEDULES & UPCOMING DISBURSEMENTS</Text>
-              </View>
-              <View style={styles.fullWidthBox}>
-                <ScheduleTimeline events={upcomingSchedules} />
-              </View>
-
-              {/* 8. 3-Week Maturity Countdown Alerts */}
-              <View style={styles.sectionTitleRow}>
-                <Text style={[styles.sectionTitleText, { color: Colors.accent }]}>
-                  9. 3-WEEK MATURITY COUNTDOWN ALERTS
-                </Text>
-              </View>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.hScroll}>
-                <CountdownCard
-                  title="3-Month Sanchaypatra Coupon"
-                  subtitle="Certificate #SC-99201 • 11.04%"
-                  daysRemaining={6}
-                  targetDate={new Date(2026, 7, 24)}
-                  amount={28500}
-                  amountLabel="Net Coupon Payout"
-                  type="sanchaypatra"
-                  urgencyLevel="critical"
-                  percentageElapsed={98}
-                />
-                <CountdownCard
-                  title="Dutch-Bangla Bank FDR Maturity"
-                  subtitle="FDR #8839201 • 3 Years @ 9.5%"
-                  daysRemaining={19}
-                  targetDate={new Date(2026, 8, 6)}
-                  amount={1500000}
-                  amountLabel="Maturity Value"
-                  type="fdr"
-                  urgencyLevel="warning"
-                  percentageElapsed={92}
-                />
-                <CountdownCard
-                  title="City Bank Home Loan EMI"
-                  subtitle="EMI #14 of 240 • Next Due"
-                  daysRemaining={7}
-                  targetDate={new Date(2026, 7, 25)}
-                  amount={45000}
-                  amountLabel="Exact EMI Due"
-                  type="emi"
-                  urgencyLevel="warning"
-                  percentageElapsed={80}
-                />
-              </ScrollView>
-
-              {/* 9. Pending EMI Action Reminders */}
-              <View style={styles.sectionTitleRow}>
-                <Text style={[styles.sectionTitleText, { color: Colors.danger }]}>
-                  PENDING EMI ACTIONS
-                </Text>
-              </View>
-              <View style={styles.emiBox}>
-                <EMIReminderCard
-                  loanTitle="Apartment Home Loan Mortgage"
-                  bankName="City Bank Ltd."
-                  emiAmount={45000}
-                  dueDate={new Date(2026, 7, 25)}
-                  paymentNumber={14}
-                  totalPayments={240}
-                  outstandingPrincipal={4250000}
-                />
-                <EMIReminderCard
-                  loanTitle="Vehicle Auto Loan (Toyota Harrier)"
-                  bankName="Eastern Bank Ltd."
-                  emiAmount={22500}
-                  dueDate={new Date(2026, 8, 5)}
-                  paymentNumber={36}
-                  totalPayments={60}
-                  outstandingPrincipal={540000}
-                />
-              </View>
             </ScrollView>
           )}
         </View>
       </View>
 
-      {/* PWA Phone Install QR Modal */}
-      <PwaInstallModal
-        visible={qrModalVisible}
-        onClose={() => setQrModalVisible(false)}
-        appUrl="https://rashedzz.github.io/money-honey/"
-      />
-
-      {/* Universal Quick Data Entry Modal */}
+      {/* Universal Data Entry Vault Modal */}
       <UniversalEntryModal
         visible={entryModalVisible}
         initialType={modalInitialType}
         onClose={() => setEntryModalVisible(false)}
         onSave={handleUniversalSave}
       />
+
+      {/* PWA Phone Install Modal */}
+      <PwaInstallModal visible={qrModalVisible} onClose={() => setQrModalVisible(false)} />
+
+      {/* User ID & Password Auth Modal */}
+      <AuthModal visible={isAuthModalVisible} onClose={closeAuthModal} />
     </SafeAreaView>
   );
 }
@@ -614,28 +506,28 @@ export default function MasterDashboardScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#E0F2FE',
+    backgroundColor: '#E0F2FE', // Sky Blue 100
   },
   appShell: {
     flex: 1,
     flexDirection: 'row',
-    backgroundColor: '#E0F2FE',
   },
   mainContent: {
     flex: 1,
-    backgroundColor: '#E0F2FE',
     display: 'flex',
     flexDirection: 'column',
+    backgroundColor: '#E0F2FE',
   },
   topUtilityBar: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: Spacing.lg,
-    paddingVertical: 14,
+    paddingVertical: 12,
     backgroundColor: '#FFFFFF',
     borderBottomWidth: 1.5,
     borderBottomColor: '#BAE6FD',
+    zIndex: 10,
   },
   headerTitleRow: {
     flexDirection: 'row',
@@ -643,16 +535,15 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   mobileMenuBtn: {
-    padding: 8,
+    padding: 6,
     borderRadius: Radius.md,
     backgroundColor: '#F0F9FF',
-    borderWidth: 1,
-    borderColor: '#BAE6FD',
   },
   pageTitle: {
     fontSize: 18,
     fontWeight: '800',
     color: '#0F172A',
+    letterSpacing: -0.3,
   },
   pageSubtitle: {
     fontSize: 12,
@@ -665,31 +556,47 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 10,
   },
+  authHeaderBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: Radius.full,
+    backgroundColor: '#F0F9FF',
+    borderWidth: 1.5,
+    borderColor: '#BAE6FD',
+  },
+  authHeaderBtnText: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: '#0F172A',
+  },
   qrHeaderBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    backgroundColor: '#F0F9FF',
-    borderWidth: 1.5,
-    borderColor: '#0284C7',
-    paddingHorizontal: 14,
+    paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: Radius.full,
+    backgroundColor: '#F0F9FF',
+    borderWidth: 1.5,
+    borderColor: '#BAE6FD',
   },
   qrHeaderBtnText: {
     fontSize: 13,
-    fontWeight: '800',
+    fontWeight: '700',
     color: '#0284C7',
   },
   quickEntryHeaderBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    backgroundColor: '#0284C7',
+    backgroundColor: '#16A34A', // Green Action Button
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: Radius.full,
-    shadowColor: '#0284C7',
+    shadowColor: '#16A34A',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
     shadowRadius: 6,
@@ -705,32 +612,31 @@ const styles = StyleSheet.create({
     backgroundColor: '#E0F2FE',
   },
   dashboardContainer: {
-    paddingTop: Spacing.lg,
+    padding: Spacing.lg,
     paddingBottom: 100,
-    paddingHorizontal: Spacing.md,
     maxWidth: 1200,
     width: '100%',
     alignSelf: 'center',
+    gap: Spacing.md,
   },
   gridRow: {
     flexDirection: 'column',
     gap: Spacing.md,
-    marginBottom: Spacing.md,
   },
   gridRowTwoCol: {
     flexDirection: 'row',
   },
   gridCol: {
-    width: '100%',
+    flex: 1,
   },
   colHalf: {
-    flex: 1,
+    width: '50%',
+  },
+  fullWidthBox: {
+    width: '100%',
   },
   cardFull: {
     width: '100%',
-  },
-  fullWidthBox: {
-    marginBottom: Spacing.md,
   },
   cardLabel: {
     fontSize: 12,
@@ -738,22 +644,5 @@ const styles = StyleSheet.create({
     color: '#0284C7',
     marginBottom: Spacing.sm,
     letterSpacing: 0.5,
-  },
-  sectionTitleRow: {
-    marginTop: Spacing.md,
-    marginBottom: Spacing.xs,
-  },
-  sectionTitleText: {
-    fontSize: 13,
-    color: '#0369A1',
-    fontWeight: '800',
-    letterSpacing: 0.5,
-  },
-  hScroll: {
-    paddingBottom: Spacing.xs,
-  },
-  emiBox: {
-    gap: Spacing.sm,
-    marginTop: Spacing.xs,
   },
 });
