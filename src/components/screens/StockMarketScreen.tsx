@@ -39,6 +39,9 @@ import {
   DSE_HISTORICAL_DATABASE,
   generate10YearHistoricalSeries,
 } from '../../finance/dseHistoricalDatabase';
+import { generateTechnicalIndicators } from '../../finance/technicalAnalysisEngine';
+import { generateFundamentalDossier } from '../../finance/fundamentalAnalysisEngine';
+import { getCompanyCandlestickPatterns } from '../../finance/candlestickPatternEngine';
 
 interface StockMarketScreenProps {
   stocks: StockHolding[];
@@ -65,6 +68,7 @@ export const StockMarketScreen: React.FC<StockMarketScreenProps> = ({
   // Deep-Dive Modal
   const [selectedStock, setSelectedStock] = useState<DseStockItem | null>(null);
   const [histTimeframe, setHistTimeframe] = useState<HistoricalTimeframe>('1Y');
+  const [modalSubTab, setModalSubTab] = useState<'ai_thesis' | 'technical' | 'patterns' | 'fundamentals' | 'historical'>('ai_thesis');
 
   // Portfolio Optimizer State
   const [optCapital, setOptCapital] = useState('1000000');
@@ -893,226 +897,488 @@ export const StockMarketScreen: React.FC<StockMarketScreenProps> = ({
                     </View>
                   </View>
 
-                  {/* AI Investment Thesis */}
-                  <View style={styles.thesisBox}>
-                    <Text style={{ fontSize: 12, fontWeight: '800', color: '#0369A1', marginBottom: 4 }}>
-                      AI INVESTMENT RESEARCH THESIS
-                    </Text>
-                    <Text style={{ fontSize: 13, color: '#0F172A', lineHeight: 18 }}>
-                      {selectedStock.aiInvestmentThesis}
-                    </Text>
-                    <Text style={{ fontSize: 12, color: '#EF4444', marginTop: 6 }}>
-                      ⚠️ Key Risks: {selectedStock.riskFactors}
-                    </Text>
-                  </View>
-
-                  {/* Competing AI Forecasting Ensemble Models */}
-                  <Text style={[styles.sectionHeading, { marginTop: Spacing.md }]}>
-                    🤖 COMPETING AI PREDICTION MODELS (ENSEMBLE ARCHITECTURE)
-                  </Text>
-                  <View style={styles.table}>
-                    <View style={styles.tableHeader}>
-                      <Text style={[styles.th, { flex: 1.5 }]}>MODEL ARCHITECTURE</Text>
-                      <Text style={[styles.th, { flex: 1 }]}>PRICE TARGET</Text>
-                      <Text style={[styles.th, { flex: 1 }]}>UPSIDE %</Text>
-                      <Text style={[styles.th, { flex: 1 }]}>HORIZON</Text>
-                    </View>
-
-                    <View style={styles.tableRow}>
-                      <Text style={[styles.td, { flex: 1.5, fontWeight: '700' }]}>XGBoost Gradient Boosted</Text>
-                      <Text style={[styles.td, { flex: 1 }]}>৳{selectedStock.xgboostPrediction}</Text>
-                      <Text style={[styles.td, { flex: 1, color: '#16A34A', fontWeight: '800' }]}>+22.7%</Text>
-                      <Text style={[styles.td, { flex: 1 }]}>90-Day</Text>
-                    </View>
-
-                    <View style={styles.tableRow}>
-                      <Text style={[styles.td, { flex: 1.5, fontWeight: '700' }]}>LSTM Deep Neural Network</Text>
-                      <Text style={[styles.td, { flex: 1 }]}>৳{selectedStock.lstmPrediction}</Text>
-                      <Text style={[styles.td, { flex: 1, color: '#16A34A', fontWeight: '800' }]}>+25.9%</Text>
-                      <Text style={[styles.td, { flex: 1 }]}>90-Day</Text>
-                    </View>
-
-                    <View style={styles.tableRow}>
-                      <Text style={[styles.td, { flex: 1.5, fontWeight: '700' }]}>DCF Valuation Model</Text>
-                      <Text style={[styles.td, { flex: 1 }]}>৳{selectedStock.dcfModelPrediction}</Text>
-                      <Text style={[styles.td, { flex: 1, color: '#16A34A', fontWeight: '800' }]}>+30.5%</Text>
-                      <Text style={[styles.td, { flex: 1 }]}>Intrinsic</Text>
-                    </View>
-
-                    <View style={[styles.tableRow, { backgroundColor: '#F0FDF4' }]}>
-                      <Text style={[styles.td, { flex: 1.5, fontWeight: '900', color: '#16A34A' }]}>
-                        AI WEIGHTED ENSEMBLE
-                      </Text>
-                      <Text style={[styles.td, { flex: 1, fontWeight: '900', color: '#16A34A' }]}>
-                        ৳{selectedStock.ensembleTargetPrice}
-                      </Text>
-                      <Text style={[styles.td, { flex: 1, fontWeight: '900', color: '#16A34A' }]}>
-                        +{selectedStock.potentialUpsidePercent}%
-                      </Text>
-                      <Text style={[styles.td, { flex: 1, fontWeight: '800' }]}>
-                        {selectedStock.modelConfidencePercent}% Conf.
-                      </Text>
-                    </View>
-                  </View>
-
-                  {/* Fundamental & Risk Health Breakdown */}
-                  <Text style={[styles.sectionHeading, { marginTop: Spacing.md }]}>
-                    🛡️ ACCOUNTING INTEGRITY & FUNDAMENTAL RATIOS
-                  </Text>
-                  <View style={styles.kpiGrid}>
-                    <View style={styles.kpiItem}>
-                      <Text style={styles.kpiLabel}>PIOTROSKI F-SCORE</Text>
-                      <Text style={[styles.kpiVal, { color: '#16A34A' }]}>{selectedStock.piotroskiScore} / 9 (Pristine)</Text>
-                    </View>
-                    <View style={styles.kpiItem}>
-                      <Text style={styles.kpiLabel}>ALTMAN Z-SCORE</Text>
-                      <Text style={[styles.kpiVal, { color: '#16A34A' }]}>{selectedStock.altmanZScore} (Safe Zone)</Text>
-                    </View>
-                    <View style={styles.kpiItem}>
-                      <Text style={styles.kpiLabel}>ROE %</Text>
-                      <Text style={styles.kpiVal}>{selectedStock.roePercent}%</Text>
-                    </View>
-                    <View style={styles.kpiItem}>
-                      <Text style={styles.kpiLabel}>DIVIDEND YIELD</Text>
-                      <Text style={[styles.kpiVal, { color: '#F59E0B' }]}>{selectedStock.dividendYieldPercent}%</Text>
-                    </View>
-                  </View>
-
-                  {/* Level-2 Order Book & Market Depth */}
-                  <Text style={[styles.sectionHeading, { marginTop: Spacing.md }]}>
-                    📊 LIVE LEVEL-2 MARKET DEPTH (ORDER BOOK & BID / ASK)
-                  </Text>
-                  <View style={styles.table}>
-                    <View style={styles.tableHeader}>
-                      <Text style={[styles.th, { flex: 1, color: '#16A34A' }]}>BUY ORDERS</Text>
-                      <Text style={[styles.th, { flex: 1, color: '#16A34A' }]}>BID QTY</Text>
-                      <Text style={[styles.th, { flex: 1, color: '#16A34A' }]}>BID PRICE</Text>
-                      <Text style={[styles.th, { flex: 1, color: '#EF4444' }]}>ASK PRICE</Text>
-                      <Text style={[styles.th, { flex: 1, color: '#EF4444' }]}>ASK QTY</Text>
-                      <Text style={[styles.th, { flex: 1, color: '#EF4444' }]}>SELL ORDERS</Text>
-                    </View>
-
-                    {(selectedStock.marketDepth || [
-                      { buyOrders: 14, buyVolume: 42500, bidPrice: selectedStock.ltp - 0.2, askPrice: selectedStock.ltp + 0.1, sellVolume: 31800, sellOrders: 9 },
-                      { buyOrders: 22, buyVolume: 65200, bidPrice: selectedStock.ltp - 0.4, askPrice: selectedStock.ltp + 0.4, sellVolume: 48500, sellOrders: 15 },
-                      { buyOrders: 31, buyVolume: 98400, bidPrice: selectedStock.ltp - 0.9, askPrice: selectedStock.ltp + 0.6, sellVolume: 82000, sellOrders: 24 },
-                      { buyOrders: 18, buyVolume: 51200, bidPrice: selectedStock.ltp - 1.4, askPrice: selectedStock.ltp + 1.1, sellVolume: 64000, sellOrders: 19 },
-                      { buyOrders: 40, buyVolume: 125000, bidPrice: selectedStock.ltp - 1.9, askPrice: selectedStock.ltp + 1.6, sellVolume: 110000, sellOrders: 32 },
-                    ]).map((tier, idx) => (
-                      <View key={idx} style={styles.tableRow}>
-                        <Text style={[styles.td, { flex: 1, color: '#64748B' }]}>{tier.buyOrders}</Text>
-                        <Text style={[styles.td, { flex: 1, fontWeight: '700', color: '#16A34A' }]}>{tier.buyVolume.toLocaleString()}</Text>
-                        <Text style={[styles.td, { flex: 1, fontWeight: '900', color: '#16A34A' }]}>৳{tier.bidPrice.toFixed(1)}</Text>
-                        <Text style={[styles.td, { flex: 1, fontWeight: '900', color: '#EF4444' }]}>৳{tier.askPrice.toFixed(1)}</Text>
-                        <Text style={[styles.td, { flex: 1, fontWeight: '700', color: '#EF4444' }]}>{tier.sellVolume.toLocaleString()}</Text>
-                        <Text style={[styles.td, { flex: 1, color: '#64748B' }]}>{tier.sellOrders}</Text>
-                      </View>
-                    ))}
-                  </View>
-
-                  {/* Corporate Announcements, Dividends & Bonus / Right Shares */}
-                  <Text style={[styles.sectionHeading, { marginTop: Spacing.md }]}>
-                    📢 CORPORATE ANNOUNCEMENTS, DIVIDENDS & BONUS/RIGHT SHARES
-                  </Text>
-                  <View style={styles.table}>
-                    <View style={styles.tableRow}>
-                      <Text style={[styles.td, { flex: 1, fontWeight: '800' }]}>Cash Dividend:</Text>
-                      <Text style={[styles.td, { flex: 1, fontWeight: '900', color: '#16A34A' }]}>{selectedStock.cashDividendPercent || selectedStock.dividendYieldPercent * 10}%</Text>
-                      <Text style={[styles.td, { flex: 1, fontWeight: '800' }]}>Bonus Shares:</Text>
-                      <Text style={[styles.td, { flex: 1, fontWeight: '800', color: '#0284C7' }]}>{selectedStock.bonusShareRatio || 'None'}</Text>
-                    </View>
-                    <View style={styles.tableRow}>
-                      <Text style={[styles.td, { flex: 1, fontWeight: '800' }]}>Right Shares:</Text>
-                      <Text style={[styles.td, { flex: 1 }]}>{selectedStock.rightShareRatio || 'None'}</Text>
-                      <Text style={[styles.td, { flex: 1, fontWeight: '800' }]}>Record Date:</Text>
-                      <Text style={[styles.td, { flex: 1 }]}>{selectedStock.recordDate || '2026-11-18'}</Text>
-                    </View>
-                    <View style={styles.tableRow}>
-                      <Text style={[styles.td, { flex: 1, fontWeight: '800' }]}>Paid-up Capital:</Text>
-                      <Text style={[styles.td, { flex: 1 }]}>৳{selectedStock.paidUpCapitalCrore || Math.round(selectedStock.marketCapCrore * 0.05)} Cr</Text>
-                      <Text style={[styles.td, { flex: 1, fontWeight: '800' }]}>Market Cap:</Text>
-                      <Text style={[styles.td, { flex: 1, fontWeight: '900' }]}>৳{selectedStock.marketCapCrore} Cr</Text>
-                    </View>
-                  </View>
-
-                  {/* 10-15 Year Historical Database & Multi-Timeframe Analytics */}
-                  <Text style={[styles.sectionHeading, { marginTop: Spacing.md }]}>
-                    🏛️ 10–15 YEAR HISTORICAL TIME-SERIES & TIMEFRAME ANALYTICS
-                  </Text>
-                  <Text style={{ fontSize: 12, color: '#64748B', marginBottom: 6 }}>
-                    Analyze historical returns, EPS CAGR, dividend growth, and historical P/E bands (DSE & ICE Data Services EOD Archive):
-                  </Text>
-
-                  {/* Timeframe Selector */}
-                  <View style={{ flexDirection: 'row', gap: 6, flexWrap: 'wrap', marginBottom: 10 }}>
-                    {(['1D', '1W', '1M', '3M', '6M', '1Y', '3Y', '5Y', '10Y'] as const).map((tf) => (
+                  {/* 5 Sub-Tabs Navigation */}
+                  <View style={{ flexDirection: 'row', gap: 6, flexWrap: 'wrap', marginTop: 12, marginBottom: 12, borderBottomWidth: 1, borderBottomColor: '#E2E8F0', paddingBottom: 8 }}>
+                    {[
+                      { id: 'ai_thesis', label: '🧠 AI Thesis & Models' },
+                      { id: 'technical', label: '📐 Technical Indicators' },
+                      { id: 'patterns', label: '🕯️ Candlestick Patterns' },
+                      { id: 'fundamentals', label: '📊 Fundamentals & BD Macro' },
+                      { id: 'historical', label: '🏛️ 10-Yr Historical' },
+                    ].map((tab) => (
                       <TouchableOpacity
-                        key={tf}
-                        style={[styles.optPill, histTimeframe === tf && styles.optPillActive]}
-                        onPress={() => setHistTimeframe(tf)}
+                        key={tab.id}
+                        style={[styles.optPill, modalSubTab === tab.id && styles.optPillActive]}
+                        onPress={() => setModalSubTab(tab.id as any)}
                       >
-                        <Text style={[styles.optPillText, histTimeframe === tf && styles.optPillTextActive]}>{tf}</Text>
+                        <Text style={[styles.optPillText, modalSubTab === tab.id && styles.optPillTextActive]}>
+                          {tab.label}
+                        </Text>
                       </TouchableOpacity>
                     ))}
                   </View>
 
-                  {/* Calculated metrics for this timeframe */}
-                  {(() => {
-                    const tfMetrics = calculateTimeframeAnalytics(selectedStock.symbol, histTimeframe, selectedStock.ltp);
-                    const isUp = tfMetrics.percentageReturn >= 0;
-                    return (
-                      <View style={styles.kpiGrid}>
-                        <View style={styles.kpiItem}>
-                          <Text style={styles.kpiLabel}>{histTimeframe} TOTAL RETURN</Text>
-                          <Text style={[styles.kpiVal, { color: isUp ? '#16A34A' : '#EF4444' }]}>
-                            {isUp ? '+' : ''}{tfMetrics.percentageReturn}%
-                            {histTimeframe !== '1D' && histTimeframe !== '1W' && histTimeframe !== '1M' ? ` (${tfMetrics.cagrReturnPercent}% CAGR)` : ''}
+                  {/* TAB 1: AI Thesis & Competing Models */}
+                  {modalSubTab === 'ai_thesis' && (
+                    <>
+                      {/* AI Investment Thesis */}
+                      <View style={styles.thesisBox}>
+                        <Text style={{ fontSize: 12, fontWeight: '800', color: '#0369A1', marginBottom: 4 }}>
+                          AI INVESTMENT RESEARCH THESIS
+                        </Text>
+                        <Text style={{ fontSize: 13, color: '#0F172A', lineHeight: 18 }}>
+                          {selectedStock.aiInvestmentThesis}
+                        </Text>
+                        <Text style={{ fontSize: 12, color: '#EF4444', marginTop: 6 }}>
+                          ⚠️ Key Risks: {selectedStock.riskFactors}
+                        </Text>
+                      </View>
+
+                      {/* Competing AI Forecasting Ensemble Models */}
+                      <Text style={[styles.sectionHeading, { marginTop: Spacing.md }]}>
+                        🤖 COMPETING AI PREDICTION MODELS (ENSEMBLE ARCHITECTURE)
+                      </Text>
+                      <View style={styles.table}>
+                        <View style={styles.tableHeader}>
+                          <Text style={[styles.th, { flex: 1.5 }]}>MODEL ARCHITECTURE</Text>
+                          <Text style={[styles.th, { flex: 1 }]}>PRICE TARGET</Text>
+                          <Text style={[styles.th, { flex: 1 }]}>UPSIDE %</Text>
+                          <Text style={[styles.th, { flex: 1 }]}>HORIZON</Text>
+                        </View>
+
+                        <View style={styles.tableRow}>
+                          <Text style={[styles.td, { flex: 1.5, fontWeight: '700' }]}>XGBoost Gradient Boosted</Text>
+                          <Text style={[styles.td, { flex: 1 }]}>৳{selectedStock.xgboostPrediction}</Text>
+                          <Text style={[styles.td, { flex: 1, color: '#16A34A', fontWeight: '800' }]}>+22.7%</Text>
+                          <Text style={[styles.td, { flex: 1 }]}>90-Day</Text>
+                        </View>
+
+                        <View style={styles.tableRow}>
+                          <Text style={[styles.td, { flex: 1.5, fontWeight: '700' }]}>LSTM Deep Neural Network</Text>
+                          <Text style={[styles.td, { flex: 1 }]}>৳{selectedStock.lstmPrediction}</Text>
+                          <Text style={[styles.td, { flex: 1, color: '#16A34A', fontWeight: '800' }]}>+25.9%</Text>
+                          <Text style={[styles.td, { flex: 1 }]}>90-Day</Text>
+                        </View>
+
+                        <View style={styles.tableRow}>
+                          <Text style={[styles.td, { flex: 1.5, fontWeight: '700' }]}>DCF Valuation Model</Text>
+                          <Text style={[styles.td, { flex: 1 }]}>৳{selectedStock.dcfModelPrediction}</Text>
+                          <Text style={[styles.td, { flex: 1, color: '#16A34A', fontWeight: '800' }]}>+30.5%</Text>
+                          <Text style={[styles.td, { flex: 1 }]}>Intrinsic</Text>
+                        </View>
+
+                        <View style={[styles.tableRow, { backgroundColor: '#F0FDF4' }]}>
+                          <Text style={[styles.td, { flex: 1.5, fontWeight: '900', color: '#16A34A' }]}>
+                            AI WEIGHTED ENSEMBLE
+                          </Text>
+                          <Text style={[styles.td, { flex: 1, fontWeight: '900', color: '#16A34A' }]}>
+                            ৳{selectedStock.ensembleTargetPrice}
+                          </Text>
+                          <Text style={[styles.td, { flex: 1, fontWeight: '900', color: '#16A34A' }]}>
+                            +{selectedStock.potentialUpsidePercent}%
+                          </Text>
+                          <Text style={[styles.td, { flex: 1, fontWeight: '800' }]}>
+                            {selectedStock.modelConfidencePercent}% Conf.
                           </Text>
                         </View>
+                      </View>
+
+                      {/* Accounting Integrity */}
+                      <Text style={[styles.sectionHeading, { marginTop: Spacing.md }]}>
+                        🛡️ ACCOUNTING INTEGRITY & RISK
+                      </Text>
+                      <View style={styles.kpiGrid}>
                         <View style={styles.kpiItem}>
-                          <Text style={styles.kpiLabel}>PERIOD RANGE (HIGH / LOW)</Text>
-                          <Text style={styles.kpiVal}>৳{tfMetrics.periodHigh} / ৳{tfMetrics.periodLow}</Text>
+                          <Text style={styles.kpiLabel}>PIOTROSKI F-SCORE</Text>
+                          <Text style={[styles.kpiVal, { color: '#16A34A' }]}>{selectedStock.piotroskiScore} / 9 (Pristine)</Text>
                         </View>
                         <View style={styles.kpiItem}>
-                          <Text style={styles.kpiLabel}>EPS / DIVIDEND CAGR</Text>
-                          <Text style={[styles.kpiVal, { color: '#0284C7' }]}>+{tfMetrics.epsCagrPercent}% / +{tfMetrics.dividendCagrPercent}%</Text>
+                          <Text style={styles.kpiLabel}>ALTMAN Z-SCORE</Text>
+                          <Text style={[styles.kpiVal, { color: '#16A34A' }]}>{selectedStock.altmanZScore} (Safe Zone)</Text>
                         </View>
                         <View style={styles.kpiItem}>
-                          <Text style={styles.kpiLabel}>HISTORICAL P/E RANGE</Text>
-                          <Text style={styles.kpiVal}>{tfMetrics.peMin}x – {tfMetrics.medianPeRatio}x – {tfMetrics.peMax}x</Text>
+                          <Text style={styles.kpiLabel}>ROE %</Text>
+                          <Text style={styles.kpiVal}>{selectedStock.roePercent}%</Text>
+                        </View>
+                        <View style={styles.kpiItem}>
+                          <Text style={styles.kpiLabel}>DIVIDEND YIELD</Text>
+                          <Text style={[styles.kpiVal, { color: '#F59E0B' }]}>{selectedStock.dividendYieldPercent}%</Text>
                         </View>
                       </View>
+                    </>
+                  )}
+
+                  {/* TAB 2: Full Technical Analysis Engine */}
+                  {modalSubTab === 'technical' && (() => {
+                    const tech = generateTechnicalIndicators(
+                      selectedStock.symbol,
+                      selectedStock.ltp,
+                      selectedStock.supportLevel,
+                      selectedStock.resistanceLevel
+                    );
+                    return (
+                      <>
+                        {/* Trend Indicators */}
+                        <Text style={styles.sectionHeading}>📈 1. TREND INDICATORS (MOVING AVERAGES & SYSTEM)</Text>
+                        <View style={styles.table}>
+                          <View style={styles.tableRow}>
+                            <Text style={[styles.td, { flex: 1, fontWeight: '800' }]}>Trend Direction:</Text>
+                            <Text style={[styles.td, { flex: 1, fontWeight: '900', color: '#16A34A' }]}>{tech.trendDirection}</Text>
+                            <Text style={[styles.td, { flex: 1, fontWeight: '800' }]}>Supertrend:</Text>
+                            <Text style={[styles.td, { flex: 1, fontWeight: '800', color: '#16A34A' }]}>৳{tech.supertrend} ({tech.supertrendStatus})</Text>
+                          </View>
+                          <View style={styles.tableRow}>
+                            <Text style={[styles.td, { flex: 1 }]}>SMA 5 / 10 / 20:</Text>
+                            <Text style={[styles.td, { flex: 1, fontWeight: '700' }]}>৳{tech.sma5} / ৳{tech.sma10} / ৳{tech.sma20}</Text>
+                            <Text style={[styles.td, { flex: 1 }]}>SMA 50 / 100 / 200:</Text>
+                            <Text style={[styles.td, { flex: 1, fontWeight: '700' }]}>৳{tech.sma50} / ৳{tech.sma100} / ৳{tech.sma200}</Text>
+                          </View>
+                          <View style={styles.tableRow}>
+                            <Text style={[styles.td, { flex: 1 }]}>EMA 12 / 26 & WMA 20:</Text>
+                            <Text style={[styles.td, { flex: 1 }]}>৳{tech.ema12} / ৳{tech.ema26} (WMA ৳{tech.wma20})</Text>
+                            <Text style={[styles.td, { flex: 1 }]}>MACD (Line / Signal / Hist):</Text>
+                            <Text style={[styles.td, { flex: 1, color: '#16A34A', fontWeight: '800' }]}>{tech.macdLine} / {tech.macdSignal} (Hist: +{tech.macdHistogram})</Text>
+                          </View>
+                          <View style={styles.tableRow}>
+                            <Text style={[styles.td, { flex: 1 }]}>ADX (14) & Aroon:</Text>
+                            <Text style={[styles.td, { flex: 1 }]}>{tech.adx14} ({tech.adxTrendStrength}) • Aroon Up {tech.aroonUp}</Text>
+                            <Text style={[styles.td, { flex: 1 }]}>Ichimoku Cloud:</Text>
+                            <Text style={[styles.td, { flex: 1, color: '#16A34A', fontWeight: '800' }]}>{tech.ichimokuCloud}</Text>
+                          </View>
+                        </View>
+
+                        {/* Momentum Indicators */}
+                        <Text style={[styles.sectionHeading, { marginTop: Spacing.md }]}>⚡ 2. MOMENTUM INDICATORS</Text>
+                        <View style={styles.kpiGrid}>
+                          <View style={styles.kpiItem}>
+                            <Text style={styles.kpiLabel}>RSI (14)</Text>
+                            <Text style={[styles.kpiVal, { color: '#0284C7' }]}>{tech.rsi14} ({tech.rsiStatus})</Text>
+                          </View>
+                          <View style={styles.kpiItem}>
+                            <Text style={styles.kpiLabel}>STOCHASTIC %K / %D</Text>
+                            <Text style={styles.kpiVal}>{tech.stochasticK} / {tech.stochasticD}</Text>
+                          </View>
+                          <View style={styles.kpiItem}>
+                            <Text style={styles.kpiLabel}>WILLIAMS %R / ROC</Text>
+                            <Text style={styles.kpiVal}>{tech.williamsPercentR}% / +{tech.rocPercent}%</Text>
+                          </View>
+                          <View style={styles.kpiItem}>
+                            <Text style={styles.kpiLabel}>MFI & CCI</Text>
+                            <Text style={styles.kpiVal}>MFI: {tech.mfi} | CCI: {tech.cci}</Text>
+                          </View>
+                        </View>
+
+                        {/* Volatility & Volume Indicators */}
+                        <Text style={[styles.sectionHeading, { marginTop: Spacing.md }]}>🌊 3. VOLATILITY & VOLUME FLOW</Text>
+                        <View style={styles.table}>
+                          <View style={styles.tableRow}>
+                            <Text style={[styles.td, { flex: 1, fontWeight: '800' }]}>ATR (14) Volatility:</Text>
+                            <Text style={[styles.td, { flex: 1 }]}>৳{tech.atr14} (Annualized {tech.historicalVolatilityAnnualized}%)</Text>
+                            <Text style={[styles.td, { flex: 1, fontWeight: '800' }]}>Bollinger Bands:</Text>
+                            <Text style={[styles.td, { flex: 1 }]}>৳{tech.bollingerLower} – ৳{tech.bollingerMiddle} – ৳{tech.bollingerUpper}</Text>
+                          </View>
+                          <View style={styles.tableRow}>
+                            <Text style={[styles.td, { flex: 1, fontWeight: '800' }]}>On-Balance Volume (OBV):</Text>
+                            <Text style={[styles.td, { flex: 1 }]}>{tech.obvMillion}M shares</Text>
+                            <Text style={[styles.td, { flex: 1, fontWeight: '800' }]}>VWAP (Volume Wtd Price):</Text>
+                            <Text style={[styles.td, { flex: 1, fontWeight: '900', color: '#0284C7' }]}>৳{tech.vwap}</Text>
+                          </View>
+                          <View style={styles.tableRow}>
+                            <Text style={[styles.td, { flex: 1, fontWeight: '800' }]}>Accumulation / Distribution:</Text>
+                            <Text style={[styles.td, { flex: 1, color: '#16A34A', fontWeight: '800' }]}>{tech.accumulationDistributionStatus}</Text>
+                            <Text style={[styles.td, { flex: 1, fontWeight: '800' }]}>Volume Spike / Divergence:</Text>
+                            <Text style={[styles.td, { flex: 1, color: '#16A34A', fontWeight: '800' }]}>{tech.volumeSpikeStatus} • {tech.volumePriceDivergence}</Text>
+                          </View>
+                        </View>
+
+                        {/* Support, Resistance & AI Market Structure */}
+                        <Text style={[styles.sectionHeading, { marginTop: Spacing.md }]}>🎯 4. SUPPORT, RESISTANCE & MARKET STRUCTURE</Text>
+                        <View style={styles.kpiGrid}>
+                          <View style={styles.kpiItem}>
+                            <Text style={styles.kpiLabel}>STRONG SUPPORT (S1 / S2)</Text>
+                            <Text style={[styles.kpiVal, { color: '#16A34A' }]}>৳{tech.strongSupport1} / ৳{tech.strongSupport2}</Text>
+                          </View>
+                          <View style={styles.kpiItem}>
+                            <Text style={styles.kpiLabel}>STRONG RESISTANCE (R1 / R2)</Text>
+                            <Text style={[styles.kpiVal, { color: '#EF4444' }]}>৳{tech.strongResistance1} / ৳{tech.strongResistance2}</Text>
+                          </View>
+                          <View style={[styles.kpiItem, { flex: 2 }]}>
+                            <Text style={styles.kpiLabel}>AI MARKET STRUCTURE DETECTION</Text>
+                            <Text style={[styles.kpiVal, { color: '#0284C7' }]}>{tech.aiStructureDetection}</Text>
+                          </View>
+                        </View>
+
+                        {/* Level-2 Order Book & Market Depth */}
+                        <Text style={[styles.sectionHeading, { marginTop: Spacing.md }]}>📊 5. LEVEL-2 ORDER BOOK & MARKET DEPTH</Text>
+                        <View style={styles.table}>
+                          <View style={styles.tableHeader}>
+                            <Text style={[styles.th, { flex: 1, color: '#16A34A' }]}>BUY ORDERS</Text>
+                            <Text style={[styles.th, { flex: 1, color: '#16A34A' }]}>BID QTY</Text>
+                            <Text style={[styles.th, { flex: 1, color: '#16A34A' }]}>BID PRICE</Text>
+                            <Text style={[styles.th, { flex: 1, color: '#EF4444' }]}>ASK PRICE</Text>
+                            <Text style={[styles.th, { flex: 1, color: '#EF4444' }]}>ASK QTY</Text>
+                            <Text style={[styles.th, { flex: 1, color: '#EF4444' }]}>SELL ORDERS</Text>
+                          </View>
+
+                          {(selectedStock.marketDepth || [
+                            { buyOrders: 14, buyVolume: 42500, bidPrice: selectedStock.ltp - 0.2, askPrice: selectedStock.ltp + 0.1, sellVolume: 31800, sellOrders: 9 },
+                            { buyOrders: 22, buyVolume: 65200, bidPrice: selectedStock.ltp - 0.4, askPrice: selectedStock.ltp + 0.4, sellVolume: 48500, sellOrders: 15 },
+                            { buyOrders: 31, buyVolume: 98400, bidPrice: selectedStock.ltp - 0.9, askPrice: selectedStock.ltp + 0.6, sellVolume: 82000, sellOrders: 24 },
+                            { buyOrders: 18, buyVolume: 51200, bidPrice: selectedStock.ltp - 1.4, askPrice: selectedStock.ltp + 1.1, sellVolume: 64000, sellOrders: 19 },
+                            { buyOrders: 40, buyVolume: 125000, bidPrice: selectedStock.ltp - 1.9, askPrice: selectedStock.ltp + 1.6, sellVolume: 110000, sellOrders: 32 },
+                          ]).map((tier, idx) => (
+                            <View key={idx} style={styles.tableRow}>
+                              <Text style={[styles.td, { flex: 1, color: '#64748B' }]}>{tier.buyOrders}</Text>
+                              <Text style={[styles.td, { flex: 1, fontWeight: '700', color: '#16A34A' }]}>{tier.buyVolume.toLocaleString()}</Text>
+                              <Text style={[styles.td, { flex: 1, fontWeight: '900', color: '#16A34A' }]}>৳{tier.bidPrice.toFixed(1)}</Text>
+                              <Text style={[styles.td, { flex: 1, fontWeight: '900', color: '#EF4444' }]}>৳{tier.askPrice.toFixed(1)}</Text>
+                              <Text style={[styles.td, { flex: 1, fontWeight: '700', color: '#EF4444' }]}>{tier.sellVolume.toLocaleString()}</Text>
+                              <Text style={[styles.td, { flex: 1, color: '#64748B' }]}>{tier.sellOrders}</Text>
+                            </View>
+                          ))}
+                        </View>
+                      </>
                     );
                   })()}
 
-                  {/* Historical Data Table (Date, Open, High, Low, Close, Adj Close, Volume, EPS, NAV, Dividend, Corporate Action) */}
-                  <View style={styles.table}>
-                    <View style={styles.tableHeader}>
-                      <Text style={[styles.th, { width: 80 }]}>DATE</Text>
-                      <Text style={[styles.th, { width: 55 }]}>OPEN</Text>
-                      <Text style={[styles.th, { width: 55 }]}>HIGH</Text>
-                      <Text style={[styles.th, { width: 55 }]}>LOW</Text>
-                      <Text style={[styles.th, { width: 60 }]}>CLOSE</Text>
-                      <Text style={[styles.th, { width: 65 }]}>ADJ CLS</Text>
-                      <Text style={[styles.th, { width: 55 }]}>EPS</Text>
-                      <Text style={[styles.th, { width: 55 }]}>NAV</Text>
-                      <Text style={[styles.th, { flex: 1 }]}>DIVIDEND & ACTION</Text>
-                    </View>
+                  {/* TAB 3: Candlestick Pattern Engine & DSE Historical Win-Rates */}
+                  {modalSubTab === 'patterns' && (() => {
+                    const patterns = getCompanyCandlestickPatterns(selectedStock.symbol);
+                    return (
+                      <>
+                        <Text style={styles.sectionHeading}>🕯️ CANDLESTICK PATTERNS & EMPIRICAL DSE WIN-RATES</Text>
+                        <Text style={{ fontSize: 12, color: '#64748B', marginBottom: 8 }}>
+                          Every pattern is backtested against 10+ years of Dhaka Stock Exchange trading cycles:
+                        </Text>
 
-                    {((DSE_HISTORICAL_DATABASE[selectedStock.symbol] || generate10YearHistoricalSeries(selectedStock.symbol, selectedStock.ltp, selectedStock.eps, selectedStock.nav)).slice(0, 6)).map((row, idx) => (
-                      <View key={idx} style={styles.tableRow}>
-                        <Text style={[styles.td, { width: 80, fontSize: 11, fontWeight: '700' }]}>{row.date}</Text>
-                        <Text style={[styles.td, { width: 55, fontSize: 11 }]}>৳{row.open}</Text>
-                        <Text style={[styles.td, { width: 55, fontSize: 11, color: '#16A34A' }]}>৳{row.high}</Text>
-                        <Text style={[styles.td, { width: 55, fontSize: 11, color: '#EF4444' }]}>৳{row.low}</Text>
-                        <Text style={[styles.td, { width: 60, fontSize: 11, fontWeight: '800' }]}>৳{row.close}</Text>
-                        <Text style={[styles.td, { width: 65, fontSize: 11, fontWeight: '700', color: '#0284C7' }]}>৳{row.adjustedClose}</Text>
-                        <Text style={[styles.td, { width: 55, fontSize: 11 }]}>৳{row.eps}</Text>
-                        <Text style={[styles.td, { width: 55, fontSize: 11 }]}>৳{row.nav}</Text>
-                        <Text style={[styles.td, { flex: 1, fontSize: 11, color: '#334155' }]}>{row.dividend !== 'None' ? row.dividend : row.corporateActions}</Text>
+                        <View style={styles.table}>
+                          <View style={styles.tableHeader}>
+                            <Text style={[styles.th, { flex: 1.5 }]}>PATTERN</Text>
+                            <Text style={[styles.th, { width: 75 }]}>STATUS</Text>
+                            <Text style={[styles.th, { width: 70 }]}>DSE HIST.</Text>
+                            <Text style={[styles.th, { width: 75 }]}>5-D WIN</Text>
+                            <Text style={[styles.th, { width: 75 }]}>20-D WIN</Text>
+                            <Text style={[styles.th, { flex: 1 }]}>TRADING RULE</Text>
+                          </View>
+
+                          {patterns.map((pat) => (
+                            <View key={pat.id} style={styles.tableRow}>
+                              <View style={{ flex: 1.5 }}>
+                                <Text style={{ fontSize: 12, fontWeight: '800', color: '#0F172A' }}>{pat.name}</Text>
+                                <Text style={{ fontSize: 10, color: '#64748B' }}>{pat.category}</Text>
+                              </View>
+                              <View style={{ width: 75 }}>
+                                <Text style={{ fontSize: 11, fontWeight: '800', color: pat.isDetectedToday ? '#16A34A' : '#94A3B8' }}>
+                                  {pat.isDetectedToday ? '✓ Detected' : '—'}
+                                </Text>
+                              </View>
+                              <Text style={[styles.td, { width: 70 }]}>{pat.dseHistoricalOccurrences.toLocaleString()}</Text>
+                              <View style={{ width: 75 }}>
+                                <Text style={{ fontSize: 11, fontWeight: '800', color: '#16A34A' }}>{pat.winRate5DaysPercent}%</Text>
+                                <Text style={{ fontSize: 10, color: '#64748B' }}>+{pat.avgReturn5DaysPercent}%</Text>
+                              </View>
+                              <View style={{ width: 75 }}>
+                                <Text style={{ fontSize: 11, fontWeight: '800', color: '#0284C7' }}>{pat.winRate20DaysPercent}%</Text>
+                                <Text style={{ fontSize: 10, color: '#64748B' }}>+{pat.avgReturn20DaysPercent}%</Text>
+                              </View>
+                              <Text style={[styles.td, { flex: 1, fontSize: 11 }]}>{pat.tradingRule}</Text>
+                            </View>
+                          ))}
+                        </View>
+                      </>
+                    );
+                  })()}
+
+                  {/* TAB 4: Fundamental Analysis & Bangladesh Macro Engine */}
+                  {modalSubTab === 'fundamentals' && (() => {
+                    const fund = generateFundamentalDossier(
+                      selectedStock.symbol,
+                      selectedStock.eps,
+                      selectedStock.peRatio,
+                      selectedStock.roePercent,
+                      selectedStock.dividendYieldPercent
+                    );
+                    return (
+                      <>
+                        {/* Profitability & Ratios */}
+                        <Text style={styles.sectionHeading}>💼 1. PROFITABILITY & RETURNS</Text>
+                        <View style={styles.kpiGrid}>
+                          <View style={styles.kpiItem}>
+                            <Text style={styles.kpiLabel}>GROSS / OPERATING MARGIN</Text>
+                            <Text style={styles.kpiVal}>{fund.grossMarginPercent}% / {fund.operatingMarginPercent}%</Text>
+                          </View>
+                          <View style={styles.kpiItem}>
+                            <Text style={styles.kpiLabel}>NET PROFIT MARGIN</Text>
+                            <Text style={[styles.kpiVal, { color: '#16A34A' }]}>{fund.netMarginPercent}%</Text>
+                          </View>
+                          <View style={styles.kpiItem}>
+                            <Text style={styles.kpiLabel}>ROE / ROA / ROIC</Text>
+                            <Text style={[styles.kpiVal, { color: '#0284C7' }]}>{fund.roePercent}% / {fund.roaPercent}% / {fund.roicPercent}%</Text>
+                          </View>
+                          <View style={styles.kpiItem}>
+                            <Text style={styles.kpiLabel}>REVENUE GROWTH (YOY)</Text>
+                            <Text style={[styles.kpiVal, { color: '#16A34A' }]}>+{fund.revenueGrowthYoYPercent}%</Text>
+                          </View>
+                        </View>
+
+                        {/* Financial Strength & Cash Flow */}
+                        <Text style={[styles.sectionHeading, { marginTop: Spacing.md }]}>🛡️ 2. FINANCIAL STRENGTH & SOLVENCY</Text>
+                        <View style={styles.table}>
+                          <View style={styles.tableRow}>
+                            <Text style={[styles.td, { flex: 1, fontWeight: '800' }]}>Debt-to-Equity:</Text>
+                            <Text style={[styles.td, { flex: 1, color: '#16A34A', fontWeight: '900' }]}>{fund.debtToEquity} (Virtually Debt-Free)</Text>
+                            <Text style={[styles.td, { flex: 1, fontWeight: '800' }]}>Current Ratio:</Text>
+                            <Text style={[styles.td, { flex: 1, color: '#16A34A', fontWeight: '800' }]}>{fund.currentRatio} (Strong Liquidity)</Text>
+                          </View>
+                          <View style={styles.tableRow}>
+                            <Text style={[styles.td, { flex: 1, fontWeight: '800' }]}>Interest Coverage:</Text>
+                            <Text style={[styles.td, { flex: 1, color: '#16A34A', fontWeight: '800' }]}>{fund.interestCoverageRatio}x</Text>
+                            <Text style={[styles.td, { flex: 1, fontWeight: '800' }]}>Cash-to-Debt Ratio:</Text>
+                            <Text style={[styles.td, { flex: 1 }]}>{fund.cashToDebtRatio}x</Text>
+                          </View>
+                          <View style={styles.tableRow}>
+                            <Text style={[styles.td, { flex: 1, fontWeight: '800' }]}>Operating Cash Flow:</Text>
+                            <Text style={[styles.td, { flex: 1, fontWeight: '800' }]}>৳{fund.operatingCashFlowCrore} Cr</Text>
+                            <Text style={[styles.td, { flex: 1, fontWeight: '800' }]}>Free Cash Flow (FCF):</Text>
+                            <Text style={[styles.td, { flex: 1, fontWeight: '900', color: '#16A34A' }]}>৳{fund.freeCashFlowCrore} Cr</Text>
+                          </View>
+                        </View>
+
+                        {/* Valuation Multiples */}
+                        <Text style={[styles.sectionHeading, { marginTop: Spacing.md }]}>💎 3. VALUATION MULTIPLES</Text>
+                        <View style={styles.kpiGrid}>
+                          <View style={styles.kpiItem}>
+                            <Text style={styles.kpiLabel}>P/E & FORWARD P/E</Text>
+                            <Text style={styles.kpiVal}>{fund.peRatio}x / {fund.forwardPE}x</Text>
+                          </View>
+                          <View style={styles.kpiItem}>
+                            <Text style={styles.kpiLabel}>P/B & PEG RATIO</Text>
+                            <Text style={styles.kpiVal}>{fund.pbRatio}x (PEG: {fund.pegRatio})</Text>
+                          </View>
+                          <View style={styles.kpiItem}>
+                            <Text style={styles.kpiLabel}>EV / EBITDA & EV / SALES</Text>
+                            <Text style={styles.kpiVal}>{fund.evToEbitda}x / {fund.evToSales}x</Text>
+                          </View>
+                          <View style={styles.kpiItem}>
+                            <Text style={styles.kpiLabel}>DIVIDEND YIELD</Text>
+                            <Text style={[styles.kpiVal, { color: '#F59E0B' }]}>{fund.dividendYieldPercent}%</Text>
+                          </View>
+                        </View>
+
+                        {/* Bangladesh-Specific Macro Economic & Regulatory Exposure */}
+                        <Text style={[styles.sectionHeading, { marginTop: Spacing.md }]}>🇧🇩 4. BANGLADESH-SPECIFIC MACRO & REGULATORY EXPOSURE</Text>
+                        <View style={styles.table}>
+                          <View style={styles.tableRow}>
+                            <Text style={[styles.td, { flex: 1, fontWeight: '800', color: '#0369A1' }]}>Inflation & Pricing Power:</Text>
+                            <Text style={[styles.td, { flex: 2 }]}>{fund.macroInflationAnalysis.exposure} — {fund.macroInflationAnalysis.details}</Text>
+                          </View>
+                          <View style={styles.tableRow}>
+                            <Text style={[styles.td, { flex: 1, fontWeight: '800', color: '#0369A1' }]}>Interest Rate Sensitivity:</Text>
+                            <Text style={[styles.td, { flex: 2 }]}>{fund.interestRateImpact.exposure} — {fund.interestRateImpact.details}</Text>
+                          </View>
+                          <View style={styles.tableRow}>
+                            <Text style={[styles.td, { flex: 1, fontWeight: '800', color: '#0369A1' }]}>USD/BDT FX & Dollar Liquidity:</Text>
+                            <Text style={[styles.td, { flex: 2 }]}>{fund.exchangeRateFxAnalysis.exposure} — {fund.exchangeRateFxAnalysis.details}</Text>
+                          </View>
+                          <View style={styles.tableRow}>
+                            <Text style={[styles.td, { flex: 1, fontWeight: '800', color: '#0369A1' }]}>Import Restrictions & LC Risk:</Text>
+                            <Text style={[styles.td, { flex: 2 }]}>{fund.importRestrictionsLCRisk.status} — {fund.importRestrictionsLCRisk.details}</Text>
+                          </View>
+                          <View style={styles.tableRow}>
+                            <Text style={[styles.td, { flex: 1, fontWeight: '800', color: '#0369A1' }]}>Energy & Captive Power:</Text>
+                            <Text style={[styles.td, { flex: 2 }]}>{fund.energyPricesImpact.status} — {fund.energyPricesImpact.details}</Text>
+                          </View>
+                          <View style={styles.tableRow}>
+                            <Text style={[styles.td, { flex: 1, fontWeight: '800', color: '#0369A1' }]}>Govt & Bangladesh Bank Policy:</Text>
+                            <Text style={[styles.td, { flex: 2 }]}>{fund.governmentAndBbPolicy.status} — {fund.governmentAndBbPolicy.details}</Text>
+                          </View>
+                        </View>
+                      </>
+                    );
+                  })()}
+
+                  {/* TAB 5: 10-15 Year Historical Database & Multi-Timeframe Analytics */}
+                  {modalSubTab === 'historical' && (
+                    <>
+                      <Text style={styles.sectionHeading}>
+                        🏛️ 10–15 YEAR HISTORICAL TIME-SERIES & TIMEFRAME ANALYTICS
+                      </Text>
+                      <Text style={{ fontSize: 12, color: '#64748B', marginBottom: 6 }}>
+                        Analyze historical returns, EPS CAGR, dividend growth, and historical P/E bands (DSE & ICE Data Services EOD Archive):
+                      </Text>
+
+                      {/* Timeframe Selector */}
+                      <View style={{ flexDirection: 'row', gap: 6, flexWrap: 'wrap', marginBottom: 10 }}>
+                        {(['1D', '1W', '1M', '3M', '6M', '1Y', '3Y', '5Y', '10Y'] as const).map((tf) => (
+                          <TouchableOpacity
+                            key={tf}
+                            style={[styles.optPill, histTimeframe === tf && styles.optPillActive]}
+                            onPress={() => setHistTimeframe(tf)}
+                          >
+                            <Text style={[styles.optPillText, histTimeframe === tf && styles.optPillTextActive]}>{tf}</Text>
+                          </TouchableOpacity>
+                        ))}
                       </View>
-                    ))}
-                  </View>
+
+                      {/* Calculated metrics for this timeframe */}
+                      {(() => {
+                        const tfMetrics = calculateTimeframeAnalytics(selectedStock.symbol, histTimeframe, selectedStock.ltp);
+                        const isUp = tfMetrics.percentageReturn >= 0;
+                        return (
+                          <View style={styles.kpiGrid}>
+                            <View style={styles.kpiItem}>
+                              <Text style={styles.kpiLabel}>{histTimeframe} TOTAL RETURN</Text>
+                              <Text style={[styles.kpiVal, { color: isUp ? '#16A34A' : '#EF4444' }]}>
+                                {isUp ? '+' : ''}{tfMetrics.percentageReturn}%
+                                {histTimeframe !== '1D' && histTimeframe !== '1W' && histTimeframe !== '1M' ? ` (${tfMetrics.cagrReturnPercent}% CAGR)` : ''}
+                              </Text>
+                            </View>
+                            <View style={styles.kpiItem}>
+                              <Text style={styles.kpiLabel}>PERIOD RANGE (HIGH / LOW)</Text>
+                              <Text style={styles.kpiVal}>৳{tfMetrics.periodHigh} / ৳{tfMetrics.periodLow}</Text>
+                            </View>
+                            <View style={styles.kpiItem}>
+                              <Text style={styles.kpiLabel}>EPS / DIVIDEND CAGR</Text>
+                              <Text style={[styles.kpiVal, { color: '#0284C7' }]}>+{tfMetrics.epsCagrPercent}% / +{tfMetrics.dividendCagrPercent}%</Text>
+                            </View>
+                            <View style={styles.kpiItem}>
+                              <Text style={styles.kpiLabel}>HISTORICAL P/E RANGE</Text>
+                              <Text style={styles.kpiVal}>{tfMetrics.peMin}x – {tfMetrics.medianPeRatio}x – {tfMetrics.peMax}x</Text>
+                            </View>
+                          </View>
+                        );
+                      })()}
+
+                      {/* Historical Data Table */}
+                      <View style={styles.table}>
+                        <View style={styles.tableHeader}>
+                          <Text style={[styles.th, { width: 80 }]}>DATE</Text>
+                          <Text style={[styles.th, { width: 55 }]}>OPEN</Text>
+                          <Text style={[styles.th, { width: 55 }]}>HIGH</Text>
+                          <Text style={[styles.th, { width: 55 }]}>LOW</Text>
+                          <Text style={[styles.th, { width: 60 }]}>CLOSE</Text>
+                          <Text style={[styles.th, { width: 65 }]}>ADJ CLS</Text>
+                          <Text style={[styles.th, { width: 55 }]}>EPS</Text>
+                          <Text style={[styles.th, { width: 55 }]}>NAV</Text>
+                          <Text style={[styles.th, { flex: 1 }]}>DIVIDEND & ACTION</Text>
+                        </View>
+
+                        {((DSE_HISTORICAL_DATABASE[selectedStock.symbol] || generate10YearHistoricalSeries(selectedStock.symbol, selectedStock.ltp, selectedStock.eps, selectedStock.nav)).slice(0, 6)).map((row, idx) => (
+                          <View key={idx} style={styles.tableRow}>
+                            <Text style={[styles.td, { width: 80, fontSize: 11, fontWeight: '700' }]}>{row.date}</Text>
+                            <Text style={[styles.td, { width: 55, fontSize: 11 }]}>৳{row.open}</Text>
+                            <Text style={[styles.td, { width: 55, fontSize: 11, color: '#16A34A' }]}>৳{row.high}</Text>
+                            <Text style={[styles.td, { width: 55, fontSize: 11, color: '#EF4444' }]}>৳{row.low}</Text>
+                            <Text style={[styles.td, { width: 60, fontSize: 11, fontWeight: '800' }]}>৳{row.close}</Text>
+                            <Text style={[styles.td, { width: 65, fontSize: 11, fontWeight: '700', color: '#0284C7' }]}>৳{row.adjustedClose}</Text>
+                            <Text style={[styles.td, { width: 55, fontSize: 11 }]}>৳{row.eps}</Text>
+                            <Text style={[styles.td, { width: 55, fontSize: 11 }]}>৳{row.nav}</Text>
+                            <Text style={[styles.td, { flex: 1, fontSize: 11, color: '#334155' }]}>{row.dividend !== 'None' ? row.dividend : row.corporateActions}</Text>
+                          </View>
+                        ))}
+                      </View>
+                    </>
+                  )}
 
                   {/* Actions */}
                   <View style={{ flexDirection: 'row', gap: 10, marginTop: Spacing.lg }}>
