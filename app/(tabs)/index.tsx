@@ -347,7 +347,13 @@ export default function MasterDashboardScreen() {
               policies={policies}
               birthdays={birthdays}
               onAddPolicy={() => openModal('insurance')}
-              onAddBirthday={() => openModal('birthday')}
+              onAddBirthday={(b) => {
+                if (b) setBirthdays((prev: any) => [b, ...prev]);
+                else openModal('birthday');
+              }}
+              onDeleteBirthday={(id) => {
+                setBirthdays((prev: any) => prev.filter((item: any) => item.id !== id));
+              }}
             />
           )}
 
