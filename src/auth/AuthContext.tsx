@@ -21,6 +21,7 @@ export interface AuthContextType {
   storageMode: 'local' | 'online_synced';
   autoCloudBackup: boolean;
   lastBackupTime: string | null;
+  isPasswordConfigured: boolean;
   login: (userId: string, password: string) => Promise<{ success: boolean; error?: string; isFirstTimeSetup?: boolean }>;
   register: (userId: string, name: string, password: string) => Promise<{ success: boolean; error?: string }>;
   logout: () => void;
@@ -238,8 +239,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
 
       const match = usersDb[user.id];
-      if (!match || match.passwordHash !== btoa(currentPassword)) {
-        return { success: false, error: 'Current Password is incorrect.' };
+      const hasExistingPassword = !!(match && match.passwordHash);
+
+      // If a password was already created previously, require the current password
+      if (hasExistingPassword) {
+        if (!currentPassword || match.passwordHash !== btoa(currentPassword)) {
+          return { success: false, error: 'Current Password is incorrect.' };
+        }
       }
 
       const cleanNewId = newUserId.trim().toLowerCase();
@@ -252,7 +258,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const updatedProfile: UserProfile = { ...user, id: cleanNewId };
       usersDb[cleanNewId] = {
         profile: updatedProfile,
-        passwordHash: newPassword ? btoa(newPassword) : match.passwordHash,
+        passwordHash: newPassword ? btoa(newPassword) : (match ? match.passwordHash : ''),
       };
 
       if (typeof window !== 'undefined' && window.localStorage) {
@@ -441,6 +447,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         storageMode: isOnline ? 'online_synced' : 'local',
         autoCloudBackup,
         lastBackupTime,
+        isPasswordConfigured: (() => {
+          try {
+            if (!user) return false;
+            if (typeof window !== 'undefined' && window.localStorage) {
+              const raw = window.localStorage.getItem(USERS_DB_KEY);
+              if (raw) {
+                const db = JSON.parse(raw);
+                return !!(db[user.id] && db[user.id].passwordHash);
+              }
+            }
+          } catch (e) {}
+          return false;
+        })(),
         login,
         register,
         logout,

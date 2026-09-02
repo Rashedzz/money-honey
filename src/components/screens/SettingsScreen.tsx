@@ -43,6 +43,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
     isOnline,
     autoCloudBackup,
     lastBackupTime,
+    isPasswordConfigured,
     updateProfile,
     changeCredentials,
     exportLocalBackup,
@@ -101,7 +102,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
     setSecErrorMsg('');
 
     if (newPassword || userId !== user?.id) {
-      if (!currentPassword) {
+      if (isPasswordConfigured && !currentPassword) {
         setSecErrorMsg('Current password required to change User ID or Password.');
         return;
       }
@@ -121,7 +122,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
 
     setCurrentPassword('');
     setNewPassword('');
-    setSecSavedMsg('Security parameters & credentials saved!');
+    setSecSavedMsg('Master password & security credentials saved successfully!');
     setTimeout(() => setSecSavedMsg(''), 3500);
   };
 
@@ -263,6 +264,15 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
           </View>
         </View>
 
+        {!isPasswordConfigured && (
+          <View style={styles.infoBanner}>
+            <Ionicons name="information-circle" size={18} color="#0284C7" />
+            <Text style={styles.infoBannerText}>
+              First-Time Password Setup: You have not configured a master password yet. Enter your desired New Password below to protect your account (Current Password is not required).
+            </Text>
+          </View>
+        )}
+
         {secSavedMsg ? (
           <View style={styles.successBanner}>
             <Ionicons name="checkmark-circle" size={16} color="#16A34A" />
@@ -291,27 +301,37 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
           </View>
 
           <View style={styles.col}>
-            <Text style={styles.inputLabel}>NEW PASSWORD (OPTIONAL)</Text>
+            <Text style={styles.inputLabel}>
+              {isPasswordConfigured ? 'NEW PASSWORD (OPTIONAL)' : 'SET MASTER PASSWORD *'}
+            </Text>
             <TextInput
               style={styles.input}
               value={newPassword}
               onChangeText={setNewPassword}
               secureTextEntry
-              placeholder="Leave blank to keep same"
+              placeholder={isPasswordConfigured ? 'Leave blank to keep same' : 'Enter new master password'}
               placeholderTextColor="#94A3B8"
             />
           </View>
         </View>
 
-        <Text style={styles.inputLabel}>CURRENT PASSWORD (REQUIRED TO SAVE CREDENTIAL CHANGES)</Text>
-        <TextInput
-          style={styles.input}
-          value={currentPassword}
-          onChangeText={setCurrentPassword}
-          secureTextEntry
-          placeholder="Enter current password"
-          placeholderTextColor="#94A3B8"
-        />
+        {isPasswordConfigured ? (
+          <>
+            <Text style={styles.inputLabel}>CURRENT PASSWORD (REQUIRED TO SAVE CREDENTIAL CHANGES) *</Text>
+            <TextInput
+              style={styles.input}
+              value={currentPassword}
+              onChangeText={setCurrentPassword}
+              secureTextEntry
+              placeholder="Enter current password"
+              placeholderTextColor="#94A3B8"
+            />
+          </>
+        ) : (
+          <Text style={{ fontSize: 12, color: '#16A34A', fontWeight: '700', marginBottom: 6 }}>
+            ✓ First-Time Setup: No previous password exists. Enter your new password above and save!
+          </Text>
+        )}
 
         {/* Security Questions Recovery */}
         <View style={styles.divider} />
