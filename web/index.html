@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta httpEquiv="X-UA-Compatible" content="IE=edge" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1.00001, viewport-fit=cover"
+    />
+    <title>Money-Honey — Private Wealth & Bangladesh Stock AI</title>
+
+    <!-- Theme & App Description -->
+    <meta name="theme-color" content="#0284C7" />
+    <meta name="description" content="Smart personal wealth, investments & Bangladesh DSE stock market AI suite" />
+    <meta name="application-name" content="Money-Honey" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="Money-Honey" />
+
+    <!-- PWA Web App Manifest & Icons -->
+    <link rel="manifest" href="/manifest.json" />
+    <link rel="icon" type="image/png" href="/favicon.png" />
+    <link rel="apple-touch-icon" href="/icons/icon-192.png" />
+
+    <!-- React Native Web layout reset -->
+    <style id="expo-reset">
+      html,
+      body {
+        height: 100%;
+        margin: 0;
+        padding: 0;
+        background-color: #E0F2FE;
+      }
+      body {
+        overflow: hidden;
+        -webkit-user-select: none;
+        user-select: none;
+      }
+      #root {
+        display: flex;
+        height: 100%;
+        flex: 1;
+      }
+    </style>
+
+    <!-- Register PWA Service Worker for Browser Install Icon in Search Bar -->
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', function() {
+          navigator.serviceWorker.register('/sw.js').then(function(reg) {
+            console.log('Money-Honey PWA Service Worker registered:', reg.scope);
+          }).catch(function(err) {
+            console.warn('PWA Service Worker registration failed:', err);
+          });
+        });
+      }
+    </script>
+  </head>
+
+  <body>
+    <noscript>
+      You need to enable JavaScript to run Money-Honey Wealth Suite.
+    </noscript>
+    <div id="root"></div>
+  </body>
+</html>

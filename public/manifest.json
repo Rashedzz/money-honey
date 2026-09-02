@@ -1,16 +1,27 @@
 {
-  "name": "Money-Honey — Personal Finance",
+  "name": "Money-Honey Wealth Suite",
   "short_name": "Money-Honey",
-  "description": "Local-first personal financial management. Track banks, loans, FDR, Sanchaypatra & budgets.",
+  "description": "Smart personal wealth, investments & stock market management suite",
   "start_url": "/",
+  "id": "/",
   "display": "standalone",
-  "background_color": "#080B14",
-  "theme_color": "#00E5B3",
+  "background_color": "#E0F2FE",
+  "theme_color": "#0284C7",
   "orientation": "portrait",
   "icons": [
-    { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
-    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
   ],
-  "categories": ["finance", "productivity"],
+  "categories": ["finance", "productivity", "business"],
   "lang": "en-BD"
 }

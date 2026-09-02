@@ -14,6 +14,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { Colors, Typography, Spacing, Radius } from '../../src/theme';
 import { GlassCard } from '../../src/components/shared/GlassCard';
 import { AppSidebar, SidebarTabType } from '../../src/components/navigation/AppSidebar';
+import { MobileDrawer } from '../../src/components/navigation/MobileDrawer';
+import { MobileBottomNav } from '../../src/components/navigation/MobileBottomNav';
 import { PwaInstallModal } from '../../src/components/modals/PwaInstallModal';
 import { RadialGauge } from '../../src/components/visuals/RadialGauge';
 import { SegmentedDonut } from '../../src/components/visuals/SegmentedDonut';
@@ -491,6 +493,29 @@ export default function MasterDashboardScreen() {
           )}
         </View>
       </View>
+
+      {/* Mobile Sticky Bottom Navigation Bar */}
+      {!isDesktop && (
+        <MobileBottomNav
+          activeTab={activeTab}
+          onSelectTab={setActiveTab}
+          onOpenDrawer={() => setMobileDrawerOpen(true)}
+          onQuickEntryPress={() => openModal('stock')}
+        />
+      )}
+
+      {/* Mobile Slide-Out Navigation Drawer */}
+      <MobileDrawer
+        visible={mobileDrawerOpen}
+        onClose={() => setMobileDrawerOpen(false)}
+        activeTab={activeTab}
+        onSelectTab={setActiveTab}
+        onQuickEntryPress={() => openModal('stock')}
+        onOpenQrModal={() => setQrModalVisible(true)}
+        onOpenAuthModal={openAuthModal}
+        userProfile={user || { name: 'Rashed Rahman', avatar: '👨‍💼', id: 'rashed01' }}
+        isOnline={isOnline}
+      />
 
       {/* Universal Data Entry Vault Modal */}
       <UniversalEntryModal

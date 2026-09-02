@@ -79,11 +79,13 @@ class AppErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundary
 }
 
 import { initDynamicFavicon } from '../src/utils/dynamicFavicon';
+import { initPwaSupport } from '../src/utils/pwaInstaller';
 import { AuthProvider } from '../src/auth/AuthContext';
 
 export default function RootLayout() {
   React.useEffect(() => {
     initDynamicFavicon();
+    initPwaSupport();
   }, []);
 
   return (
