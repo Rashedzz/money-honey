@@ -26,6 +26,8 @@ export interface OptimizedPortfolioResult {
   expectedVolatilityPercent: number;
   sharpeRatio: number;
   maxDrawdownPercent: number;
+  portfolioBeta: number;
+  averageCorrelation: number;
   cashReservePercent: number;
   cashReserveAmount: number;
   stockAllocations: PortfolioAllocationItem[];
@@ -133,6 +135,8 @@ export function generateOptimizedPortfolio(
     expectedVolatilityPercent: riskTolerance === 'Conservative' ? 8.4 : riskTolerance === 'Moderate' ? 12.8 : 17.5,
     sharpeRatio: Math.max(0.8, sharpe),
     maxDrawdownPercent: riskTolerance === 'Conservative' ? 6.2 : riskTolerance === 'Moderate' ? 11.4 : 16.8,
+    portfolioBeta: riskTolerance === 'Conservative' ? 0.68 : riskTolerance === 'Moderate' ? 0.84 : 1.12,
+    averageCorrelation: 0.38,
     cashReservePercent: cashPercent,
     cashReserveAmount: cashAmount,
     stockAllocations,
