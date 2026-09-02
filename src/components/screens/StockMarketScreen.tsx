@@ -45,6 +45,7 @@ import { getCompanyCandlestickPatterns } from '../../finance/candlestickPatternE
 import { calculateDetailedDCF } from '../../finance/dcfValuationEngine';
 import { getDividendProfileForStock } from '../../finance/dividendAnalysisEngine';
 import { generate5ModelAiEnsemble } from '../../finance/aiMultiModelEnsemble';
+import { BACKTEST_STRATEGIES, getBacktestStrategy } from '../../finance/backtestEngine';
 
 interface StockMarketScreenProps {
   stocks: StockHolding[];
@@ -76,6 +77,9 @@ export const StockMarketScreen: React.FC<StockMarketScreenProps> = ({
   const [modalSubTab, setModalSubTab] = useState<
     'ai_models' | 'dcf_waterfall' | 'dividends' | 'technical' | 'patterns' | 'fundamentals' | 'historical'
   >('ai_models');
+
+  // Backtest Strategy State
+  const [selectedBacktestStrategy, setSelectedBacktestStrategy] = useState<string>('multi_factor_ai');
 
   // Portfolio Optimizer State
   const [optCapital, setOptCapital] = useState('1000000');
@@ -644,34 +648,115 @@ export const StockMarketScreen: React.FC<StockMarketScreenProps> = ({
             </View>
           </GlassCard>
 
-          {/* Multi-Factor Strategy Backtest Summary */}
-          <GlassCard style={{ width: '100%' }} padding={20} glowColor="#16A34A">
-            <Text style={{ fontSize: 16, fontWeight: '900', color: '#0369A1', marginBottom: 6 }}>
-              📈 10-YEAR DSE MULTI-FACTOR STRATEGY BACKTEST (2016 - 2026)
-            </Text>
-            <Text style={{ fontSize: 12, color: '#64748B', marginBottom: Spacing.md }}>
-              Strategy Rule: RSI &lt; 35 + Volume &gt; 1.5x 20-DMA + ROE &gt; 15% + P/E &lt; 5-Year Sector Median.
-            </Text>
+          {/* Multi-Factor Strategy Backtest Summary & Comparison */}
+          {(() => {
+            const bt = getBacktestStrategy(selectedBacktestStrategy);
+            return (
+              <GlassCard style={{ width: '100%' }} padding={20} glowColor="#16A34A">
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10, marginBottom: 8 }}>
+                  <View>
+                    <Text style={{ fontSize: 18, fontWeight: '900', color: '#0F172A' }}>
+                      📈 10-YEAR STRATEGY BACKTESTING ENGINE (2016 – 2026)
+                    </Text>
+                    <Text style={{ fontSize: 12, color: '#64748B' }}>
+                      Empirical evidence: Testing whether multi-factor signals actually beat the market historically on DSE
+                    </Text>
+                  </View>
+                </View>
 
-            <View style={styles.kpiGrid}>
-              <View style={styles.kpiItem}>
-                <Text style={styles.kpiLabel}>TOTAL SIMULATED TRADES</Text>
-                <Text style={styles.kpiVal}>384 Trades</Text>
-              </View>
-              <View style={styles.kpiItem}>
-                <Text style={styles.kpiLabel}>OVERALL WIN RATE</Text>
-                <Text style={[styles.kpiVal, { color: '#16A34A' }]}>61.4%</Text>
-              </View>
-              <View style={styles.kpiItem}>
-                <Text style={styles.kpiLabel}>AVG WINNING TRADE</Text>
-                <Text style={[styles.kpiVal, { color: '#16A34A' }]}>+8.4%</Text>
-              </View>
-              <View style={styles.kpiItem}>
-                <Text style={styles.kpiLabel}>MAX DRAWDOWN</Text>
-                <Text style={[styles.kpiVal, { color: '#EF4444' }]}>-17.2%</Text>
-              </View>
-            </View>
-          </GlassCard>
+                {/* Strategy Selector Pills */}
+                <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap', marginBottom: 12 }}>
+                  {[
+                    { id: 'multi_factor_ai', label: 'RSI + MACD + EPS + DCF' },
+                    { id: 'deep_value_dcf', label: 'Pure Deep Value (P/E < 10)' },
+                    { id: 'momentum_breakout', label: 'Momentum Breakout (52W High)' },
+                  ].map((s) => (
+                    <TouchableOpacity
+                      key={s.id}
+                      style={[styles.optPill, selectedBacktestStrategy === s.id && styles.optPillActive]}
+                      onPress={() => setSelectedBacktestStrategy(s.id)}
+                    >
+                      <Text style={[styles.optPillText, selectedBacktestStrategy === s.id && styles.optPillTextActive]}>
+                        {s.label}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+
+                {/* Strategy Rules Banner */}
+                <View style={[styles.thesisBox, { backgroundColor: '#F0F9FF', borderColor: '#BAE6FD', marginBottom: Spacing.md }]}>
+                  <Text style={{ fontSize: 11, fontWeight: '800', color: '#0369A1' }}>STRATEGY: {bt.strategyName.toUpperCase()}</Text>
+                  <Text style={{ fontSize: 12, color: '#0F172A', marginTop: 3 }}>{bt.rulesSummary}</Text>
+                </View>
+
+                {/* KPI Grid */}
+                <View style={styles.kpiGrid}>
+                  <View style={styles.kpiItem}>
+                    <Text style={styles.kpiLabel}>TOTAL SIMULATED TRADES</Text>
+                    <Text style={styles.kpiVal}>{bt.totalTrades} Trades</Text>
+                  </View>
+                  <View style={styles.kpiItem}>
+                    <Text style={styles.kpiLabel}>WIN RATE %</Text>
+                    <Text style={[styles.kpiVal, { color: '#16A34A' }]}>{bt.winRatePercent}%</Text>
+                  </View>
+                  <View style={styles.kpiItem}>
+                    <Text style={styles.kpiLabel}>AVG WINNING TRADE</Text>
+                    <Text style={[styles.kpiVal, { color: '#16A34A' }]}>+{bt.avgWinningTradePercent}%</Text>
+                  </View>
+                  <View style={styles.kpiItem}>
+                    <Text style={styles.kpiLabel}>AVG LOSING TRADE</Text>
+                    <Text style={[styles.kpiVal, { color: '#EF4444' }]}>{bt.avgLosingTradePercent}%</Text>
+                  </View>
+                  <View style={styles.kpiItem}>
+                    <Text style={styles.kpiLabel}>MAX HISTORICAL DRAWDOWN</Text>
+                    <Text style={[styles.kpiVal, { color: '#EF4444' }]}>-{bt.maxDrawdownPercent}%</Text>
+                  </View>
+                  <View style={styles.kpiItem}>
+                    <Text style={styles.kpiLabel}>SHARPE RATIO (SORTINO)</Text>
+                    <Text style={styles.kpiVal}>{bt.sharpeRatio} ({bt.sortinoRatio})</Text>
+                  </View>
+                  <View style={styles.kpiItem}>
+                    <Text style={styles.kpiLabel}>STRATEGY 10-YR RETURN</Text>
+                    <Text style={[styles.kpiVal, { color: '#16A34A' }]}>+{bt.strategyTotalReturnPercent}% ({bt.strategyCagrPercent}% CAGR)</Text>
+                  </View>
+                  <View style={styles.kpiItem}>
+                    <Text style={styles.kpiLabel}>DSEX BENCHMARK RETURN</Text>
+                    <Text style={styles.kpiVal}>+{bt.dsexBenchmarkReturnPercent}% (Alpha: +{bt.alphaGeneratedPercent}%)</Text>
+                  </View>
+                </View>
+
+                {/* Historical Simulated Trades Ledger */}
+                <Text style={[styles.sectionHeading, { marginTop: Spacing.md }]}>
+                  📜 SAMPLE BACKTEST EXECUTIONS & PROVEN OUTCOMES
+                </Text>
+                <View style={styles.table}>
+                  <View style={styles.tableHeader}>
+                    <Text style={[styles.th, { width: 80 }]}>SYMBOL</Text>
+                    <Text style={[styles.th, { width: 85 }]}>ENTRY DATE</Text>
+                    <Text style={[styles.th, { width: 85 }]}>EXIT DATE</Text>
+                    <Text style={[styles.th, { width: 70 }]}>RETURN</Text>
+                    <Text style={[styles.th, { width: 65 }]}>DAYS</Text>
+                    <Text style={[styles.th, { flex: 1 }]}>TRIGGER & EXIT REASON</Text>
+                  </View>
+
+                  {bt.tradesLedger.map((tr) => (
+                    <View key={tr.tradeId} style={styles.tableRow}>
+                      <Text style={[styles.td, { width: 80, fontWeight: '800' }]}>{tr.symbol}</Text>
+                      <Text style={[styles.td, { width: 85, fontSize: 11 }]}>{tr.entryDate}</Text>
+                      <Text style={[styles.td, { width: 85, fontSize: 11 }]}>{tr.exitDate}</Text>
+                      <Text style={[styles.td, { width: 70, fontWeight: '900', color: tr.returnPercent >= 0 ? '#16A34A' : '#EF4444' }]}>
+                        {tr.returnPercent >= 0 ? '+' : ''}{tr.returnPercent}%
+                      </Text>
+                      <Text style={[styles.td, { width: 65, fontSize: 11 }]}>{tr.holdingDays}d</Text>
+                      <Text style={[styles.td, { flex: 1, fontSize: 11, color: '#64748B' }]}>
+                        {tr.entryTrigger} → {tr.exitReason}
+                      </Text>
+                    </View>
+                  ))}
+                </View>
+              </GlassCard>
+            );
+          })()}
         </View>
       )}
 
