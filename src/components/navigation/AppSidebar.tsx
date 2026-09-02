@@ -109,7 +109,11 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
       </View>
 
       {/* Navigation Links: Pure Black background, Pure White text, Green selected button, Gold hover */}
-      <ScrollView showsVerticalScrollIndicator={false} style={styles.menuList}>
+      <ScrollView
+        showsVerticalScrollIndicator={true}
+        style={[styles.menuList, { overflowY: 'auto' as any }]}
+        contentContainerStyle={{ paddingBottom: 24, flexGrow: 1 }}
+      >
         {menuItems.map((item) => {
           const isActive = activeTab === item.id;
           const isHovered = hoveredTab === item.id && !isActive;

@@ -126,7 +126,11 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({
             </TouchableOpacity>
 
             {/* Navigation Menu Items */}
-            <ScrollView style={styles.menuScroll} showsVerticalScrollIndicator={false}>
+            <ScrollView
+              style={[styles.menuScroll, { overflowY: 'auto' as any }]}
+              showsVerticalScrollIndicator={true}
+              contentContainerStyle={{ paddingBottom: 30 }}
+            >
               <Text style={styles.sectionLabel}>NAVIGATION</Text>
               {menuItems.map((item) => {
                 const isActive = activeTab === item.id;
