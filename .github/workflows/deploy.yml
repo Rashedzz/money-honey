@@ -39,10 +39,11 @@ jobs:
           node -e "const fs=require('fs'); const a=JSON.parse(fs.readFileSync('app.json')); a.expo.experiments={...a.expo.experiments, baseUrl:'/money-honey'}; fs.writeFileSync('app.json', JSON.stringify(a,null,2));"
           npx expo export --platform web
 
-      - name: Configure GitHub Pages Routing (.nojekyll & 404 fallback)
+      - name: Configure GitHub Pages Routing (.nojekyll & 404 fallback & PWA files)
         run: |
           touch dist/.nojekyll
           if [ -f dist/index.html ]; then cp dist/index.html dist/404.html; fi
+          cp -r public/* dist/
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3

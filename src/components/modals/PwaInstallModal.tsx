@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -8,6 +8,7 @@ import {
   Image,
   ScrollView,
   Platform,
+  Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, Typography, Spacing, Radius } from '../../theme';
@@ -42,6 +43,36 @@ export const PwaInstallModal: React.FC<PwaInstallModalProps> = ({
     }
   };
 
+  const [canInstallDirectly, setCanInstallDirectly] = useState(
+    typeof window !== 'undefined' && !!(window as any).deferredPWAInstallPrompt
+  );
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const handleInstallable = () => setCanInstallDirectly(true);
+      window.addEventListener('pwa-installable', handleInstallable);
+      return () => window.removeEventListener('pwa-installable', handleInstallable);
+    }
+  }, []);
+
+  const handleDirectInstall = () => {
+    if (typeof window !== 'undefined' && (window as any).deferredPWAInstallPrompt) {
+      (window as any).deferredPWAInstallPrompt.prompt();
+      (window as any).deferredPWAInstallPrompt.userChoice.then((choiceResult: any) => {
+        if (choiceResult.outcome === 'accepted') {
+          console.log('User accepted PWA installation');
+        }
+        (window as any).deferredPWAInstallPrompt = null;
+        setCanInstallDirectly(false);
+      });
+    } else {
+      Alert.alert(
+        'Install Money-Honey',
+        'In your browser top address bar, click the Install App icon (⊕ or computer icon) or click the browser menu (⋮) → "Install Money-Honey" / "Add to Home Screen".'
+      );
+    }
+  };
+
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
       <View style={styles.overlay}>
@@ -51,8 +82,8 @@ export const PwaInstallModal: React.FC<PwaInstallModalProps> = ({
             <View style={styles.titleRow}>
               <DynamicMoneyTree size={38} />
               <View>
-                <Text style={styles.title}>Install on Mobile Phone</Text>
-                <Text style={styles.subtitle}>Scan QR or copy link to install PWA app</Text>
+                <Text style={styles.title}>Install App on Laptop & Phone</Text>
+                <Text style={styles.subtitle}>Install as standalone desktop/mobile app</Text>
               </View>
             </View>
 
@@ -66,6 +97,18 @@ export const PwaInstallModal: React.FC<PwaInstallModalProps> = ({
             style={{ flex: 1, width: '100%', overflowY: 'auto' as any }}
             contentContainerStyle={styles.body}
           >
+            {/* Direct 1-Click Install Button */}
+            <TouchableOpacity
+              style={styles.directInstallBtn}
+              onPress={handleDirectInstall}
+              activeOpacity={0.85}
+            >
+              <Ionicons name="download" size={20} color="#FFFFFF" />
+              <Text style={styles.directInstallBtnText}>
+                {canInstallDirectly ? '📥 Install App on this Device Now' : '📥 1-Click Install Money-Honey'}
+              </Text>
+            </TouchableOpacity>
+
             {/* QR Code Container */}
             <View style={styles.qrCard}>
               <Image
@@ -188,6 +231,27 @@ const styles = StyleSheet.create({
   body: {
     alignItems: 'center',
     width: '100%',
+  },
+  directInstallBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    backgroundColor: '#0284C7',
+    width: '100%',
+    paddingVertical: 14,
+    borderRadius: Radius.lg,
+    marginBottom: Spacing.md,
+    shadowColor: '#0284C7',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.3,
+    shadowRadius: 6,
+    elevation: 4,
+  },
+  directInstallBtnText: {
+    color: '#FFFFFF',
+    fontSize: 15,
+    fontWeight: '800',
   },
   qrCard: {
     backgroundColor: '#F0F9FF',

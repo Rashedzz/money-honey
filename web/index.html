@@ -18,10 +18,10 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="Money-Honey" />
 
-    <!-- PWA Web App Manifest & Icons -->
-    <link rel="manifest" href="/manifest.json" />
-    <link rel="icon" type="image/png" href="/favicon.png" />
-    <link rel="apple-touch-icon" href="/icons/icon-192.png" />
+    <!-- PWA Web App Manifest & Icons (Relative for GitHub Pages subpath support) -->
+    <link rel="manifest" href="./manifest.json" />
+    <link rel="icon" type="image/png" href="./favicon.png" />
+    <link rel="apple-touch-icon" href="./icon-192.png" />
 
     <!-- React Native Web layout reset -->
     <style id="expo-reset">
@@ -48,13 +48,23 @@
     <script>
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', function() {
-          navigator.serviceWorker.register('/sw.js').then(function(reg) {
+          var swUrl = './sw.js';
+          navigator.serviceWorker.register(swUrl).then(function(reg) {
             console.log('Money-Honey PWA Service Worker registered:', reg.scope);
           }).catch(function(err) {
             console.warn('PWA Service Worker registration failed:', err);
           });
         });
       }
+
+      // Capture beforeinstallprompt for instant 1-click install button in browser
+      window.deferredPWAInstallPrompt = null;
+      window.addEventListener('beforeinstallprompt', function(e) {
+        e.preventDefault();
+        window.deferredPWAInstallPrompt = e;
+        console.log('beforeinstallprompt captured — browser install banner ready!');
+        window.dispatchEvent(new CustomEvent('pwa-installable'));
+      });
     </script>
   </head>
 

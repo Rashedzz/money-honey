@@ -3,22 +3,22 @@
  * Enables offline caching, fast background assets, and Chrome/Edge/Mobile PWA Installability
  */
 
-const CACHE_NAME = 'money-honey-cache-v1';
+const CACHE_NAME = 'money-honey-cache-v2';
 
-const STATIC_ASSETS = [
-  '/',
-  '/manifest.json',
-  '/icons/icon-192.png',
-  '/icons/icon-512.png',
-  '/favicon.png'
-];
-
-// Install: Cache critical static assets
+// Install: Cache critical static assets relative to current scope
 self.addEventListener('install', (event) => {
   self.skipWaiting();
+  const scope = self.registration ? self.registration.scope : './';
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
-      return cache.addAll(STATIC_ASSETS).catch((err) => {
+      const urlsToCache = [
+        scope,
+        new URL('manifest.json', scope).href,
+        new URL('favicon.png', scope).href,
+        new URL('icon-192.png', scope).href,
+        new URL('icon-512.png', scope).href,
+      ];
+      return cache.addAll(urlsToCache).catch((err) => {
         console.warn('PWA: Some assets failed to pre-cache', err);
       });
     })
@@ -41,9 +41,8 @@ self.addEventListener('activate', (event) => {
   );
 });
 
-// Fetch: Network-first strategy with cache fallback
+// Fetch: Stale-while-revalidate / Network-first strategy with cache fallback
 self.addEventListener('fetch', (event) => {
-  // Only handle GET requests
   if (event.request.method !== 'GET') return;
 
   event.respondWith(
@@ -66,9 +65,9 @@ self.addEventListener('fetch', (event) => {
           if (cachedResponse) {
             return cachedResponse;
           }
-          // If offline and request is for page, return root
           if (event.request.mode === 'navigate') {
-            return caches.match('/');
+            const scope = self.registration ? self.registration.scope : './';
+            return caches.match(scope);
           }
         });
       })
