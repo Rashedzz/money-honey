@@ -1,21 +1,26 @@
 import React from 'react';
+import { useWindowDimensions } from 'react-native';
 import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../../src/theme';
 
 export default function TabsLayout() {
+  const { width } = useWindowDimensions();
+  const isDesktop = width >= 768;
+
   return (
     <Tabs
       screenOptions={{
         tabBarActiveTintColor: Colors.primary,
         tabBarInactiveTintColor: Colors.textMuted,
         tabBarStyle: {
-          backgroundColor: '#0D1322',
+          display: isDesktop ? 'none' : 'flex',
+          backgroundColor: '#0F172A',
           borderTopColor: 'rgba(255, 255, 255, 0.08)',
           borderTopWidth: 1,
-          height: 62,
-          paddingBottom: 8,
-          paddingTop: 8,
+          height: 60,
+          paddingBottom: 6,
+          paddingTop: 6,
         },
         tabBarLabelStyle: {
           fontSize: 10,

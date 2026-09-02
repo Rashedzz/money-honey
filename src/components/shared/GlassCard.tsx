@@ -24,10 +24,10 @@ export const GlassCard: React.FC<GlassCardProps> = ({
       style={[
         styles.card,
         { padding },
-        glowColor && {
+        glowColor ? {
           borderBottomWidth: 2,
           borderBottomColor: glowColor,
-        },
+        } : undefined,
         style,
       ]}
     >

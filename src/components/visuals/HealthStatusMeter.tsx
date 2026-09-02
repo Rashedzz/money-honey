@@ -1,6 +1,5 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, Typography, Spacing, Radius } from '../../theme';
 import { GlassCard } from '../shared/GlassCard';
@@ -21,22 +20,22 @@ export const HealthStatusMeter: React.FC<HealthStatusMeterProps> = ({
   return (
     <GlassCard
       style={styles.card}
-      padding={18}
+      padding={16}
       glowColor={isSolvent ? Colors.primary : Colors.danger}
     >
       <View style={styles.header}>
         <View style={styles.titleRow}>
           <Ionicons
             name={isSolvent ? 'shield-checkmark' : 'alert-circle'}
-            size={22}
+            size={18}
             color={isSolvent ? Colors.primary : Colors.danger}
           />
-          <Text style={styles.title}>CURRENT FINANCIAL STATUS</Text>
+          <Text style={styles.title}>CURRENT FINANCIAL SOLVENCY STATUS</Text>
         </View>
         <View
           style={[
             styles.statusPill,
-            { backgroundColor: isSolvent ? 'rgba(0,229,179,0.15)' : 'rgba(255,71,87,0.15)' },
+            { backgroundColor: isSolvent ? 'rgba(34, 197, 94, 0.15)' : 'rgba(239, 68, 68, 0.15)' },
           ]}
         >
           <Text
@@ -45,22 +44,28 @@ export const HealthStatusMeter: React.FC<HealthStatusMeterProps> = ({
               { color: isSolvent ? Colors.primary : Colors.danger },
             ]}
           >
-            {isSolvent ? 'NET POSITIVE / SOLVENT' : 'DEBT EXCEEDS CASH'}
+            {isSolvent ? 'SOLVENT' : 'DEBT EXCEEDS CASH'}
           </Text>
         </View>
       </View>
 
-      <Text style={styles.subFormula}>Cash in Hand (Total) − Total Outstanding Loans</Text>
+      <Text style={styles.subFormula}>Net Liquid Status: Cash in Hand − Total Outstanding Loans</Text>
 
       <View style={styles.mainValueRow}>
-        <Text
-          style={[
-            styles.netAmount,
-            { color: isSolvent ? Colors.primary : Colors.danger },
-          ]}
-        >
-          {isSolvent ? '+' : '−'}৳ {Math.abs(netStatus).toLocaleString('en-IN')}
-        </Text>
+        <View>
+          <Text
+            style={[
+              styles.netAmount,
+              { color: isSolvent ? Colors.primary : Colors.danger },
+            ]}
+          >
+            {isSolvent ? '+' : '−'}৳ {Math.abs(netStatus).toLocaleString('en-IN')}
+          </Text>
+          <Text style={styles.netAmountSub}>
+            {isSolvent ? 'Net Liquid Capital Surplus' : 'Net Deficit (Debt higher than liquid reserves)'}
+          </Text>
+        </View>
+
         <View style={styles.coverageBox}>
           <Text style={styles.coverageLabel}>Debt Coverage</Text>
           <Text style={[styles.coverageValue, { color: isSolvent ? Colors.primary : Colors.accent }]}>
@@ -77,7 +82,7 @@ export const HealthStatusMeter: React.FC<HealthStatusMeterProps> = ({
             { flex: Math.max(1, totalCashInHand) },
           ]}
         >
-          <Text style={styles.barInsideText}>Cash: ৳{(totalCashInHand / 100000).toFixed(1)}L</Text>
+          <Text style={styles.barInsideText}>Cash ৳{(totalCashInHand / 100000).toFixed(1)}L</Text>
         </View>
         <View
           style={[
@@ -85,19 +90,19 @@ export const HealthStatusMeter: React.FC<HealthStatusMeterProps> = ({
             { flex: Math.max(1, totalLoans) },
           ]}
         >
-          <Text style={styles.barInsideText}>Loan: ৳{(totalLoans / 100000).toFixed(1)}L</Text>
+          <Text style={styles.barInsideText}>Loan ৳{(totalLoans / 100000).toFixed(1)}L</Text>
         </View>
       </View>
 
       <View style={styles.footerRow}>
         <View style={styles.footerItem}>
           <View style={[styles.dot, { backgroundColor: Colors.primary }]} />
-          <Text style={styles.footerLabel}>Total Cash & Bank:</Text>
+          <Text style={styles.footerLabel}>Total Liquid Cash & Bank:</Text>
           <Text style={styles.footerVal}>৳ {totalCashInHand.toLocaleString('en-IN')}</Text>
         </View>
         <View style={styles.footerItem}>
           <View style={[styles.dot, { backgroundColor: Colors.danger }]} />
-          <Text style={styles.footerLabel}>Total Debt Liability:</Text>
+          <Text style={styles.footerLabel}>Total Loan Liability:</Text>
           <Text style={styles.footerVal}>৳ {totalLoans.toLocaleString('en-IN')}</Text>
         </View>
       </View>
@@ -107,14 +112,16 @@ export const HealthStatusMeter: React.FC<HealthStatusMeterProps> = ({
 
 const styles = StyleSheet.create({
   card: {
-    marginHorizontal: Spacing.md,
-    marginBottom: Spacing.lg,
+    marginBottom: Spacing.md,
+    borderRadius: Radius.lg,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.08)',
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 4,
+    marginBottom: 2,
   },
   titleRow: {
     flexDirection: 'row',
@@ -123,13 +130,13 @@ const styles = StyleSheet.create({
   },
   title: {
     ...Typography.label,
-    fontSize: 11,
+    fontSize: 10,
     color: Colors.textPrimary,
     fontWeight: '800',
   },
   statusPill: {
     paddingHorizontal: 8,
-    paddingVertical: 3,
+    paddingVertical: 2,
     borderRadius: Radius.full,
   },
   statusText: {
@@ -140,36 +147,41 @@ const styles = StyleSheet.create({
   subFormula: {
     ...Typography.caption,
     color: Colors.textMuted,
-    fontSize: 11,
-    marginBottom: Spacing.md,
+    fontSize: 10,
+    marginBottom: Spacing.sm,
   },
   mainValueRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'baseline',
-    marginBottom: Spacing.md,
+    alignItems: 'flex-end',
+    marginBottom: Spacing.sm,
   },
   netAmount: {
-    fontSize: 34,
-    fontWeight: '900',
-    letterSpacing: -1,
+    fontSize: 26,
+    fontWeight: '800',
+    letterSpacing: -0.5,
+  },
+  netAmountSub: {
+    fontSize: 10,
+    color: Colors.textMuted,
+    marginTop: 1,
   },
   coverageBox: {
     alignItems: 'flex-end',
   },
   coverageLabel: {
     ...Typography.caption,
-    fontSize: 10,
+    fontSize: 9,
     color: Colors.textMuted,
     textTransform: 'uppercase',
   },
   coverageValue: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '800',
-    marginTop: 2,
+    marginTop: 1,
   },
   streamBar: {
-    height: 24,
+    height: 18,
     flexDirection: 'row',
     borderRadius: Radius.full,
     overflow: 'hidden',
@@ -187,14 +199,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   barInsideText: {
-    fontSize: 10,
+    fontSize: 9,
     fontWeight: '800',
-    color: '#000',
+    color: '#020617',
   },
   footerRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     paddingTop: Spacing.xs,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255, 255, 255, 0.05)',
   },
   footerItem: {
     flexDirection: 'row',
@@ -207,11 +221,11 @@ const styles = StyleSheet.create({
     borderRadius: 3,
   },
   footerLabel: {
-    fontSize: 11,
+    fontSize: 10,
     color: Colors.textSecondary,
   },
   footerVal: {
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: '700',
     color: Colors.textPrimary,
   },

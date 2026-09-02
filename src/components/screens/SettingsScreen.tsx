@@ -173,11 +173,14 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0B0F19',
+    backgroundColor: '#020617',
   },
   content: {
     padding: Spacing.lg,
     paddingBottom: 100,
+    maxWidth: 1200,
+    width: '100%',
+    alignSelf: 'center',
     gap: Spacing.lg,
   },
   card: {

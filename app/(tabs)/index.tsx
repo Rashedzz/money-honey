@@ -10,9 +10,11 @@ import {
   TouchableOpacity,
   useWindowDimensions,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { Colors, Typography, Spacing, Radius } from '../../src/theme';
 import { GlassCard } from '../../src/components/shared/GlassCard';
-import { TopNavBar, MainTabType } from '../../src/components/navigation/TopNavBar';
+import { AppSidebar, SidebarTabType } from '../../src/components/navigation/AppSidebar';
+import { PwaInstallModal } from '../../src/components/modals/PwaInstallModal';
 import { RadialGauge } from '../../src/components/visuals/RadialGauge';
 import { SegmentedDonut } from '../../src/components/visuals/SegmentedDonut';
 import { FlowBreakdownBar } from '../../src/components/visuals/FlowBreakdownBar';
@@ -39,7 +41,6 @@ import {
   LifeInsurancePolicy,
   BirthdayEvent,
   calculateInsuranceSummary,
-  calculateBirthdayReminders,
 } from '../../src/finance/insuranceBirthday';
 import { calculateWealthVelocity } from '../../src/finance/wealthVelocity';
 import { calculateFinancialPlanningSuite } from '../../src/finance/financialPlanningTools';
@@ -172,8 +173,8 @@ const initialBirthdays: BirthdayEvent[] = [
 ];
 
 const initialCash = [
-  { id: '1', label: 'City Bank Savings', amount: 650000, color: '#00F5A0' },
-  { id: '2', label: 'BRAC Bank Salary A/C', amount: 450000, color: '#00D2FF' },
+  { id: '1', label: 'City Bank Savings', amount: 650000, color: '#22C55E' },
+  { id: '2', label: 'BRAC Bank Salary A/C', amount: 450000, color: '#06B6D4' },
   { id: '3', label: 'Cash in Hand (Physical)', amount: 65000, color: '#F59E0B' },
   { id: '4', label: 'bKash Wallet (MFS)', amount: 35000, color: '#EF4444' },
 ];
@@ -230,9 +231,10 @@ const upcomingSchedules: ScheduleEvent[] = [
 
 export default function MasterDashboardScreen() {
   const { width } = useWindowDimensions();
-  const isWide = width >= 768;
+  const isDesktop = width >= 768;
 
-  const [activeTab, setActiveTab] = useState<MainTabType>('dashboard');
+  const [activeTab, setActiveTab] = useState<SidebarTabType>('dashboard');
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [birthDate, setBirthDate] = useState('1992-05-15');
 
@@ -243,9 +245,13 @@ export default function MasterDashboardScreen() {
   const [policies, setPolicies] = useState<LifeInsurancePolicy[]>(initialPolicies);
   const [birthdays, setBirthdays] = useState<BirthdayEvent[]>(initialBirthdays);
 
-  // Modal State
+  // Modals
   const [entryModalVisible, setEntryModalVisible] = useState(false);
   const [modalInitialType, setModalInitialType] = useState<EntryType>('income');
+  const [qrModalVisible, setQrModalVisible] = useState(false);
+
+  // Mobile Drawer State
+  const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
 
   // Computed Values
   const totalCashInHand = cashList.reduce((sum, item) => sum + item.amount, 0);
@@ -254,7 +260,7 @@ export default function MasterDashboardScreen() {
   const insuranceSummary = calculateInsuranceSummary(policies, totalLoans);
 
   const currentIncomeItems = [
-    { id: '1', name: 'Employment Tech Salary', sub: 'Primary Income', amount: 135000, color: '#00F5A0' },
+    { id: '1', name: 'Employment Tech Salary', sub: 'Primary Income', amount: 135000, color: '#22C55E' },
     {
       id: '2',
       name: 'Asset Cash Flow (Rent)',
@@ -262,7 +268,7 @@ export default function MasterDashboardScreen() {
       amount: assetSummary.totalMonthlyAssetIncome,
       color: '#8B5CF6',
     },
-    { id: '3', name: '3-Mo Sanchaypatra Coupon', sub: 'National Savings', amount: 21500, color: '#00D2FF' },
+    { id: '3', name: '3-Mo Sanchaypatra Coupon', sub: 'National Savings', amount: 21500, color: '#06B6D4' },
     { id: '4', name: 'FDR Monthly Return', sub: 'DBBL Fixed Deposit', amount: 18500, color: '#F59E0B' },
   ];
 
@@ -272,7 +278,7 @@ export default function MasterDashboardScreen() {
     { id: '1', name: 'City Bank Home Loan EMI', sub: 'Debt Service • Bank Loan', amount: 45000, color: '#EF4444' },
     { id: '2', name: 'Household Living & Food', sub: 'Family Living & Supplies', amount: 28000, color: '#F59E0B' },
     { id: '3', name: 'EBL Vehicle Auto Loan EMI', sub: 'Debt Service • Asset EMI', amount: 22500, color: '#EF4444' },
-    { id: '4', name: 'Utilities & Telecom', sub: 'Electricity, Gas, Internet', amount: 7000, color: '#00D2FF' },
+    { id: '4', name: 'Utilities & Telecom', sub: 'Electricity, Gas, Internet', amount: 7000, color: '#06B6D4' },
   ];
 
   const totalCurrentExpense = currentExpenseItems.reduce((sum, item) => sum + item.amount, 0);
@@ -298,7 +304,7 @@ export default function MasterDashboardScreen() {
     if (type === 'asset') setAssets((prev) => [data, ...prev]);
     else if (type === 'insurance') setPolicies((prev) => [data, ...prev]);
     else if (type === 'birthday') setBirthdays((prev) => [data, ...prev]);
-    else if (type === 'bank') setCashList((prev) => [...prev, { id: data.id, label: data.title, amount: data.amount, color: '#00F5A0' }]);
+    else if (type === 'bank') setCashList((prev) => [...prev, { id: data.id, label: data.title, amount: data.amount, color: '#22C55E' }]);
     else if (type === 'loan') setLoanList((prev) => [...prev, { id: data.id, name: data.title, sub: data.category, amount: data.amount, color: '#EF4444' }]);
   };
 
@@ -309,226 +315,290 @@ export default function MasterDashboardScreen() {
 
   const onRefresh = () => {
     setRefreshing(true);
-    setTimeout(() => setRefreshing(false), 800);
+    setTimeout(() => setRefreshing(false), 600);
+  };
+
+  const pageTitles: Record<SidebarTabType, string> = {
+    dashboard: 'Executive Wealth Dashboard',
+    accounts: 'Liquid Bank Accounts & Cash Vault',
+    loans: 'Institutional Loans & Debt Service',
+    paper_assets: 'Paper Assets (Sanchaypatra / FDR / DPS)',
+    physical_assets: 'Physical Assets (Land / Gold / Flats)',
+    expenses: 'Expenses & Asset Maintenance Costs',
+    settings: 'Settings & Security Vault',
   };
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <StatusBar barStyle="light-content" backgroundColor="#0B0F19" />
+      <StatusBar barStyle="light-content" backgroundColor="#020617" />
 
-      {/* Top Universal Modern Navigation Bar */}
-      <TopNavBar
-        activeTab={activeTab}
-        onSelectTab={setActiveTab}
-        onQuickEntryPress={() => openModal('income')}
+      <View style={styles.appShell}>
+        {/* 1. Left Collapsible Sidebar on Desktop / Tablet */}
+        {isDesktop && (
+          <AppSidebar
+            activeTab={activeTab}
+            onSelectTab={setActiveTab}
+            onQuickEntryPress={() => openModal('income')}
+            onOpenQrModal={() => setQrModalVisible(true)}
+            isCollapsed={isSidebarCollapsed}
+            onToggleCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+            userProfile={{ name: 'Rashed Rahman', avatar: '👨‍💼' }}
+          />
+        )}
+
+        {/* 2. Main Content Container */}
+        <View style={styles.mainContent}>
+          {/* Top Utility Header */}
+          <View style={styles.topUtilityBar}>
+            <View style={styles.headerTitleRow}>
+              {!isDesktop && (
+                <TouchableOpacity
+                  style={styles.mobileMenuBtn}
+                  onPress={() => setMobileDrawerOpen(true)}
+                >
+                  <Ionicons name="menu" size={22} color={Colors.textPrimary} />
+                </TouchableOpacity>
+              )}
+              <View>
+                <Text style={styles.pageTitle}>{pageTitles[activeTab]}</Text>
+                <Text style={styles.pageSubtitle}>AFIL Agro Hub Standard • Real-Time Engine</Text>
+              </View>
+            </View>
+
+            <View style={styles.topActions}>
+              <TouchableOpacity
+                style={styles.qrHeaderBtn}
+                onPress={() => setQrModalVisible(true)}
+                activeOpacity={0.8}
+              >
+                <Ionicons name="qr-code-outline" size={15} color={Colors.primary} />
+                <Text style={styles.qrHeaderBtnText}>📱 Phone QR</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.quickEntryHeaderBtn}
+                onPress={() => openModal('income')}
+                activeOpacity={0.85}
+              >
+                <Ionicons name="add-circle" size={16} color="#020617" />
+                <Text style={styles.quickEntryHeaderBtnText}>+ Data Entry</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+
+          {/* Sub-view router */}
+          {activeTab === 'accounts' && <AccountsScreen />}
+          {activeTab === 'loans' && <LoansScreen />}
+          {activeTab === 'paper_assets' && <PaperAssetsScreen />}
+          {activeTab === 'physical_assets' && (
+            <PhysicalAssetsScreen assets={assets} onAddAsset={(a) => setAssets([a, ...assets])} />
+          )}
+          {activeTab === 'expenses' && <ExpensesScreen />}
+          {activeTab === 'settings' && (
+            <SettingsScreen
+              birthDate={birthDate}
+              onUpdateBirthDate={setBirthDate}
+              policies={policies}
+              birthdays={birthdays}
+              onAddPolicy={() => openModal('insurance')}
+              onAddBirthday={() => openModal('birthday')}
+            />
+          )}
+
+          {/* Master Dashboard Screen (Constrained to max-width 1200) */}
+          {activeTab === 'dashboard' && (
+            <ScrollView
+              style={styles.scrollArea}
+              contentContainerStyle={styles.dashboardContainer}
+              refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={Colors.primary} />}
+            >
+              {/* 1. Solvency Meter */}
+              <HealthStatusMeter totalCashInHand={totalCashInHand} totalLoans={totalLoans} />
+
+              {/* 2. Real-Time Wealth Velocity Clock */}
+              <WealthVelocityCard velocity={wealthVelocity} />
+
+              {/* 3. Responsive 2-Column Grid: Cash in Hand & Loan Liabilities */}
+              <View style={[styles.gridRow, isDesktop && styles.gridRowTwoCol]}>
+                <View style={[styles.gridCol, isDesktop && styles.colHalf]}>
+                  <GlassCard style={styles.cardFull} padding={16} glowColor={Colors.primary}>
+                    <Text style={styles.cardLabel}>1. CURRENT CASH IN HAND & LIQUID RESERVES</Text>
+                    <SegmentedDonut
+                      segments={cashList}
+                      totalLabel="Total Liquid"
+                      totalFormatted={`৳ ${(totalCashInHand / 100000).toFixed(1)}L`}
+                      size={140}
+                    />
+                  </GlassCard>
+                </View>
+
+                <View style={[styles.gridCol, isDesktop && styles.colHalf]}>
+                  <GlassCard style={styles.cardFull} padding={16} glowColor={Colors.danger}>
+                    <Text style={[styles.cardLabel, { color: Colors.danger }]}>
+                      2. OUTSTANDING LOAN LIABILITIES
+                    </Text>
+                    <RadialGauge
+                      score={84}
+                      title={`৳ ${(totalLoans / 100000).toFixed(1)} Lakhs`}
+                      subtitle="84% Institutional • 5% Private"
+                      statusLabel="Debt Load"
+                      statusColor={Colors.danger}
+                      size={140}
+                    />
+                  </GlassCard>
+                </View>
+              </View>
+
+              {/* Detailed Loan Bank vs Outside-Bank Split Bar */}
+              <View style={styles.fullWidthBox}>
+                <GlassCard style={styles.cardFull} padding={16}>
+                  <FlowBreakdownBar
+                    items={loanList}
+                    total={totalLoans}
+                    title="LOAN BREAKDOWN (BANK-WISE & OUTSIDE OF BANK)"
+                    totalFormatted={`৳ ${totalLoans.toLocaleString('en-IN')}`}
+                  />
+                </GlassCard>
+              </View>
+
+              {/* 4. Responsive 2-Column Grid: Income Sources & Expenses by Sector */}
+              <View style={[styles.gridRow, isDesktop && styles.gridRowTwoCol]}>
+                <View style={[styles.gridCol, isDesktop && styles.colHalf]}>
+                  <GlassCard style={styles.cardFull} padding={16} glowColor={Colors.primary}>
+                    <FlowBreakdownBar
+                      items={currentIncomeItems}
+                      total={totalCurrentIncome}
+                      title="4. INCOME SOURCES WITH ASSET RENTAL YIELD"
+                      totalFormatted={`৳ ${totalCurrentIncome.toLocaleString('en-IN')}`}
+                    />
+                  </GlassCard>
+                </View>
+
+                <View style={[styles.gridCol, isDesktop && styles.colHalf]}>
+                  <GlassCard style={styles.cardFull} padding={16} glowColor={Colors.danger}>
+                    <FlowBreakdownBar
+                      items={currentExpenseItems}
+                      total={totalCurrentExpense}
+                      title="5. EXPENSES BY SECTOR & FIXED DEBT EMIs"
+                      totalFormatted={`৳ ${totalCurrentExpense.toLocaleString('en-IN')}`}
+                    />
+                  </GlassCard>
+                </View>
+              </View>
+
+              {/* 5. Next Month Cash Flow Forecasting Card */}
+              <View style={styles.fullWidthBox}>
+                <ProjectionComparisonCard
+                  currentMonthName="August"
+                  nextMonthName="September 2026"
+                  currentIncome={totalCurrentIncome}
+                  projectedIncomeNextMonth={totalCurrentIncome + 7000}
+                  currentExpense={totalCurrentExpense}
+                  projectedExpenseNextMonth={104000}
+                  projectedIncomeBreakdown={[
+                    { name: 'Salary', amount: 135000, color: '#22C55E' },
+                    { name: 'Asset Rent (AST-101, 104)', amount: assetSummary.totalMonthlyAssetIncome, color: '#8B5CF6' },
+                    { name: 'Sanchaypatra (Q)', amount: 28500, color: '#06B6D4' },
+                    { name: 'FDR Returns', amount: 18500, color: '#F59E0B' },
+                  ]}
+                  projectedExpenseBreakdown={[
+                    { name: 'Fixed EMIs (Home + Auto)', amount: 67500, color: '#EF4444' },
+                    { name: 'Household Living', amount: 28000, color: '#F59E0B' },
+                    { name: 'Scheduled Utilities & Bills', amount: 8500, color: '#06B6D4' },
+                  ]}
+                />
+              </View>
+
+              {/* 6. Financial Planning Suite & Rule of 72 Doubling Time */}
+              <FinancialConsultantToolsCard planning={planningSuite} />
+
+              {/* 7. Schedules & Upcoming Disbursements */}
+              <View style={styles.sectionTitleRow}>
+                <Text style={styles.sectionTitleText}>8. SCHEDULES & UPCOMING DISBURSEMENTS</Text>
+              </View>
+              <View style={styles.fullWidthBox}>
+                <ScheduleTimeline events={upcomingSchedules} />
+              </View>
+
+              {/* 8. 3-Week Maturity Countdown Alerts */}
+              <View style={styles.sectionTitleRow}>
+                <Text style={[styles.sectionTitleText, { color: Colors.accent }]}>
+                  9. 3-WEEK MATURITY COUNTDOWN ALERTS
+                </Text>
+              </View>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.hScroll}>
+                <CountdownCard
+                  title="3-Month Sanchaypatra Coupon"
+                  subtitle="Certificate #SC-99201 • 11.04%"
+                  daysRemaining={6}
+                  targetDate={new Date(2026, 7, 24)}
+                  amount={28500}
+                  amountLabel="Net Coupon Payout"
+                  type="sanchaypatra"
+                  urgencyLevel="critical"
+                  percentageElapsed={98}
+                />
+                <CountdownCard
+                  title="Dutch-Bangla Bank FDR Maturity"
+                  subtitle="FDR #8839201 • 3 Years @ 9.5%"
+                  daysRemaining={19}
+                  targetDate={new Date(2026, 8, 6)}
+                  amount={1500000}
+                  amountLabel="Maturity Value"
+                  type="fdr"
+                  urgencyLevel="warning"
+                  percentageElapsed={92}
+                />
+                <CountdownCard
+                  title="City Bank Home Loan EMI"
+                  subtitle="EMI #14 of 240 • Next Due"
+                  daysRemaining={7}
+                  targetDate={new Date(2026, 7, 25)}
+                  amount={45000}
+                  amountLabel="Exact EMI Due"
+                  type="emi"
+                  urgencyLevel="warning"
+                  percentageElapsed={80}
+                />
+              </ScrollView>
+
+              {/* 9. Pending EMI Action Reminders */}
+              <View style={styles.sectionTitleRow}>
+                <Text style={[styles.sectionTitleText, { color: Colors.danger }]}>
+                  PENDING EMI ACTIONS
+                </Text>
+              </View>
+              <View style={styles.emiBox}>
+                <EMIReminderCard
+                  loanTitle="Apartment Home Loan Mortgage"
+                  bankName="City Bank Ltd."
+                  emiAmount={45000}
+                  dueDate={new Date(2026, 7, 25)}
+                  paymentNumber={14}
+                  totalPayments={240}
+                  outstandingPrincipal={4250000}
+                />
+                <EMIReminderCard
+                  loanTitle="Vehicle Auto Loan (Toyota Harrier)"
+                  bankName="Eastern Bank Ltd."
+                  emiAmount={22500}
+                  dueDate={new Date(2026, 8, 5)}
+                  paymentNumber={36}
+                  totalPayments={60}
+                  outstandingPrincipal={540000}
+                />
+              </View>
+            </ScrollView>
+          )}
+        </View>
+      </View>
+
+      {/* PWA Phone Install QR Modal */}
+      <PwaInstallModal
+        visible={qrModalVisible}
+        onClose={() => setQrModalVisible(false)}
+        appUrl="https://rashedzz.github.io/money-honey/"
       />
-
-      {/* Main View Router */}
-      {activeTab === 'accounts' && <AccountsScreen />}
-      {activeTab === 'loans' && <LoansScreen />}
-      {activeTab === 'paper_assets' && <PaperAssetsScreen />}
-      {activeTab === 'physical_assets' && (
-        <PhysicalAssetsScreen assets={assets} onAddAsset={(a) => setAssets([a, ...assets])} />
-      )}
-      {activeTab === 'expenses' && <ExpensesScreen />}
-      {activeTab === 'settings' && (
-        <SettingsScreen
-          birthDate={birthDate}
-          onUpdateBirthDate={setBirthDate}
-          policies={policies}
-          birthdays={birthdays}
-          onAddPolicy={() => openModal('insurance')}
-          onAddBirthday={() => openModal('birthday')}
-        />
-      )}
-
-      {/* Default Tab: Master Executive Multi-Column Dashboard */}
-      {activeTab === 'dashboard' && (
-        <ScrollView
-          style={styles.container}
-          contentContainerStyle={styles.content}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={Colors.primary} />}
-        >
-          {/* 1. Net Financial Health Status (Cash in Hand − Total Loans) */}
-          <HealthStatusMeter totalCashInHand={totalCashInHand} totalLoans={totalLoans} />
-
-          {/* 2. Real-Time Wealth Velocity Clock (Min/Hr/Day/Yr) */}
-          <WealthVelocityCard velocity={wealthVelocity} />
-
-          {/* 3. Responsive 2-Column Grid: Cash in Hand & Loan Liabilities */}
-          <View style={[styles.gridRow, isWide && styles.gridRowWide]}>
-            {/* Cash in Hand */}
-            <View style={[styles.gridCol, isWide && styles.gridColHalf]}>
-              <GlassCard style={styles.cardFull} padding={18} glowColor={Colors.primary}>
-                <Text style={styles.cardLabel}>1. CURRENT CASH IN HAND</Text>
-                <SegmentedDonut
-                  segments={cashList}
-                  totalLabel="Total Liquid"
-                  totalFormatted={`৳ ${(totalCashInHand / 100000).toFixed(1)}L`}
-                  size={150}
-                />
-              </GlassCard>
-            </View>
-
-            {/* Loan Liabilities */}
-            <View style={[styles.gridCol, isWide && styles.gridColHalf]}>
-              <GlassCard style={styles.cardFull} padding={18} glowColor={Colors.danger}>
-                <Text style={[styles.cardLabel, { color: Colors.danger }]}>2. OUTSTANDING LOANS</Text>
-                <RadialGauge
-                  score={84}
-                  title={`৳ ${(totalLoans / 100000).toFixed(1)} Lakhs`}
-                  subtitle="84% Institutional • 5% Private"
-                  statusLabel="Debt Load"
-                  statusColor={Colors.danger}
-                  size={150}
-                />
-              </GlassCard>
-            </View>
-          </View>
-
-          {/* Detailed Loan Bank & Outside Bank Breakdown Bar */}
-          <View style={styles.fullWidthItem}>
-            <GlassCard style={styles.cardFull} padding={18}>
-              <FlowBreakdownBar
-                items={loanList}
-                total={totalLoans}
-                title="LOAN BREAKDOWN (BANK-WISE & OUTSIDE OF BANK)"
-                totalFormatted={`৳ ${totalLoans.toLocaleString('en-IN')}`}
-              />
-            </GlassCard>
-          </View>
-
-          {/* 4. Responsive 2-Column Grid: Income Sources & Expenses by Sector */}
-          <View style={[styles.gridRow, isWide && styles.gridRowWide]}>
-            {/* Income Sources with Asset Rental Yield */}
-            <View style={[styles.gridCol, isWide && styles.gridColHalf]}>
-              <GlassCard style={styles.cardFull} padding={18} glowColor={Colors.primary}>
-                <FlowBreakdownBar
-                  items={currentIncomeItems}
-                  total={totalCurrentIncome}
-                  title="4. INCOME SOURCES WITH ASSET RENTAL YIELD"
-                  totalFormatted={`৳ ${totalCurrentIncome.toLocaleString('en-IN')}`}
-                />
-              </GlassCard>
-            </View>
-
-            {/* Expenses by Sector */}
-            <View style={[styles.gridCol, isWide && styles.gridColHalf]}>
-              <GlassCard style={styles.cardFull} padding={18} glowColor={Colors.danger}>
-                <FlowBreakdownBar
-                  items={currentExpenseItems}
-                  total={totalCurrentExpense}
-                  title="5. EXPENSES BY SECTOR & FIXED DEBT EMIs"
-                  totalFormatted={`৳ ${totalCurrentExpense.toLocaleString('en-IN')}`}
-                />
-              </GlassCard>
-            </View>
-          </View>
-
-          {/* 5. Next Month Cash Flow Forecasting Card */}
-          <View style={styles.fullWidthItem}>
-            <ProjectionComparisonCard
-              currentMonthName="August"
-              nextMonthName="September 2026"
-              currentIncome={totalCurrentIncome}
-              projectedIncomeNextMonth={totalCurrentIncome + 7000}
-              currentExpense={totalCurrentExpense}
-              projectedExpenseNextMonth={104000}
-              projectedIncomeBreakdown={[
-                { name: 'Salary', amount: 135000, color: '#00F5A0' },
-                { name: 'Asset Rent (AST-101, 104)', amount: assetSummary.totalMonthlyAssetIncome, color: '#8B5CF6' },
-                { name: 'Sanchaypatra (Q)', amount: 28500, color: '#00D2FF' },
-                { name: 'FDR Returns', amount: 18500, color: '#F59E0B' },
-              ]}
-              projectedExpenseBreakdown={[
-                { name: 'Fixed EMIs (Home + Auto)', amount: 67500, color: '#EF4444' },
-                { name: 'Household Living', amount: 28000, color: '#F59E0B' },
-                { name: 'Scheduled Utilities & Bills', amount: 8500, color: '#00D2FF' },
-              ]}
-            />
-          </View>
-
-          {/* 6. Financial Planning Suite, Rule of 72 & FIRE Freedom Number */}
-          <FinancialConsultantToolsCard planning={planningSuite} />
-
-          {/* 7. Schedules & Reminders */}
-          <View style={styles.sectionHeadingRow}>
-            <Text style={styles.sectionHeadingText}>8. SCHEDULES & UPCOMING DISBURSEMENTS</Text>
-          </View>
-          <View style={styles.fullWidthItem}>
-            <ScheduleTimeline events={upcomingSchedules} />
-          </View>
-
-          {/* 8. 3-Week Maturity Countdowns */}
-          <View style={styles.sectionHeadingRow}>
-            <Text style={[styles.sectionHeadingText, { color: Colors.accent }]}>
-              9. 3-WEEK MATURITY COUNTDOWN ALERTS
-            </Text>
-          </View>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.hScroll}>
-            <CountdownCard
-              title="3-Month Sanchaypatra Coupon"
-              subtitle="Certificate #SC-99201 • 11.04%"
-              daysRemaining={6}
-              targetDate={new Date(2026, 7, 24)}
-              amount={28500}
-              amountLabel="Net Coupon Payout"
-              type="sanchaypatra"
-              urgencyLevel="critical"
-              percentageElapsed={98}
-            />
-            <CountdownCard
-              title="Dutch-Bangla Bank FDR Maturity"
-              subtitle="FDR #8839201 • 3 Years @ 9.5%"
-              daysRemaining={19}
-              targetDate={new Date(2026, 8, 6)}
-              amount={1500000}
-              amountLabel="Maturity Value"
-              type="fdr"
-              urgencyLevel="warning"
-              percentageElapsed={92}
-            />
-            <CountdownCard
-              title="City Bank Home Loan EMI"
-              subtitle="EMI #14 of 240 • Next Due"
-              daysRemaining={7}
-              targetDate={new Date(2026, 7, 25)}
-              amount={45000}
-              amountLabel="Exact EMI Due"
-              type="emi"
-              urgencyLevel="warning"
-              percentageElapsed={80}
-            />
-          </ScrollView>
-
-          {/* 9. Pending EMI Action Reminders */}
-          <View style={styles.sectionHeadingRow}>
-            <Text style={[styles.sectionHeadingText, { color: Colors.danger }]}>
-              PENDING EMI ACTIONS
-            </Text>
-          </View>
-          <View style={styles.emiList}>
-            <EMIReminderCard
-              loanTitle="Apartment Home Loan Mortgage"
-              bankName="City Bank Ltd."
-              emiAmount={45000}
-              dueDate={new Date(2026, 7, 25)}
-              paymentNumber={14}
-              totalPayments={240}
-              outstandingPrincipal={4250000}
-            />
-            <EMIReminderCard
-              loanTitle="Vehicle Auto Loan (Toyota Harrier)"
-              bankName="Eastern Bank Ltd."
-              emiAmount={22500}
-              dueDate={new Date(2026, 8, 5)}
-              paymentNumber={36}
-              totalPayments={60}
-              outstandingPrincipal={540000}
-            />
-          </View>
-        </ScrollView>
-      )}
 
       {/* Universal Quick Data Entry Modal */}
       <UniversalEntryModal
@@ -544,61 +614,137 @@ export default function MasterDashboardScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#0B0F19',
+    backgroundColor: '#020617',
   },
-  container: {
+  appShell: {
     flex: 1,
-    backgroundColor: '#0B0F19',
+    flexDirection: 'row',
+    backgroundColor: '#020617',
   },
-  content: {
+  mainContent: {
+    flex: 1,
+    backgroundColor: '#020617',
+    display: 'flex',
+    flexDirection: 'column',
+  },
+  topUtilityBar: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: Spacing.md,
+    paddingVertical: 10,
+    backgroundColor: '#0F172A',
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255, 255, 255, 0.08)',
+  },
+  headerTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  mobileMenuBtn: {
+    padding: 6,
+    borderRadius: Radius.sm,
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+  },
+  pageTitle: {
+    ...Typography.heading,
+    fontSize: 14,
+    color: Colors.textPrimary,
+  },
+  pageSubtitle: {
+    ...Typography.caption,
+    fontSize: 10,
+    color: Colors.primary,
+    fontWeight: '700',
+  },
+  topActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  qrHeaderBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    backgroundColor: 'rgba(34, 197, 94, 0.1)',
+    borderWidth: 1,
+    borderColor: 'rgba(34, 197, 94, 0.25)',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: Radius.full,
+  },
+  qrHeaderBtnText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: Colors.primary,
+  },
+  quickEntryHeaderBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    backgroundColor: Colors.primary,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: Radius.full,
+  },
+  quickEntryHeaderBtnText: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: '#020617',
+  },
+  scrollArea: {
+    flex: 1,
+  },
+  dashboardContainer: {
     paddingTop: Spacing.md,
-    paddingBottom: 120,
+    paddingBottom: 100,
+    paddingHorizontal: Spacing.md,
+    maxWidth: 1200,
+    width: '100%',
+    alignSelf: 'center',
   },
   gridRow: {
     flexDirection: 'column',
-    paddingHorizontal: Spacing.md,
     gap: Spacing.md,
     marginBottom: Spacing.md,
   },
-  gridRowWide: {
+  gridRowTwoCol: {
     flexDirection: 'row',
   },
   gridCol: {
     width: '100%',
   },
-  gridColHalf: {
+  colHalf: {
     flex: 1,
   },
   cardFull: {
     width: '100%',
   },
-  fullWidthItem: {
-    paddingHorizontal: Spacing.md,
+  fullWidthBox: {
     marginBottom: Spacing.md,
   },
   cardLabel: {
     ...Typography.label,
-    fontSize: 10,
+    fontSize: 9,
     color: Colors.primary,
     marginBottom: Spacing.sm,
   },
-  sectionHeadingRow: {
-    paddingHorizontal: Spacing.md,
-    marginTop: Spacing.md,
+  sectionTitleRow: {
+    marginTop: Spacing.sm,
     marginBottom: Spacing.xs,
   },
-  sectionHeadingText: {
+  sectionTitleText: {
     ...Typography.label,
     fontSize: 10,
     color: Colors.primary,
     fontWeight: '800',
   },
   hScroll: {
-    paddingHorizontal: Spacing.md,
     paddingBottom: Spacing.xs,
   },
-  emiList: {
-    paddingHorizontal: Spacing.md,
+  emiBox: {
     gap: Spacing.sm,
+    marginTop: Spacing.xs,
   },
 });
