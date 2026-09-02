@@ -367,14 +367,39 @@ export const UniversalEntryModal: React.FC<UniversalEntryModalProps> = ({
 
             {selectedType === 'bank' && (
               <>
-                <Text style={styles.label}>BANK / ACCOUNT NAME *</Text>
+                <Text style={styles.label}>BANK / INSTITUTION NAME *</Text>
                 <TextInput
                   style={styles.input}
-                  placeholder="e.g. City Bank Savings, BRAC Salary, bKash, Cash"
+                  placeholder="e.g. City Bank, BRAC Bank, Eastern Bank, bKash, Cash"
                   placeholderTextColor={Colors.textMuted}
                   value={title}
                   onChangeText={setTitle}
                 />
+
+                <View style={styles.twoCol}>
+                  <View style={styles.col}>
+                    <Text style={styles.label}>ACCOUNT NUMBER</Text>
+                    <TextInput
+                      style={styles.input}
+                      placeholder="e.g. 1029384729"
+                      placeholderTextColor={Colors.textMuted}
+                      value={subInfo}
+                      onChangeText={setSubInfo}
+                    />
+                  </View>
+                  <View style={styles.col}>
+                    <Text style={styles.label}>BEFTN ROUTING NUMBER (9 DIGITS)</Text>
+                    <TextInput
+                      style={styles.input}
+                      placeholder="e.g. 095261234"
+                      placeholderTextColor={Colors.textMuted}
+                      keyboardType="numeric"
+                      maxLength={9}
+                      value={extraField}
+                      onChangeText={setExtraField}
+                    />
+                  </View>
+                </View>
 
                 <View style={styles.twoCol}>
                   <View style={styles.col}>
@@ -392,7 +417,7 @@ export const UniversalEntryModal: React.FC<UniversalEntryModalProps> = ({
                     <Text style={styles.label}>ACCOUNT TYPE</Text>
                     <TextInput
                       style={styles.input}
-                      placeholder="e.g. Savings, Current, Wallet, Cash"
+                      placeholder="e.g. Savings, Salary, Current, Wallet"
                       placeholderTextColor={Colors.textMuted}
                       value={category}
                       onChangeText={setCategory}

@@ -151,8 +151,8 @@ export default function MasterDashboardScreen() {
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
 
   // Computed Values
-  const totalCashInHand = cashList.reduce((sum, item) => sum + item.amount, 0);
-  const totalLoans = loanList.reduce((sum, item) => sum + item.amount, 0);
+  const totalCashInHand = cashList.reduce((sum, item) => sum + (item.amount || item.currentBalance || 0), 0);
+  const totalLoans = loanList.reduce((sum, item) => sum + (item.outstandingPrincipal !== undefined ? item.outstandingPrincipal : (item.amount || 0)), 0);
   const assetSummary = evaluateAssets(assets);
   const insuranceSummary = calculateInsuranceSummary(policies, totalLoans);
 

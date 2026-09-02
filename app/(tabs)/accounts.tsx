@@ -19,6 +19,7 @@ export interface BankAccountItem {
   bankName: string;
   accountName: string;
   accountNumber: string;
+  routingNumber?: string;
   accountType: 'Savings' | 'Current' | 'Salary' | 'MFS Wallet' | 'Physical Cash';
   currentBalance: number;
   branch?: string;
@@ -58,6 +59,7 @@ export default function AccountsScreen() {
   const [bankName, setBankName] = useState('');
   const [accountName, setAccountName] = useState('');
   const [accountNumber, setAccountNumber] = useState('');
+  const [routingNumber, setRoutingNumber] = useState('');
   const [branch, setBranch] = useState('');
   const [address, setAddress] = useState('');
   const [accountType, setAccountType] = useState<BankAccountItem['accountType']>('Savings');
@@ -86,6 +88,7 @@ export default function AccountsScreen() {
     setBankName('');
     setAccountName('');
     setAccountNumber('');
+    setRoutingNumber('');
     setBranch('');
     setAddress('');
     setInitialBalance('');
@@ -100,6 +103,7 @@ export default function AccountsScreen() {
     setBankName(acc.bankName);
     setAccountName(acc.accountName);
     setAccountNumber(acc.accountNumber);
+    setRoutingNumber(acc.routingNumber || '');
     setBranch(acc.branch || '');
     setAddress(acc.address || '');
     setAccountType(acc.accountType);
@@ -144,6 +148,7 @@ export default function AccountsScreen() {
               bankName: bankName.trim(),
               accountName: accountName.trim() || `${bankName} Account`,
               accountNumber: accountNumber.trim(),
+              routingNumber: routingNumber.trim(),
               branch: branch.trim(),
               address: address.trim(),
               accountType,
@@ -161,6 +166,7 @@ export default function AccountsScreen() {
         bankName: bankName.trim(),
         accountName: accountName.trim() || `${bankName} Account`,
         accountNumber: accountNumber.trim() || '0000',
+        routingNumber: routingNumber.trim(),
         branch: branch.trim(),
         address: address.trim(),
         accountType,
@@ -273,6 +279,19 @@ export default function AccountsScreen() {
           </View>
 
           <View style={styles.formRow}>
+            <View style={styles.formCol}>
+              <Text style={styles.inputLabel}>ROUTING NUMBER (9 DIGITS - BEFTN / NPSB / RTGS)</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="e.g. 095261234 (BEFTN Routing Number)"
+                placeholderTextColor="#94A3B8"
+                keyboardType="numeric"
+                maxLength={9}
+                value={routingNumber}
+                onChangeText={setRoutingNumber}
+              />
+            </View>
+
             <View style={styles.formCol}>
               <Text style={styles.inputLabel}>BRANCH NAME</Text>
               <TextInput
@@ -416,6 +435,24 @@ export default function AccountsScreen() {
                         A/C: {acc.accountNumber} • {acc.branch || 'Main Branch'}
                         {acc.address ? ` (${acc.address})` : ''}
                       </Text>
+                      {acc.routingNumber ? (
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 4 }}>
+                          <Text style={[styles.accNum, { color: '#0284C7', fontWeight: '800' }]}>
+                            BEFTN Routing: {acc.routingNumber}
+                          </Text>
+                          <TouchableOpacity
+                            onPress={() => {
+                              if (typeof navigator !== 'undefined' && navigator.clipboard) {
+                                navigator.clipboard.writeText(acc.routingNumber || '');
+                                Alert.alert('Copied', `Routing Number ${acc.routingNumber} copied to clipboard!`);
+                              }
+                            }}
+                            style={{ paddingHorizontal: 4, paddingVertical: 2 }}
+                          >
+                            <Ionicons name="copy-outline" size={13} color="#0284C7" />
+                          </TouchableOpacity>
+                        </View>
+                      ) : null}
                     </View>
                   </View>
 
