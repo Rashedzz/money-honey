@@ -78,7 +78,13 @@ class AppErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundary
   }
 }
 
+import { initDynamicFavicon } from '../src/utils/dynamicFavicon';
+
 export default function RootLayout() {
+  React.useEffect(() => {
+    initDynamicFavicon();
+  }, []);
+
   return (
     <AppErrorBoundary>
       <DatabaseProvider>

@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, Typography, Spacing, Radius } from '../../theme';
+import { DynamicMoneyTree } from '../visuals/DynamicMoneyTree';
 
 interface PwaInstallModalProps {
   visible: boolean;
@@ -48,9 +49,7 @@ export const PwaInstallModal: React.FC<PwaInstallModalProps> = ({
           {/* Header */}
           <View style={styles.header}>
             <View style={styles.titleRow}>
-              <View style={styles.iconBadge}>
-                <Ionicons name="phone-portrait-outline" size={18} color={Colors.primary} />
-              </View>
+              <DynamicMoneyTree size={38} />
               <View>
                 <Text style={styles.title}>Install on Mobile Phone</Text>
                 <Text style={styles.subtitle}>Scan QR or copy link to install PWA app</Text>

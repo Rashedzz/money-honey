@@ -8,6 +8,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, Typography, Spacing, Radius } from '../../theme';
+import { DynamicMoneyTree } from '../visuals/DynamicMoneyTree';
 
 export type SidebarTabType =
   | 'dashboard'
@@ -61,9 +62,7 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
       <View style={[styles.brandHeader, isCollapsed && styles.brandHeaderCollapsed]}>
         {!isCollapsed && (
           <View style={styles.brandRow}>
-            <View style={styles.logoBadge}>
-              <Text style={{ fontSize: 22 }}>🍯</Text>
-            </View>
+            <DynamicMoneyTree size={42} />
             <View style={styles.brandTextCol}>
               <Text style={styles.brandTitle}>Money-Honey</Text>
               <Text style={styles.brandTag}>Sky Blue Wealth Suite</Text>
@@ -72,9 +71,7 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
         )}
 
         {isCollapsed && (
-          <View style={styles.logoBadge}>
-            <Text style={{ fontSize: 22 }}>🍯</Text>
-          </View>
+          <DynamicMoneyTree size={36} />
         )}
 
         <TouchableOpacity

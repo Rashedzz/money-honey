@@ -36,11 +36,14 @@
       "favicon": "./assets/favicon.png",
       "bundler": "metro",
       "output": "single",
-      "name": "Money-Honey",
+      "name": "Money-Honey Wealth Suite",
       "shortName": "MoneyHoney",
-      "description": "Local-first personal finance manager",
+      "description": "Smart personal wealth & asset financial management suite",
       "themeColor": "#0284C7",
-      "backgroundColor": "#E0F2FE"
+      "backgroundColor": "#E0F2FE",
+      "display": "standalone",
+      "orientation": "portrait",
+      "scope": "/"
     },
     "plugins": [
       "expo-router",
