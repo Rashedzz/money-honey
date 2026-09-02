@@ -48,6 +48,7 @@ import { generate5ModelAiEnsemble } from '../../finance/aiMultiModelEnsemble';
 import { BACKTEST_STRATEGIES, getBacktestStrategy } from '../../finance/backtestEngine';
 import { performForensicAccountingAudit } from '../../finance/accountingFraudDetection';
 import { analyzeStockNewsSentiment } from '../../finance/aiNewsSentimentEngine';
+import { processAiInvestmentQuery, AssistantQueryResponse } from '../../finance/aiInvestmentAssistant';
 
 interface StockMarketScreenProps {
   stocks: StockHolding[];
@@ -56,7 +57,7 @@ interface StockMarketScreenProps {
   onUpdatePrice: (id: string, newPrice: number) => void;
 }
 
-type MainTabType = 'ai_intelligence' | 'screener' | 'portfolio_optimizer' | 'backtest' | 'paper_trading' | 'my_holdings';
+type MainTabType = 'ai_intelligence' | 'screener' | 'ai_assistant' | 'portfolio_optimizer' | 'backtest' | 'paper_trading' | 'my_holdings';
 
 export const StockMarketScreen: React.FC<StockMarketScreenProps> = ({
   stocks,
@@ -65,6 +66,16 @@ export const StockMarketScreen: React.FC<StockMarketScreenProps> = ({
   onUpdatePrice,
 }) => {
   const [activeTab, setActiveTab] = useState<MainTabType>('ai_intelligence');
+
+  // Live AI Assistant State
+  const [assistantInput, setAssistantInput] = useState(
+    'I have Tk 20 lakh. I want moderate risk and 3-year investment horizon. Analyze the Bangladesh market and suggest a portfolio.'
+  );
+  const [assistantResult, setAssistantResult] = useState<AssistantQueryResponse | null>(() =>
+    processAiInvestmentQuery(
+      'I have Tk 20 lakh. I want moderate risk and 3-year investment horizon. Analyze the Bangladesh market and suggest a portfolio.'
+    )
+  );
 
   // Screener Filters
   const [searchQuery, setSearchQuery] = useState('');
@@ -237,6 +248,7 @@ export const StockMarketScreen: React.FC<StockMarketScreenProps> = ({
           {[
             { id: 'ai_intelligence', label: '🧠 AI Intelligence & Top Picks' },
             { id: 'screener', label: '📊 DSE Stock Screener' },
+            { id: 'ai_assistant', label: '🤖 Live AI Assistant' },
             { id: 'portfolio_optimizer', label: '💼 AI Portfolio Optimizer' },
             { id: 'backtest', label: '🔬 Patterns & Backtesting' },
             { id: 'paper_trading', label: '🎮 Virtual Paper Trading' },
@@ -677,6 +689,195 @@ export const StockMarketScreen: React.FC<StockMarketScreenProps> = ({
               </TouchableOpacity>
             ))}
           </View>
+        </View>
+      )}
+
+      {/* TAB: LIVE BANGLADESH AI INVESTMENT ASSISTANT (PHASE 4) */}
+      {activeTab === 'ai_assistant' && (
+        <View style={{ gap: Spacing.md }}>
+          <GlassCard style={{ width: '100%' }} padding={20} glowColor="#16A34A">
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 6 }}>
+              <Text style={{ fontSize: 24 }}>🤖</Text>
+              <View>
+                <Text style={{ fontSize: 18, fontWeight: '900', color: '#0F172A' }}>
+                  LIVE BANGLADESH AI INVESTMENT ASSISTANT
+                </Text>
+                <Text style={{ fontSize: 12, color: '#64748B' }}>
+                  Conversational decision-support synthesizing DSE/CSE data, DCF waterfalls, and fraud radars
+                </Text>
+              </View>
+            </View>
+
+            {/* Natural Language Prompt Input Bar */}
+            <View style={{ marginTop: 12 }}>
+              <Text style={{ fontSize: 12, fontWeight: '800', color: '#0F172A', marginBottom: 6 }}>
+                ASK YOUR INVESTMENT QUESTION / PORTFOLIO REQUIREMENT:
+              </Text>
+              <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center' }}>
+                <View style={[styles.searchBar, { flex: 1 }]}>
+                  <Ionicons name="chatbox-ellipses-outline" size={18} color="#64748B" />
+                  <TextInput
+                    style={styles.searchInput}
+                    placeholder="e.g. I have Tk 20 lakh, moderate risk, 3-year horizon. Analyze and suggest a portfolio..."
+                    placeholderTextColor="#94A3B8"
+                    value={assistantInput}
+                    onChangeText={setAssistantInput}
+                  />
+                </View>
+                <TouchableOpacity
+                  style={[styles.scanBtn, { backgroundColor: '#16A34A' }]}
+                  onPress={() => {
+                    if (!assistantInput.trim()) return;
+                    setAssistantResult(processAiInvestmentQuery(assistantInput));
+                  }}
+                  activeOpacity={0.85}
+                >
+                  <Ionicons name="sparkles" size={16} color="#FFFFFF" />
+                  <Text style={styles.scanBtnText}>Analyze</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            {/* Quick Prompt Recommendation Pills */}
+            <View style={{ marginTop: 12 }}>
+              <Text style={{ fontSize: 11, color: '#64748B', marginBottom: 6 }}>
+                Or tap a one-click sample institutional scenario:
+              </Text>
+              <View style={{ flexDirection: 'row', gap: 6, flexWrap: 'wrap' }}>
+                {[
+                  'I have Tk 20 lakh. I want moderate risk and 3-year investment horizon. Analyze the Bangladesh market and suggest a portfolio.',
+                  'I have Tk 50 lakh. Aggressive growth, 5-year horizon. Maximize capital appreciation.',
+                  'Audit Square Pharmaceuticals for DCF valuation, earnings growth, and fraud risk.',
+                  'Check Beximco for debt distress, Beneish M-score, and auditor warnings.',
+                  'What are the safest high-yield dividend stocks with unbroken cash flow coverage?',
+                ].map((prompt, i) => (
+                  <TouchableOpacity
+                    key={i}
+                    style={{ backgroundColor: '#F1F5F9', paddingHorizontal: 10, paddingVertical: 6, borderRadius: Radius.full, borderWidth: 1, borderColor: '#E2E8F0' }}
+                    onPress={() => {
+                      setAssistantInput(prompt);
+                      setAssistantResult(processAiInvestmentQuery(prompt));
+                    }}
+                  >
+                    <Text style={{ fontSize: 11, color: '#334155', fontWeight: '600' }} numberOfLines={1}>
+                      💬 {prompt.length > 55 ? prompt.slice(0, 52) + '...' : prompt}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </View>
+          </GlassCard>
+
+          {/* AI Assistant Output Dossier */}
+          {assistantResult && (
+            <GlassCard style={{ width: '100%' }} padding={20} glowColor="#0284C7">
+              {/* Response Header */}
+              <View style={{ borderBottomWidth: 1, borderBottomColor: '#E2E8F0', paddingBottom: 12, marginBottom: 12 }}>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <Text style={{ fontSize: 16, fontWeight: '900', color: '#0369A1' }}>
+                    {assistantResult.headline}
+                  </Text>
+                  <View style={{ backgroundColor: '#F0FDF4', paddingHorizontal: 8, paddingVertical: 4, borderRadius: Radius.sm }}>
+                    <Text style={{ fontSize: 11, fontWeight: '800', color: '#16A34A' }}>VERIFIED RESEARCH</Text>
+                  </View>
+                </View>
+                <Text style={{ fontSize: 13, color: '#0F172A', marginTop: 8, lineHeight: 19 }}>
+                  {assistantResult.executiveSummary}
+                </Text>
+              </View>
+
+              {/* Key Strategic Takeaways */}
+              <Text style={styles.sectionHeading}>💡 KEY STRATEGIC FINDINGS</Text>
+              <View style={{ gap: 6, marginBottom: Spacing.md }}>
+                {assistantResult.keyTakeaways.map((takeaway, idx) => (
+                  <View key={idx} style={{ flexDirection: 'row', gap: 8, alignItems: 'flex-start' }}>
+                    <Text style={{ color: '#16A34A', fontWeight: '900' }}>✓</Text>
+                    <Text style={{ fontSize: 12, color: '#334155', flex: 1, lineHeight: 18 }}>{takeaway}</Text>
+                  </View>
+                ))}
+              </View>
+
+              {/* Portfolio Allocations if applicable */}
+              {assistantResult.recommendedPortfolio && (
+                <>
+                  <Text style={styles.sectionHeading}>📊 OPTIMAL ALLOCATION MATRIX</Text>
+                  <View style={styles.table}>
+                    <View style={styles.tableHeader}>
+                      <Text style={[styles.th, { flex: 1 }]}>SECURITY</Text>
+                      <Text style={[styles.th, { width: 65 }]}>WEIGHT</Text>
+                      <Text style={[styles.th, { flex: 1 }]}>AMOUNT (৳)</Text>
+                      <Text style={[styles.th, { flex: 1 }]}>SHARES</Text>
+                      <Text style={[styles.th, { flex: 1 }]}>TARGET</Text>
+                    </View>
+                    {assistantResult.recommendedPortfolio.stockAllocations.map((item) => (
+                      <View key={item.symbol} style={styles.tableRow}>
+                        <View style={{ flex: 1 }}>
+                          <Text style={{ fontWeight: '800', color: '#0F172A' }}>{item.symbol}</Text>
+                          <Text style={{ fontSize: 10, color: '#64748B' }}>{item.sector}</Text>
+                        </View>
+                        <Text style={[styles.td, { width: 65, fontWeight: '800', color: '#0284C7' }]}>{item.weightPercent}%</Text>
+                        <Text style={[styles.td, { flex: 1, fontWeight: '800' }]}>৳{Math.round(item.allocatedAmount).toLocaleString('en-IN')}</Text>
+                        <Text style={[styles.td, { flex: 1 }]}>{item.sharesToBuy.toLocaleString()} shares</Text>
+                        <Text style={[styles.td, { flex: 1, fontWeight: '900', color: '#16A34A' }]}>৳{item.targetPrice} (+{item.expectedReturnPercent}%)</Text>
+                      </View>
+                    ))}
+                    <View style={[styles.tableRow, { backgroundColor: '#F0F9FF' }]}>
+                      <Text style={[styles.td, { flex: 1, fontWeight: '800', color: '#0284C7' }]}>Liquid Cash Reserve</Text>
+                      <Text style={[styles.td, { width: 65, fontWeight: '800' }]}>{assistantResult.recommendedPortfolio.cashReservePercent}%</Text>
+                      <Text style={[styles.td, { flex: 1, fontWeight: '800' }]}>৳{Math.round(assistantResult.recommendedPortfolio.cashReserveAmount).toLocaleString('en-IN')}</Text>
+                      <Text style={[styles.td, { flex: 1 }]}>Liquid Buffer</Text>
+                      <Text style={[styles.td, { flex: 1, color: '#64748B' }]}>Dip Protection</Text>
+                    </View>
+                  </View>
+                </>
+              )}
+
+              {/* Single Stock Audit if applicable */}
+              {assistantResult.targetStockDetails && (
+                <View style={[styles.kpiGrid, { marginTop: Spacing.sm }]}>
+                  <View style={styles.kpiItem}>
+                    <Text style={styles.kpiLabel}>LAST TRADED PRICE</Text>
+                    <Text style={styles.kpiVal}>৳{assistantResult.targetStockDetails.ltp}</Text>
+                  </View>
+                  <View style={styles.kpiItem}>
+                    <Text style={styles.kpiLabel}>AI SCORE & RATING</Text>
+                    <Text style={[styles.kpiVal, { color: '#16A34A' }]}>{assistantResult.targetStockDetails.aiScore}/100 ({assistantResult.targetStockDetails.recommendation})</Text>
+                  </View>
+                  <View style={styles.kpiItem}>
+                    <Text style={styles.kpiLabel}>DCF INTRINSIC VALUE</Text>
+                    <Text style={[styles.kpiVal, { color: '#0284C7' }]}>৳{assistantResult.targetStockDetails.dcfValue} (+{assistantResult.targetStockDetails.marginOfSafety}%)</Text>
+                  </View>
+                  <View style={styles.kpiItem}>
+                    <Text style={styles.kpiLabel}>ACCOUNTING FRAUD RISK</Text>
+                    <Text style={[styles.kpiVal, { color: assistantResult.targetStockDetails.accountingRisk.includes('Low') ? '#16A34A' : '#EF4444' }]}>
+                      {assistantResult.targetStockDetails.accountingRisk}
+                    </Text>
+                  </View>
+                </View>
+              )}
+
+              {/* Action: Transfer to Virtual Paper Trading */}
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: Spacing.md, paddingTop: 12, borderTopWidth: 1, borderTopColor: '#E2E8F0', flexWrap: 'wrap', gap: 10 }}>
+                <Text style={{ fontSize: 11, color: '#64748B', flex: 1 }}>
+                  🛡️ {assistantResult.disclaimer}
+                </Text>
+                <TouchableOpacity
+                  style={[styles.quickBuyBtn, { paddingHorizontal: 16, paddingVertical: 10 }]}
+                  onPress={() => {
+                    setActiveTab('paper_trading');
+                    Alert.alert(
+                      'Ready to Test Strategy',
+                      'Navigate to the Virtual Paper Simulator tab to execute this portfolio with zero financial risk!'
+                    );
+                  }}
+                >
+                  <Text style={{ fontSize: 12, fontWeight: '800', color: '#FFFFFF' }}>
+                    🎮 Test in Virtual Paper Simulator
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </GlassCard>
+          )}
         </View>
       )}
 
