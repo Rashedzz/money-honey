@@ -57,7 +57,7 @@
     },
     "scheme": "moneyhoney",
     "extra": {
-      "eas": { "projectId": "YOUR_EAS_PROJECT_ID" }
+      "eas": { "projectId": "2f0aa68a-42b8-4ee0-b121-10218fb78f82" }
     }
   }
 }
