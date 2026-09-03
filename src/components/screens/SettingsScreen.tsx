@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   View,
   Text,
@@ -9,6 +9,7 @@ import {
   Alert,
   Switch,
   Platform,
+  Image,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, Typography, Spacing, Radius } from '../../theme';
@@ -53,12 +54,14 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
   } = useAuth();
 
   // Profile Form State
-  const [name, setName] = useState(user?.name || 'Rashed Rahman');
-  const [email, setEmail] = useState(user?.email || 'rashed@example.com');
+  const [name, setName] = useState(user?.name || 'Rashed Zaman');
+  const [email, setEmail] = useState(user?.email || 'sm.rashed.zaman@gmail.com');
   const [userId, setUserId] = useState(user?.id || 'rashed01');
-  const [dob, setDob] = useState(birthDate);
+  const [dob, setDob] = useState(birthDate || user?.birthDate || '1985-11-18');
   const [selectedAvatar, setSelectedAvatar] = useState(user?.avatar || '👨‍💼');
+  const [customPhoto, setCustomPhoto] = useState(user?.photoUri || '');
   const [profileSavedMsg, setProfileSavedMsg] = useState('');
+  const fileInputRef = useRef<any>(null);
 
   // Password & Security State
   const [currentPassword, setCurrentPassword] = useState('');
@@ -84,16 +87,94 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
   const [restoreInput, setRestoreInput] = useState('');
   const [showRestoreBox, setShowRestoreBox] = useState(false);
 
+  useEffect(() => {
+    if (user) {
+      if (user.name) setName(user.name);
+      if (user.email) setEmail(user.email);
+      if (user.id) setUserId(user.id);
+      if (user.avatar) setSelectedAvatar(user.avatar);
+      if (user.photoUri !== undefined) setCustomPhoto(user.photoUri);
+      if (user.birthDate) setDob(user.birthDate);
+    }
+  }, [user]);
+
+  const triggerImagePicker = () => {
+    if (Platform.OS === 'web' && typeof document !== 'undefined') {
+      fileInputRef.current?.click();
+    } else {
+      Alert.alert('Upload Photo', 'To upload your profile photo, please open Money-Honey in a web browser or modern mobile device.');
+    }
+  };
+
+  const handlePhotoFileChange = (event: any) => {
+    const file = event.target?.files?.[0];
+    if (!file) return;
+
+    if (file.size > 10 * 1024 * 1024) {
+      Alert.alert('Image Too Large', 'Please select an image smaller than 10MB.');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const dataUrl = e.target?.result as string;
+      if (dataUrl) {
+        if (typeof window !== 'undefined') {
+          const img = new (window as any).Image();
+          img.onload = () => {
+            const canvas = document.createElement('canvas');
+            const maxDim = 320;
+            let w = img.width;
+            let h = img.height;
+            if (w > h) {
+              if (w > maxDim) {
+                h = Math.round((h * maxDim) / w);
+                w = maxDim;
+              }
+            } else {
+              if (h > maxDim) {
+                w = Math.round((w * maxDim) / h);
+                h = maxDim;
+              }
+            }
+            canvas.width = w;
+            canvas.height = h;
+            const ctx = canvas.getContext('2d');
+            ctx?.drawImage(img, 0, 0, w, h);
+            const compressed = canvas.toDataURL('image/jpeg', 0.85);
+            setCustomPhoto(compressed);
+          };
+          img.src = dataUrl;
+        } else {
+          setCustomPhoto(dataUrl);
+        }
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+
   const handleSaveProfile = async () => {
-    onUpdateBirthDate(dob);
-    const res = await updateProfile({
-      name,
-      email,
-      avatar: selectedAvatar,
-    });
-    if (res.success) {
-      setProfileSavedMsg('Profile successfully updated!');
-      setTimeout(() => setProfileSavedMsg(''), 3000);
+    try {
+      onUpdateBirthDate(dob);
+      const res = await updateProfile({
+        name: name.trim() || 'Rashed Zaman',
+        email: email.trim(),
+        avatar: selectedAvatar,
+        photoUri: customPhoto,
+        birthDate: dob,
+      });
+      if (res.success) {
+        setProfileSavedMsg('Profile and photo successfully saved!');
+        Alert.alert(
+          'Profile Saved',
+          'Your legal name, recovery email, birthdate, and profile picture have been updated and permanently saved.'
+        );
+        setTimeout(() => setProfileSavedMsg(''), 4000);
+      } else {
+        Alert.alert('Save Failed', res.error || 'Failed to update profile.');
+      }
+    } catch (err: any) {
+      Alert.alert('Error', err.message || 'An error occurred while saving.');
     }
   };
 
@@ -123,6 +204,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
     setCurrentPassword('');
     setNewPassword('');
     setSecSavedMsg('Master password & security credentials saved successfully!');
+    Alert.alert('Security Saved', 'Master password and recovery security questions saved successfully!');
     setTimeout(() => setSecSavedMsg(''), 3500);
   };
 
@@ -135,13 +217,14 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
     const newEvent: BirthdayEvent = {
       id: `BD-${Date.now()}`,
       personName: bName.trim(),
-      relation: bRelation.trim() || 'Friend',
+      relation: (bRelation.trim() as any) || 'Friend',
       birthDate: bDate.trim(),
       giftBudget: parseFloat(bBudget) || 5000,
       notifyDaysBefore: parseInt(bDaysBefore, 10) || 3,
     };
 
     onAddBirthday(newEvent);
+    Alert.alert('Birthday Saved', `Birthday for ${newEvent.personName} saved with reminders!`);
     setBName('');
     setBRelation('');
     setBDate('');
@@ -181,16 +264,61 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       {/* 1. Profile & Avatar Card */}
       <GlassCard style={styles.card} padding={20} glowColor={Colors.primary}>
+        {/* Hidden Web File Input */}
+        {Platform.OS === 'web' && (
+          <input
+            type="file"
+            ref={fileInputRef}
+            accept="image/*"
+            style={{ display: 'none' }}
+            onChange={handlePhotoFileChange}
+          />
+        )}
+
         <View style={styles.profileHeader}>
-          <View style={styles.avatarLarge}>
-            <Text style={{ fontSize: 36 }}>{selectedAvatar}</Text>
-          </View>
+          <TouchableOpacity
+            style={styles.avatarLarge}
+            onPress={triggerImagePicker}
+            activeOpacity={0.8}
+          >
+            {customPhoto ? (
+              <Image source={{ uri: customPhoto }} style={styles.avatarPhoto} />
+            ) : (
+              <Text style={{ fontSize: 36 }}>{selectedAvatar}</Text>
+            )}
+            <View style={styles.avatarCameraBadge}>
+              <Ionicons name="camera" size={13} color="#FFFFFF" />
+            </View>
+          </TouchableOpacity>
 
           <View style={styles.profileMeta}>
             <Text style={styles.userName}>{name}</Text>
             <Text style={styles.userRole}>
               User ID: @{user?.id || 'rashed01'} • Wealth Suite Master
             </Text>
+            {/* Real Photo Upload & Remove Buttons */}
+            <View style={styles.photoActionRow}>
+              <TouchableOpacity
+                style={styles.uploadPhotoBtn}
+                onPress={triggerImagePicker}
+                activeOpacity={0.85}
+              >
+                <Ionicons name="camera" size={14} color="#FFFFFF" />
+                <Text style={styles.uploadPhotoBtnText}>
+                  {customPhoto ? 'Change Photo' : 'Upload Real Photo'}
+                </Text>
+              </TouchableOpacity>
+              {customPhoto ? (
+                <TouchableOpacity
+                  style={styles.removePhotoBtn}
+                  onPress={() => setCustomPhoto('')}
+                  activeOpacity={0.85}
+                >
+                  <Ionicons name="trash-outline" size={13} color="#EF4444" />
+                  <Text style={styles.removePhotoBtnText}>Remove</Text>
+                </TouchableOpacity>
+              ) : null}
+            </View>
           </View>
         </View>
 
@@ -666,6 +794,61 @@ const styles = StyleSheet.create({
     borderColor: '#BAE6FD',
     justifyContent: 'center',
     alignItems: 'center',
+    position: 'relative',
+  },
+  avatarPhoto: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+  },
+  avatarCameraBadge: {
+    position: 'absolute',
+    bottom: -2,
+    right: -2,
+    backgroundColor: '#0284C7',
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1.5,
+    borderColor: '#FFFFFF',
+  },
+  photoActionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginTop: 8,
+  },
+  uploadPhotoBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: '#0284C7',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: Radius.sm,
+  },
+  uploadPhotoBtnText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: '800',
+  },
+  removePhotoBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#FEE2E2',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: Radius.sm,
+    borderWidth: 1,
+    borderColor: '#FECACA',
+  },
+  removePhotoBtnText: {
+    color: '#EF4444',
+    fontSize: 12,
+    fontWeight: '800',
   },
   profileMeta: {
     flex: 1,

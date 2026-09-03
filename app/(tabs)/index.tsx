@@ -9,6 +9,7 @@ import {
   SafeAreaView,
   TouchableOpacity,
   useWindowDimensions,
+  Image,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, Typography, Spacing, Radius } from '../../src/theme';
@@ -84,7 +85,14 @@ export default function MasterDashboardScreen() {
   const [activeTab, setActiveTab] = useState<SidebarTabType>('dashboard');
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
-  const [birthDate, setBirthDate] = useState('1992-05-15');
+  const [birthDate, setBirthDateState] = useState<string>(() =>
+    getStoredData('mh_user_birthdate', user?.birthDate || '1985-11-18')
+  );
+
+  const setBirthDate = (newDob: string) => {
+    setBirthDateState(newDob);
+    setStoredData('mh_user_birthdate', newDob);
+  };
 
   // Master State - Clean slate without dummy data, persisted to local device storage
   const [assets, setAssetsState] = useState<AssetItem[]>(() => getStoredData('mh_user_assets', []));
@@ -310,7 +318,7 @@ export default function MasterDashboardScreen() {
             onOpenAuthModal={openAuthModal}
             isCollapsed={isSidebarCollapsed}
             onToggleCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
-            userProfile={user || { name: 'Rashed Rahman', avatar: '👨‍💼', id: 'rashed01' }}
+            userProfile={user || { name: 'Rashed Zaman', avatar: '👨‍💼', id: 'rashed01' }}
             isOnline={isOnline}
           />
         )}
@@ -342,7 +350,14 @@ export default function MasterDashboardScreen() {
                 onPress={openAuthModal}
                 activeOpacity={0.8}
               >
-                <Ionicons name="person-circle-outline" size={18} color="#0F172A" />
+                {user?.photoUri ? (
+                  <Image
+                    source={{ uri: user.photoUri }}
+                    style={{ width: 22, height: 22, borderRadius: 11, marginRight: 6 }}
+                  />
+                ) : (
+                  <Ionicons name="person-circle-outline" size={18} color="#0F172A" />
+                )}
                 <Text style={styles.authHeaderBtnText}>
                   @{user?.id || 'rashed01'}
                 </Text>
@@ -564,7 +579,7 @@ export default function MasterDashboardScreen() {
         onQuickEntryPress={() => openModal('stock')}
         onOpenQrModal={() => setQrModalVisible(true)}
         onOpenAuthModal={openAuthModal}
-        userProfile={user || { name: 'Rashed Rahman', avatar: '👨‍💼', id: 'rashed01' }}
+        userProfile={user || { name: 'Rashed Zaman', avatar: '👨‍💼', id: 'rashed01' }}
         isOnline={isOnline}
       />
 

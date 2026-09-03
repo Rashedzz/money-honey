@@ -6,6 +6,8 @@ export interface UserProfile {
   name: string;        // Display Name
   email?: string;
   avatar?: string;
+  photoUri?: string;   // Real custom photo (data URL base64)
+  birthDate?: string;  // Date of birth
   recoveryEmail?: string;
   securityQuestion1?: string;
   securityAnswer1?: string;
@@ -13,6 +15,18 @@ export interface UserProfile {
   securityAnswer2?: string;
   createdAt: number;
 }
+
+export const DEFAULT_USER_PROFILE: UserProfile = {
+  id: 'rashed01',
+  name: 'Rashed Zaman',
+  email: 'sm.rashed.zaman@gmail.com',
+  avatar: '👨‍💼',
+  photoUri: '',
+  birthDate: '1985-11-18',
+  securityQuestion1: 'What was your first school or hometown?',
+  securityAnswer1: '',
+  createdAt: 1700000000000,
+};
 
 export interface AuthContextType {
   user: UserProfile | null;
@@ -46,7 +60,20 @@ const LAST_BACKUP_KEY = 'money_honey_last_backup';
 const AuthContext = createContext<AuthContextType>({} as AuthContextType);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<UserProfile | null>(null);
+  const [user, setUser] = useState<UserProfile | null>(() => {
+    try {
+      if (typeof window !== 'undefined' && window.localStorage) {
+        const savedSession = window.localStorage.getItem(USER_STORAGE_KEY);
+        if (savedSession) {
+          const parsed = JSON.parse(savedSession);
+          if (parsed && parsed.id) return parsed;
+        }
+      }
+    } catch (e) {
+      console.warn('Session init error:', e);
+    }
+    return DEFAULT_USER_PROFILE;
+  });
   const [isAuthModalVisible, setIsAuthModalVisible] = useState(false);
   const [isOnline, setIsOnline] = useState(true);
   const [autoCloudBackup, setAutoCloudBackup] = useState(true);
@@ -60,6 +87,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const savedSession = window.localStorage.getItem(USER_STORAGE_KEY);
         if (savedSession) {
           setUser(JSON.parse(savedSession));
+        } else {
+          window.localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(DEFAULT_USER_PROFILE));
+          setUser(DEFAULT_USER_PROFILE);
         }
 
         // Load backup config
@@ -200,27 +230,31 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const updateProfile = async (updates: Partial<UserProfile>): Promise<{ success: boolean; error?: string }> => {
     try {
-      if (!user) return { success: false, error: 'No active session.' };
-
-      const updated = { ...user, ...updates };
+      const current = user || DEFAULT_USER_PROFILE;
+      const updated: UserProfile = { ...current, ...updates };
       setUser(updated);
 
       if (typeof window !== 'undefined' && window.localStorage) {
         window.localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(updated));
 
         // Update in users database
+        let usersDb: Record<string, { profile: UserProfile; passwordHash: string }> = {};
         const raw = window.localStorage.getItem(USERS_DB_KEY);
-        if (raw) {
-          const db = JSON.parse(raw);
-          if (db[user.id]) {
-            db[user.id].profile = updated;
-            window.localStorage.setItem(USERS_DB_KEY, JSON.stringify(db));
-          }
+        if (raw) usersDb = JSON.parse(raw);
+
+        if (usersDb[updated.id]) {
+          usersDb[updated.id].profile = updated;
+        } else {
+          usersDb[updated.id] = {
+            profile: updated,
+            passwordHash: '',
+          };
         }
+        window.localStorage.setItem(USERS_DB_KEY, JSON.stringify(usersDb));
       }
       return { success: true };
     } catch (err: any) {
-      return { success: false, error: err.message };
+      return { success: false, error: err.message || 'Failed to update profile.' };
     }
   };
 
@@ -230,7 +264,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     newPassword?: string
   ): Promise<{ success: boolean; error?: string }> => {
     try {
-      if (!user) return { success: false, error: 'Not authenticated.' };
+      const currentUser = user || DEFAULT_USER_PROFILE;
 
       let usersDb: Record<string, { profile: UserProfile; passwordHash: string }> = {};
       if (typeof window !== 'undefined' && window.localStorage) {
@@ -238,7 +272,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (raw) usersDb = JSON.parse(raw);
       }
 
-      const match = usersDb[user.id];
+      const match = usersDb[currentUser.id];
       const hasExistingPassword = !!(match && match.passwordHash);
 
       // If a password was already created previously, require the current password
@@ -249,13 +283,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
 
       const cleanNewId = newUserId.trim().toLowerCase();
-      if (cleanNewId !== user.id && usersDb[cleanNewId]) {
+      if (cleanNewId !== currentUser.id && usersDb[cleanNewId]) {
         return { success: false, error: 'New User ID is already taken.' };
       }
 
-      delete usersDb[user.id];
+      delete usersDb[currentUser.id];
 
-      const updatedProfile: UserProfile = { ...user, id: cleanNewId };
+      const updatedProfile: UserProfile = { ...currentUser, id: cleanNewId };
       usersDb[cleanNewId] = {
         profile: updatedProfile,
         passwordHash: newPassword ? btoa(newPassword) : (match ? match.passwordHash : ''),

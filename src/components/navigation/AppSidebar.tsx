@@ -5,6 +5,7 @@ import {
   StyleSheet,
   TouchableOpacity,
   ScrollView,
+  Image,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, Typography, Spacing, Radius } from '../../theme';
@@ -32,6 +33,7 @@ interface AppSidebarProps {
     id?: string;
     name: string;
     avatar?: string;
+    photoUri?: string;
   };
   isOnline?: boolean;
 }
@@ -44,7 +46,7 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
   onOpenAuthModal,
   isCollapsed,
   onToggleCollapse,
-  userProfile = { id: 'rashed01', name: 'Rashed Rahman', avatar: '👨‍💼' },
+  userProfile = { id: 'rashed01', name: 'Rashed Zaman', avatar: '👨‍💼' },
   isOnline = true,
 }) => {
   const [hoveredTab, setHoveredTab] = useState<string | null>(null);
@@ -111,7 +113,7 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
       {/* Navigation Links: Pure Black background, Pure White text, Green selected button, Gold hover */}
       <ScrollView
         showsVerticalScrollIndicator={true}
-        style={[styles.menuList, { overflowY: 'auto' as any }]}
+        style={[styles.menuList, { overflow: 'scroll' } as any]}
         contentContainerStyle={{ paddingBottom: 24, flexGrow: 1 }}
       >
         {menuItems.map((item) => {
@@ -217,7 +219,11 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
           activeOpacity={0.85}
         >
           <View style={styles.avatar}>
-            <Text style={{ fontSize: 18 }}>{userProfile.avatar || '👨‍💼'}</Text>
+            {userProfile.photoUri ? (
+              <Image source={{ uri: userProfile.photoUri }} style={styles.avatarImg} />
+            ) : (
+              <Text style={{ fontSize: 18 }}>{userProfile.avatar || '👨‍💼'}</Text>
+            )}
           </View>
           {!isCollapsed && (
             <View style={styles.userMeta}>
@@ -469,6 +475,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderWidth: 1,
     borderColor: '#16A34A',
+    overflow: 'hidden',
+  },
+  avatarImg: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
   },
   userMeta: {
     flex: 1,

@@ -7,6 +7,7 @@ import {
   ScrollView,
   Modal,
   SafeAreaView,
+  Image,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, Spacing, Radius } from '../../theme';
@@ -25,6 +26,7 @@ interface MobileDrawerProps {
     id?: string;
     name: string;
     avatar?: string;
+    photoUri?: string;
   };
   isOnline?: boolean;
 }
@@ -37,7 +39,7 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({
   onQuickEntryPress,
   onOpenQrModal,
   onOpenAuthModal,
-  userProfile = { id: 'rashed01', name: 'Rashed Rahman', avatar: '👨‍💼' },
+  userProfile = { id: 'rashed01', name: 'Rashed Zaman', avatar: '👨‍💼' },
   isOnline = true,
 }) => {
   const menuItems: Array<{
@@ -94,7 +96,11 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({
               }}
               activeOpacity={0.8}
             >
-              <Text style={styles.avatar}>{userProfile.avatar || '👨‍💼'}</Text>
+              {userProfile.photoUri ? (
+                <Image source={{ uri: userProfile.photoUri }} style={styles.avatarImg} />
+              ) : (
+                <Text style={styles.avatar}>{userProfile.avatar || '👨‍💼'}</Text>
+              )}
               <View style={{ flex: 1 }}>
                 <Text style={styles.profileName}>{userProfile.name}</Text>
                 <View style={styles.statusRow}>
@@ -127,7 +133,7 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({
 
             {/* Navigation Menu Items */}
             <ScrollView
-              style={[styles.menuScroll, { overflowY: 'auto' as any }]}
+              style={[styles.menuScroll, { overflow: 'scroll' } as any]}
               showsVerticalScrollIndicator={true}
               contentContainerStyle={{ paddingBottom: 30 }}
             >
@@ -260,6 +266,11 @@ const styles = StyleSheet.create({
   },
   avatar: {
     fontSize: 24,
+  },
+  avatarImg: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
   },
   profileName: {
     fontSize: 13,
