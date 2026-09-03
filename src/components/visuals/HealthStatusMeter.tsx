@@ -18,57 +18,59 @@ export const HealthStatusMeter: React.FC<HealthStatusMeterProps> = ({
   const coverageRatio = totalLoans > 0 ? ((totalCashInHand / totalLoans) * 100).toFixed(0) : '100+';
 
   return (
-    <GlassCard
-      style={styles.card}
-      padding={20}
-      glowColor={isSolvent ? Colors.success : Colors.danger}
-    >
+    <View style={styles.card}>
       <View style={styles.header}>
         <View style={styles.titleRow}>
           <Ionicons
             name={isSolvent ? 'shield-checkmark' : 'alert-circle'}
-            size={22}
-            color={isSolvent ? Colors.success : Colors.danger}
+            size={18}
+            color={isSolvent ? '#059669' : '#DC2626'}
           />
-          <Text style={styles.title}>CURRENT FINANCIAL SOLVENCY STATUS</Text>
+          <Text style={styles.title}>LIQUID SOLVENCY & DEBT COVERAGE RATIO</Text>
         </View>
         <View
           style={[
             styles.statusPill,
-            { backgroundColor: isSolvent ? 'rgba(16, 185, 129, 0.15)' : 'rgba(239, 68, 68, 0.15)' },
+            { backgroundColor: isSolvent ? 'rgba(16, 185, 129, 0.12)' : 'rgba(239, 68, 68, 0.12)' },
           ]}
         >
+          <View
+            style={[
+              styles.statusDot,
+              { backgroundColor: isSolvent ? '#10B981' : '#EF4444' },
+            ]}
+          />
           <Text
             style={[
               styles.statusText,
-              { color: isSolvent ? Colors.success : Colors.danger },
+              { color: isSolvent ? '#059669' : '#DC2626' },
             ]}
           >
-            {isSolvent ? 'SOLVENT' : 'DEBT EXCEEDS CASH'}
+            {isSolvent ? 'LIQUID SURPLUS' : 'LEVERAGED DEFICIT'}
           </Text>
         </View>
       </View>
 
-      <Text style={styles.subFormula}>Net Liquid Status: Cash in Hand − Total Outstanding Loans</Text>
+      <Text style={styles.subFormula}>Liquid Reserve Buffer: Cash & Bank Accounts − Outstanding Borrowings</Text>
 
       <View style={styles.mainValueRow}>
         <View>
           <Text
             style={[
               styles.netAmount,
-              { color: isSolvent ? Colors.success : Colors.danger },
+              { color: isSolvent ? '#0F172A' : '#DC2626' },
             ]}
           >
             {isSolvent ? '+' : '−'}৳ {Math.abs(netStatus).toLocaleString('en-IN')}
           </Text>
           <Text style={styles.netAmountSub}>
-            {isSolvent ? 'Net Liquid Capital Surplus' : 'Net Deficit (Total Debt exceeds liquid bank reserves)'}
+            {isSolvent ? 'Liquid Capital Buffer above all debts' : 'Immediate debt liabilities exceed liquid cash reserves'}
           </Text>
         </View>
 
         <View style={styles.coverageBox}>
           <Text style={styles.coverageLabel}>Debt Coverage</Text>
-          <Text style={[styles.coverageValue, { color: isSolvent ? Colors.success : Colors.accent }]}>
+          <Text style={[styles.coverageValue, { color: isSolvent ? '#059669' : '#D97706' }]}>
             {coverageRatio}%
           </Text>
         </View>
@@ -82,7 +84,9 @@ export const HealthStatusMeter: React.FC<HealthStatusMeterProps> = ({
             { flex: Math.max(1, totalCashInHand) },
           ]}
         >
-          <Text style={styles.barInsideText}>Cash: ৳{(totalCashInHand / 100000).toFixed(1)}L</Text>
+          {totalCashInHand > 0 && (
+            <Text style={styles.barInsideText}>Cash: ৳{(totalCashInHand / 100000).toFixed(1)}L</Text>
+          )}
         </View>
         <View
           style={[
@@ -90,30 +94,41 @@ export const HealthStatusMeter: React.FC<HealthStatusMeterProps> = ({
             { flex: Math.max(1, totalLoans) },
           ]}
         >
-          <Text style={styles.barInsideText}>Loan: ৳{(totalLoans / 100000).toFixed(1)}L</Text>
+          {totalLoans > 0 && (
+            <Text style={styles.barInsideText}>Debt: ৳{(totalLoans / 100000).toFixed(1)}L</Text>
+          )}
         </View>
       </View>
 
       <View style={styles.footerRow}>
         <View style={styles.footerItem}>
-          <View style={[styles.dot, { backgroundColor: Colors.primary }]} />
-          <Text style={styles.footerLabel}>Total Liquid Cash & Bank:</Text>
+          <View style={[styles.dot, { backgroundColor: '#0284C7' }]} />
+          <Text style={styles.footerLabel}>Liquid Cash & Bank Reserves:</Text>
           <Text style={styles.footerVal}>৳ {totalCashInHand.toLocaleString('en-IN')}</Text>
         </View>
         <View style={styles.footerItem}>
-          <View style={[styles.dot, { backgroundColor: Colors.danger }]} />
-          <Text style={styles.footerLabel}>Total Loan Liability:</Text>
+          <View style={[styles.dot, { backgroundColor: '#DC2626' }]} />
+          <Text style={styles.footerLabel}>Total Outstanding Borrowing:</Text>
           <Text style={styles.footerVal}>৳ {totalLoans.toLocaleString('en-IN')}</Text>
         </View>
       </View>
-    </GlassCard>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
   card: {
-    marginBottom: Spacing.md,
+    backgroundColor: '#FFFFFF',
     borderRadius: Radius.lg,
+    padding: Spacing.lg,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.04,
+    shadowRadius: 10,
+    elevation: 2,
+    marginBottom: Spacing.md,
   },
   header: {
     flexDirection: 'row',
@@ -127,15 +142,23 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   title: {
-    fontSize: 13,
+    fontSize: 12,
     color: '#0F172A',
     fontWeight: '800',
     letterSpacing: 0.5,
   },
   statusPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: Radius.full,
+  },
+  statusDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
   },
   statusText: {
     fontSize: 11,
@@ -144,7 +167,7 @@ const styles = StyleSheet.create({
   },
   subFormula: {
     color: '#64748B',
-    fontSize: 13,
+    fontSize: 12,
     marginBottom: Spacing.sm,
   },
   mainValueRow: {
@@ -154,12 +177,12 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.md,
   },
   netAmount: {
-    fontSize: 32,
+    fontSize: 30,
     fontWeight: '900',
     letterSpacing: -0.5,
   },
   netAmountSub: {
-    fontSize: 13,
+    fontSize: 12,
     color: '#64748B',
     marginTop: 2,
   },
@@ -178,20 +201,21 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   streamBar: {
-    height: 24,
+    height: 18,
     flexDirection: 'row',
     borderRadius: Radius.full,
     overflow: 'hidden',
+    backgroundColor: '#F1F5F9',
     marginBottom: Spacing.md,
     gap: 2,
   },
   cashPortion: {
-    backgroundColor: Colors.primary,
+    backgroundColor: '#0284C7',
     justifyContent: 'center',
     alignItems: 'center',
   },
   loanPortion: {
-    backgroundColor: Colors.danger,
+    backgroundColor: '#DC2626',
     justifyContent: 'center',
     alignItems: 'center',
   },

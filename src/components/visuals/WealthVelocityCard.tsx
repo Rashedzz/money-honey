@@ -75,29 +75,29 @@ export const WealthVelocityCard: React.FC<WealthVelocityCardProps> = ({
 
   return (
     <View style={styles.container}>
-      <GlassCard style={styles.card} padding={18} glowColor={Colors.primary}>
+      <View style={styles.card}>
         {/* Header */}
         <View style={styles.header}>
           <View style={styles.titleRow}>
-            <Text style={{ fontSize: 18 }}>⏱️</Text>
+            <Ionicons name="pulse-outline" size={18} color="#0284C7" />
             <View>
-              <Text style={styles.title}>LIFETIME WEALTH VELOCITY & TIME VALUE</Text>
+              <Text style={styles.title}>HUMAN CAPITAL VELOCITY & TIME-VALUE OF WEALTH</Text>
               <Text style={styles.subText}>
-                Based on Birth Date: {velocity.birthDate} ({velocity.ageYears} Years • {velocity.totalMinutesLived.toLocaleString()} Mins Lived)
+                Birth Date: {velocity.birthDate} • Age {velocity.ageYears} ({velocity.totalMinutesLived.toLocaleString()} Mins Lived)
               </Text>
             </View>
           </View>
         </View>
 
-        {/* Time Unit Selector Pill Tabs */}
+        {/* Time Unit Selector Segmented Control */}
         <View style={styles.unitPillsRow}>
           {[
-            { id: 'minute', label: 'Minute ⏱️' },
-            { id: 'hour', label: 'Hour ⏳' },
-            { id: 'day', label: 'Day ☀️' },
-            { id: 'month', label: 'Month 📅' },
-            { id: 'year', label: 'Year 🚀' },
-            { id: 'lifetime', label: 'Lifetime 🧬' },
+            { id: 'minute', label: 'Minute' },
+            { id: 'hour', label: 'Hour' },
+            { id: 'day', label: 'Day' },
+            { id: 'month', label: 'Month' },
+            { id: 'year', label: 'Year' },
+            { id: 'lifetime', label: 'Lifetime' },
           ].map((tab) => (
             <TouchableOpacity
               key={tab.id}
@@ -106,6 +106,7 @@ export const WealthVelocityCard: React.FC<WealthVelocityCardProps> = ({
                 styles.unitBtn,
                 unit === tab.id && styles.unitBtnActive,
               ]}
+              activeOpacity={0.8}
             >
               <Text
                 style={[
@@ -120,7 +121,7 @@ export const WealthVelocityCard: React.FC<WealthVelocityCardProps> = ({
         </View>
 
         <Text style={styles.rateHeader}>
-          RATES: <Text style={{ color: Colors.primary, textTransform: 'uppercase' }}>{currentRates.unitLabel}</Text>
+          VELOCITY RATIO: <Text style={{ color: '#0284C7', textTransform: 'uppercase' }}>{currentRates.unitLabel}</Text>
         </Text>
 
         {/* 3-Column Velocity Metrics Grid */}
@@ -128,7 +129,7 @@ export const WealthVelocityCard: React.FC<WealthVelocityCardProps> = ({
           {/* Income Velocity */}
           <View style={styles.metricCard}>
             <Text style={styles.metricLabel}>INCOME GENERATION</Text>
-            <Text style={[styles.metricValue, { color: Colors.primary }]}>
+            <Text style={[styles.metricValue, { color: '#059669' }]}>
               {currentRates.income}
             </Text>
             <Text style={styles.metricSub}>{currentRates.workingNote}</Text>
@@ -137,16 +138,16 @@ export const WealthVelocityCard: React.FC<WealthVelocityCardProps> = ({
           {/* Expense Burn Rate */}
           <View style={styles.metricCard}>
             <Text style={styles.metricLabel}>EXPENSE BURN RATE</Text>
-            <Text style={[styles.metricValue, { color: Colors.danger }]}>
+            <Text style={[styles.metricValue, { color: '#DC2626' }]}>
               {currentRates.expense}
             </Text>
-            <Text style={styles.metricSub}>Living & Debt Burn</Text>
+            <Text style={styles.metricSub}>Living & Debt Servicing</Text>
           </View>
 
           {/* Net Wealth Surplus Creation */}
           <View style={styles.metricCard}>
             <Text style={styles.metricLabel}>EQUITY CREATION</Text>
-            <Text style={[styles.metricValue, { color: Colors.secondary }]}>
+            <Text style={[styles.metricValue, { color: '#0284C7' }]}>
               {currentRates.savings}
             </Text>
             <Text style={styles.metricSub}>{velocity.savings.savingsRatePct}% Net Surplus</Text>
@@ -156,37 +157,47 @@ export const WealthVelocityCard: React.FC<WealthVelocityCardProps> = ({
         {/* Lifetime Human Capital Summary */}
         <View style={styles.lifetimeFooter}>
           <View style={styles.footerCol}>
-            <Text style={styles.footerLabel}>LIFETIME CAREER EARNED</Text>
+            <Text style={styles.footerLabel}>CAREER EARNED TO DATE</Text>
             <Text style={styles.footerVal}>
               ৳ {(velocity.lifetime.estimatedLifetimeEarnings / 10000000).toFixed(2)} Cr
             </Text>
           </View>
           <View style={styles.vLine} />
           <View style={styles.footerCol}>
-            <Text style={styles.footerLabel}>LIFETIME SPENT</Text>
-            <Text style={[styles.footerVal, { color: Colors.accent }]}>
+            <Text style={styles.footerLabel}>LIFETIME OUTFLOW</Text>
+            <Text style={[styles.footerVal, { color: '#D97706' }]}>
               ৳ {(velocity.lifetime.estimatedLifetimeSpending / 10000000).toFixed(2)} Cr
             </Text>
           </View>
           <View style={styles.vLine} />
           <View style={styles.footerCol}>
             <Text style={styles.footerLabel}>WEALTH CREATED / HR LIVED</Text>
-            <Text style={[styles.footerVal, { color: Colors.primary }]}>
+            <Text style={[styles.footerVal, { color: '#0284C7' }]}>
               ৳ {velocity.lifetime.wealthGeneratedPerHourLived}/hr
             </Text>
           </View>
         </View>
-      </GlassCard>
+      </View>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
-    paddingHorizontal: Spacing.md,
-    marginBottom: Spacing.lg,
+    marginBottom: Spacing.md,
+    width: '100%',
   },
   card: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: Radius.lg,
+    padding: Spacing.lg,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.04,
+    shadowRadius: 10,
+    elevation: 2,
     width: '100%',
   },
   header: {
@@ -198,8 +209,8 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   title: {
-    fontSize: 13,
-    color: '#0369A1',
+    fontSize: 12,
+    color: '#0F172A',
     fontWeight: '800',
     letterSpacing: 0.5,
   },
@@ -211,28 +222,26 @@ const styles = StyleSheet.create({
   unitPillsRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 8,
+    gap: 6,
     marginVertical: Spacing.sm,
-    backgroundColor: '#F0F9FF',
-    padding: 6,
+    backgroundColor: '#F8FAFC',
+    padding: 4,
     borderRadius: Radius.md,
     borderWidth: 1,
-    borderColor: '#BAE6FD',
+    borderColor: '#E2E8F0',
   },
   unitBtn: {
     paddingHorizontal: 12,
-    paddingVertical: 7,
+    paddingVertical: 6,
     borderRadius: Radius.sm,
   },
   unitBtnActive: {
     backgroundColor: '#0284C7',
-    borderWidth: 1,
-    borderColor: '#0284C7',
   },
   unitBtnText: {
     fontSize: 12,
     fontWeight: '700',
-    color: '#334155',
+    color: '#64748B',
   },
   unitBtnTextActive: {
     color: '#FFFFFF',
@@ -241,7 +250,7 @@ const styles = StyleSheet.create({
   rateHeader: {
     fontSize: 11,
     fontWeight: '700',
-    color: '#0284C7',
+    color: '#64748B',
     marginBottom: Spacing.sm,
     letterSpacing: 0.5,
   },
@@ -252,11 +261,11 @@ const styles = StyleSheet.create({
   },
   metricCard: {
     flex: 1,
-    backgroundColor: '#F0F9FF',
+    backgroundColor: '#F8FAFC',
     borderRadius: Radius.md,
     padding: 12,
-    borderWidth: 1.5,
-    borderColor: '#BAE6FD',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
   },
   metricLabel: {
     fontSize: 11,

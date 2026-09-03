@@ -14,13 +14,11 @@ export const FinancialConsultantToolsCard: React.FC<FinancialConsultantToolsCard
 }) => {
   return (
     <View style={styles.container}>
-      {/* ========================================================= */}
-      {/* 1. PRINCIPAL CONSULTANT STRATEGIC DIRECTIVES              */}
-      {/* ========================================================= */}
-      <GlassCard style={styles.card} padding={18} glowColor={Colors.primary}>
+      {/* 1. PRINCIPAL CONSULTANT STRATEGIC DIRECTIVES */}
+      <View style={styles.card}>
         <View style={styles.header}>
           <View style={styles.titleRow}>
-            <Text style={{ fontSize: 18 }}>👑</Text>
+            <Ionicons name="sparkles" size={17} color="#0284C7" />
             <Text style={styles.title}>PRINCIPAL WEALTH CONSULTANT DIRECTIVES</Text>
           </View>
           <View style={styles.gradeBadge}>
@@ -37,7 +35,7 @@ export const FinancialConsultantToolsCard: React.FC<FinancialConsultantToolsCard
             <View key={rec.id} style={styles.recCard}>
               <View style={styles.recHeader}>
                 <View style={styles.recTagRow}>
-                  <Ionicons name={rec.icon as any} size={14} color={Colors.primary} />
+                  <Ionicons name={rec.icon as any} size={14} color="#0284C7" />
                   <Text style={styles.recCategory}>{rec.category}</Text>
                 </View>
                 <View
@@ -46,10 +44,10 @@ export const FinancialConsultantToolsCard: React.FC<FinancialConsultantToolsCard
                     {
                       backgroundColor:
                         rec.severity === 'CRITICAL'
-                          ? 'rgba(255,71,87,0.18)'
+                          ? 'rgba(239, 68, 68, 0.12)'
                           : rec.severity === 'STRATEGIC'
-                          ? 'rgba(0,229,179,0.18)'
-                          : 'rgba(123,110,246,0.18)',
+                          ? 'rgba(16, 185, 129, 0.12)'
+                          : 'rgba(99, 102, 241, 0.12)',
                     },
                   ]}
                 >
@@ -59,10 +57,10 @@ export const FinancialConsultantToolsCard: React.FC<FinancialConsultantToolsCard
                       {
                         color:
                           rec.severity === 'CRITICAL'
-                            ? Colors.danger
+                            ? '#DC2626'
                             : rec.severity === 'STRATEGIC'
-                            ? Colors.primary
-                            : Colors.secondary,
+                            ? '#059669'
+                            : '#6366F1',
                       },
                     ]}
                   >
@@ -74,21 +72,20 @@ export const FinancialConsultantToolsCard: React.FC<FinancialConsultantToolsCard
               <Text style={styles.recTitle}>{rec.title}</Text>
               <Text style={styles.recDirective}>{rec.directive}</Text>
               <View style={styles.recImpactBox}>
-                <Text style={styles.recImpactText}>💡 Financial Impact: {rec.impact}</Text>
+                <Ionicons name="information-circle-outline" size={13} color="#0284C7" />
+                <Text style={styles.recImpactText}>Impact: {rec.impact}</Text>
               </View>
             </View>
           ))}
         </View>
-      </GlassCard>
+      </View>
 
-      {/* ========================================================= */}
-      {/* 2. RULE OF 72 CAPITAL DOUBLING TIME COMPARISON             */}
-      {/* ========================================================= */}
-      <GlassCard style={styles.card} padding={18} glowColor={Colors.secondary}>
+      {/* 2. RULE OF 72 CAPITAL DOUBLING TIME COMPARISON */}
+      <View style={styles.card}>
         <View style={styles.header}>
           <View style={styles.titleRow}>
-            <Text style={{ fontSize: 18 }}>⚡</Text>
-            <Text style={[styles.title, { color: Colors.secondary }]}>
+            <Ionicons name="trending-up" size={17} color="#6366F1" />
+            <Text style={[styles.title, { color: '#4338CA' }]}>
               RULE OF 72: YEARS TO DOUBLE YOUR CAPITAL
             </Text>
           </View>
@@ -128,17 +125,15 @@ export const FinancialConsultantToolsCard: React.FC<FinancialConsultantToolsCard
             </View>
           ))}
         </View>
-      </GlassCard>
+      </View>
 
-      {/* ========================================================= */}
-      {/* 3. FIRE RETIREMENT (4% SAFE WITHDRAWAL RULE) & 50/30/20   */}
-      {/* ========================================================= */}
-      <GlassCard style={styles.card} padding={18} glowColor={Colors.accent}>
+      {/* 3. FIRE RETIREMENT (4% SAFE WITHDRAWAL RULE) & 50/30/20 */}
+      <View style={styles.card}>
         <View style={styles.header}>
           <View style={styles.titleRow}>
-            <Text style={{ fontSize: 18 }}>🎯</Text>
-            <Text style={[styles.title, { color: Colors.accent }]}>
-              FIRE RETIREMENT FREEDOM & 4% WITHDRAWAL RULE
+            <Ionicons name="flag-outline" size={17} color="#D97706" />
+            <Text style={[styles.title, { color: '#B45309' }]}>
+              FINANCIAL FREEDOM (FIRE) & 4% SAFE WITHDRAWAL RULE
             </Text>
           </View>
           <View style={styles.firePill}>
@@ -149,7 +144,7 @@ export const FinancialConsultantToolsCard: React.FC<FinancialConsultantToolsCard
         <View style={styles.fireGrid}>
           <View style={styles.fireCol}>
             <Text style={styles.fireLabel}>FREEDOM NUMBER (25X EXPENSES)</Text>
-            <Text style={[styles.fireVal, { color: Colors.accent }]}>
+            <Text style={[styles.fireVal, { color: '#B45309' }]}>
               ৳ {(planning.firePlan.fireCorpusTarget / 10000000).toFixed(2)} Crore
             </Text>
             <Text style={styles.fireSub}>
@@ -159,7 +154,7 @@ export const FinancialConsultantToolsCard: React.FC<FinancialConsultantToolsCard
           <View style={styles.vLine} />
           <View style={styles.fireCol}>
             <Text style={styles.fireLabel}>SAFE MONTHLY WITHDRAWAL</Text>
-            <Text style={[styles.fireVal, { color: Colors.primary }]}>
+            <Text style={[styles.fireVal, { color: '#059669' }]}>
               ৳ {planning.firePlan.monthlySafeWithdrawalAmount.toLocaleString('en-IN')}/mo
             </Text>
             <Text style={styles.fireSub}>At 4% perpetual safe withdrawal rate</Text>
@@ -169,7 +164,7 @@ export const FinancialConsultantToolsCard: React.FC<FinancialConsultantToolsCard
         {/* FIRE Progress Bar */}
         <View style={styles.fireProgressContainer}>
           <View style={styles.fireProgressHeader}>
-            <Text style={styles.fireProgressText}>Financial Freedom Progress</Text>
+            <Text style={styles.fireProgressText}>Financial Freedom Target Progress</Text>
             <Text style={styles.fireProgressPctText}>{planning.firePlan.fireProgressPct}% Achieved</Text>
           </View>
           <View style={styles.fireProgressBg}>
@@ -181,21 +176,31 @@ export const FinancialConsultantToolsCard: React.FC<FinancialConsultantToolsCard
             />
           </View>
           <Text style={styles.fireEtaText}>
-            ⏱️ Estimated {planning.firePlan.estimatedYearsToFIRE} years to 100% passive freedom at current savings pace.
+            Estimated {planning.firePlan.estimatedYearsToFIRE} years to 100% passive freedom at current savings pace.
           </Text>
         </View>
-      </GlassCard>
+      </View>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
-    paddingHorizontal: Spacing.md,
     gap: Spacing.md,
     marginBottom: Spacing.lg,
+    width: '100%',
   },
   card: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: Radius.lg,
+    padding: Spacing.lg,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.04,
+    shadowRadius: 10,
+    elevation: 2,
     width: '100%',
   },
   header: {
@@ -207,19 +212,19 @@ const styles = StyleSheet.create({
   titleRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: 8,
     flex: 1,
   },
   title: {
-    fontSize: 13,
-    color: '#0369A1',
+    fontSize: 12,
+    color: '#0F172A',
     fontWeight: '800',
     letterSpacing: 0.5,
   },
   gradeBadge: {
-    backgroundColor: '#E0F2FE',
+    backgroundColor: '#F1F5F9',
     borderWidth: 1,
-    borderColor: '#BAE6FD',
+    borderColor: '#E2E8F0',
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: Radius.full,
@@ -232,7 +237,7 @@ const styles = StyleSheet.create({
   formulaTag: {
     fontSize: 11,
     fontWeight: '700',
-    color: '#0284C7',
+    color: '#6366F1',
   },
   subText: {
     color: '#64748B',
@@ -244,11 +249,11 @@ const styles = StyleSheet.create({
     gap: Spacing.sm,
   },
   recCard: {
-    backgroundColor: '#F0F9FF',
+    backgroundColor: '#F8FAFC',
     borderRadius: Radius.md,
     padding: 14,
-    borderWidth: 1.5,
-    borderColor: '#BAE6FD',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
   },
   recHeader: {
     flexDirection: 'row',
@@ -288,13 +293,16 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   recImpactBox: {
-    backgroundColor: '#E0F2FE',
+    backgroundColor: '#F1F5F9',
     padding: 8,
     borderRadius: Radius.sm,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
   },
   recImpactText: {
     fontSize: 12,
-    color: '#0369A1',
+    color: '#0284C7',
     fontWeight: '700',
   },
   ruleList: {
@@ -391,10 +399,10 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   fireProgressContainer: {
-    backgroundColor: '#F0F9FF',
+    backgroundColor: '#F8FAFC',
     borderRadius: Radius.md,
-    borderWidth: 1.5,
-    borderColor: '#BAE6FD',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
     padding: 12,
   },
   fireProgressHeader: {

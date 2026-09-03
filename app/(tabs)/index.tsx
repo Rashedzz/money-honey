@@ -28,6 +28,7 @@ import { ProjectionComparisonCard } from '../../src/components/visuals/Projectio
 import { ScheduleTimeline, ScheduleEvent } from '../../src/components/visuals/ScheduleTimeline';
 import { WealthVelocityCard } from '../../src/components/visuals/WealthVelocityCard';
 import { FinancialConsultantToolsCard } from '../../src/components/visuals/FinancialConsultantToolsCard';
+import { NetWorthMeter } from '../../src/components/dashboard/NetWorthMeter';
 import { CountdownCard } from '../../src/components/dashboard/CountdownCard';
 import { EMIReminderCard } from '../../src/components/dashboard/EMIReminderCard';
 import { UniversalEntryModal, EntryType } from '../../src/components/modals/UniversalEntryModal';
@@ -209,9 +210,25 @@ export default function MasterDashboardScreen() {
 
   const totalCurrentExpense = currentExpenseItems.reduce((sum, item) => sum + item.amount, 0);
 
+  const paperAssetsTotal = (() => {
+    try {
+      if (typeof window !== 'undefined' && window.localStorage) {
+        const raw = window.localStorage.getItem('mh_paper_assets');
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (Array.isArray(parsed)) {
+            return parsed.reduce((sum: number, item: any) => sum + (item.amount || item.investmentAmount || 0), 0);
+          }
+        }
+      }
+    } catch (e) {}
+    return 0;
+  })();
+
   const consolidatedNetWorth =
     totalCashInHand +
     stockSummary.currentValue +
+    paperAssetsTotal +
     assetSummary.totalAssetValuation -
     totalLoans;
 
@@ -432,64 +449,108 @@ export default function MasterDashboardScreen() {
               contentContainerStyle={styles.dashboardContainer}
               refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={Colors.primary} />}
             >
-              {/* 1. Solvency Meter */}
-              <HealthStatusMeter totalCashInHand={totalCashInHand} totalLoans={totalLoans} />
+              {/* 1. Flagship Consolidated Net Worth Hero Card */}
+              <NetWorthMeter
+                netWorth={consolidatedNetWorth}
+                totalAssets={totalCashInHand + stockSummary.currentValue + assetSummary.totalAssetValuation}
+                totalLiabilities={totalLoans}
+                monthlyIncome={totalCurrentIncome}
+                monthlyExpense={totalCurrentExpense}
+                allocation={{
+                  cash: totalCashInHand,
+                  stocks: stockSummary.currentValue,
+                  paperAssets: paperAssetsTotal,
+                  physicalAssets: assetSummary.totalAssetValuation,
+                }}
+              />
 
-              {/* 2. Real-Time Wealth Velocity Clock */}
-              <WealthVelocityCard velocity={wealthVelocity} />
+              {/* 2. Executive Quick Action Ribbon */}
+              <View style={styles.actionRibbon}>
+                <TouchableOpacity style={styles.actionPill} onPress={() => openModal('bank')} activeOpacity={0.8}>
+                  <Ionicons name="wallet-outline" size={15} color="#0284C7" />
+                  <Text style={styles.actionPillText}>+ Bank Account</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.actionPill} onPress={() => openModal('stock')} activeOpacity={0.8}>
+                  <Ionicons name="trending-up" size={15} color="#0D9488" />
+                  <Text style={styles.actionPillText}>+ Stock Position</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.actionPill} onPress={() => openModal('loan')} activeOpacity={0.8}>
+                  <Ionicons name="card-outline" size={15} color="#DC2626" />
+                  <Text style={styles.actionPillText}>+ Loan / Debt</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.actionPill} onPress={() => setActiveTab('paper_assets')} activeOpacity={0.8}>
+                  <Ionicons name="document-text-outline" size={15} color="#6366F1" />
+                  <Text style={styles.actionPillText}>+ Sanchaypatra / FDR</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.actionPill} onPress={() => openModal('asset')} activeOpacity={0.8}>
+                  <Ionicons name="business-outline" size={15} color="#D97706" />
+                  <Text style={styles.actionPillText}>+ Physical Asset</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.actionPill} onPress={() => openModal('expense')} activeOpacity={0.8}>
+                  <Ionicons name="receipt-outline" size={15} color="#475569" />
+                  <Text style={styles.actionPillText}>+ Record Expense</Text>
+                </TouchableOpacity>
+              </View>
 
-              {/* 3. NEW: Stock Market & Equities Portfolio Card */}
+              {/* 3. DSE / CSE Stock Market & Listed Equities Card */}
               <View style={styles.fullWidthBox}>
-                <GlassCard style={styles.cardFull} padding={18} glowColor={stockSummary.isProfitable ? Colors.success : Colors.danger}>
-                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 10 }}>
+                <View style={styles.stockCard}>
+                  <View style={styles.stockCardContent}>
                     <View>
                       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                        <Text style={{ fontSize: 20 }}>📈</Text>
-                        <Text style={styles.cardLabel}>STOCK MARKET & EQUITIES PORTFOLIO</Text>
+                        <View style={styles.stockIconBadge}>
+                          <Ionicons name="trending-up" size={16} color="#0D9488" />
+                        </View>
+                        <Text style={styles.stockCardHeaderTitle}>DSE / CSE EQUITIES & PORTFOLIO SURVEILLANCE</Text>
                       </View>
-                      <Text style={{ fontSize: 32, fontWeight: '900', color: '#0F172A', marginTop: 4 }}>
+                      <Text style={styles.stockCardAmount}>
                         ৳ {stockSummary.currentValue.toLocaleString('en-IN')}
                       </Text>
-                      <Text style={{ fontSize: 13, color: '#64748B', marginTop: 2 }}>
-                        Capital Invested: ৳ {stockSummary.totalInvested.toLocaleString('en-IN')} • {stockSummary.totalHoldingsCount} Stock Holdings (DSE/CSE)
+                      <Text style={styles.stockCardSub}>
+                        Capital Invested: ৳ {stockSummary.totalInvested.toLocaleString('en-IN')} • {stockSummary.totalHoldingsCount} Stock Positions (Dhaka & Chittagong Stock Exchanges)
                       </Text>
                     </View>
 
-                    <View style={{ alignItems: 'flex-end', gap: 8 }}>
-                      <View style={{
-                        paddingHorizontal: 14,
-                        paddingVertical: 6,
-                        borderRadius: 20,
-                        backgroundColor: stockSummary.isProfitable ? 'rgba(22, 163, 74, 0.14)' : 'rgba(239, 68, 68, 0.14)'
-                      }}>
-                        <Text style={{
-                          fontSize: 13,
-                          fontWeight: '800',
-                          color: stockSummary.isProfitable ? Colors.success : Colors.danger
-                        }}>
+                    <View style={styles.stockCardRight}>
+                      <View style={[
+                        styles.trendPill,
+                        { backgroundColor: stockSummary.isProfitable ? 'rgba(16, 185, 129, 0.12)' : 'rgba(239, 68, 68, 0.12)' }
+                      ]}>
+                        <Text style={[
+                          styles.trendPillText,
+                          { color: stockSummary.isProfitable ? '#059669' : '#DC2626' }
+                        ]}>
                           {stockSummary.isProfitable ? '▲ +' : '▼ −'}৳ {Math.abs(stockSummary.totalGainLoss).toLocaleString('en-IN')} ({stockSummary.totalGainLossPercent.toFixed(2)}%)
                         </Text>
                       </View>
                       <TouchableOpacity
                         onPress={() => setActiveTab('stocks')}
-                        style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}
+                        style={styles.stockTerminalBtn}
+                        activeOpacity={0.8}
                       >
-                        <Text style={{ fontSize: 14, fontWeight: '800', color: '#0284C7' }}>Open Stock Market →</Text>
+                        <Text style={styles.stockTerminalBtnText}>Open Stock Market Terminal</Text>
+                        <Ionicons name="arrow-forward" size={14} color="#0284C7" />
                       </TouchableOpacity>
                     </View>
                   </View>
-                </GlassCard>
+                </View>
               </View>
 
-              {/* 4. Responsive 2-Column Grid: Cash in Hand & Loan Liabilities */}
+              {/* 4. Solvency & Debt Service Coverage Ratio */}
+              <HealthStatusMeter totalCashInHand={totalCashInHand} totalLoans={totalLoans} />
+
+              {/* 5. Responsive 2-Column Grid: Liquid Reserves & Debt Liabilities */}
               <View style={[styles.gridRow, isDesktop && styles.gridRowTwoCol]}>
                 <View style={[styles.gridCol, isDesktop && styles.colHalf]}>
-                  <GlassCard style={styles.cardFull} padding={16} glowColor={Colors.primary}>
-                    <Text style={styles.cardLabel}>1. CURRENT CASH IN HAND & LIQUID RESERVES</Text>
+                  <View style={styles.whiteCard}>
+                    <View style={styles.cardHeaderRow}>
+                      <Ionicons name="wallet-outline" size={16} color="#0284C7" />
+                      <Text style={styles.cardLabel}>LIQUID CAPITAL & ACTIVE BANK ACCOUNTS</Text>
+                    </View>
                     {cashList.length === 0 ? (
                       <View style={{ alignItems: 'center', paddingVertical: 20 }}>
                         <Text style={{ fontSize: 13, color: '#64748B', fontStyle: 'italic' }}>
-                          No cash accounts recorded. Click "+ Data Entry" above.
+                          No bank accounts recorded. Click "+ Bank Account" above.
                         </Text>
                       </View>
                     ) : (
@@ -500,18 +561,21 @@ export default function MasterDashboardScreen() {
                         size={140}
                       />
                     )}
-                  </GlassCard>
+                  </View>
                 </View>
 
                 <View style={[styles.gridCol, isDesktop && styles.colHalf]}>
-                  <GlassCard style={styles.cardFull} padding={16} glowColor={Colors.danger}>
-                    <Text style={[styles.cardLabel, { color: Colors.danger }]}>
-                      2. OUTSTANDING LOAN LIABILITIES
-                    </Text>
+                  <View style={styles.whiteCard}>
+                    <View style={styles.cardHeaderRow}>
+                      <Ionicons name="card-outline" size={16} color="#DC2626" />
+                      <Text style={[styles.cardLabel, { color: '#DC2626' }]}>
+                        OUTSTANDING LOAN LIABILITIES & DEBT LOAD
+                      </Text>
+                    </View>
                     {loanList.length === 0 ? (
                       <View style={{ alignItems: 'center', paddingVertical: 20 }}>
                         <Text style={{ fontSize: 13, color: '#64748B', fontStyle: 'italic' }}>
-                          No debt liabilities recorded.
+                          No debt liabilities recorded. Complete peace of mind.
                         </Text>
                       </View>
                     ) : (
@@ -524,36 +588,39 @@ export default function MasterDashboardScreen() {
                         size={140}
                       />
                     )}
-                  </GlassCard>
+                  </View>
                 </View>
               </View>
 
-              {/* 5. Income Sources & Expenses by Sector */}
+              {/* 6. Responsive 2-Column Grid: Cash Inflow & Expense Outflow */}
               <View style={[styles.gridRow, isDesktop && styles.gridRowTwoCol]}>
                 <View style={[styles.gridCol, isDesktop && styles.colHalf]}>
-                  <GlassCard style={styles.cardFull} padding={16} glowColor={Colors.primary}>
+                  <View style={styles.whiteCard}>
                     <FlowBreakdownBar
                       items={currentIncomeItems}
                       total={totalCurrentIncome}
-                      title="3. INCOME SOURCES WITH ASSET RENTAL YIELD"
+                      title="MONTHLY CASH INFLOW & ASSET YIELD"
                       totalFormatted={`৳ ${totalCurrentIncome.toLocaleString('en-IN')}`}
                     />
-                  </GlassCard>
+                  </View>
                 </View>
 
                 <View style={[styles.gridCol, isDesktop && styles.colHalf]}>
-                  <GlassCard style={styles.cardFull} padding={16} glowColor={Colors.danger}>
+                  <View style={styles.whiteCard}>
                     <FlowBreakdownBar
                       items={currentExpenseItems}
                       total={totalCurrentExpense}
-                      title="4. EXPENSES BY SECTOR & FIXED DEBT EMIs"
+                      title="MONTHLY OUTFLOW & DEBT SERVICE EXPENSES"
                       totalFormatted={`৳ ${totalCurrentExpense.toLocaleString('en-IN')}`}
                     />
-                  </GlassCard>
+                  </View>
                 </View>
               </View>
 
-              {/* 6. Financial Planning Suite */}
+              {/* 7. Human Capital Wealth Velocity & Time-Value */}
+              <WealthVelocityCard velocity={wealthVelocity} />
+
+              {/* 8. Principal Wealth Consultant Directives */}
               <FinancialConsultantToolsCard planning={planningSuite} />
             </ScrollView>
           )}
@@ -619,7 +686,7 @@ export default function MasterDashboardScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#E0F2FE', // Sky Blue 100
+    backgroundColor: '#F8FAFC',
   },
   appShell: {
     flex: 1,
@@ -629,7 +696,7 @@ const styles = StyleSheet.create({
     flex: 1,
     display: 'flex',
     flexDirection: 'column',
-    backgroundColor: '#E0F2FE',
+    backgroundColor: '#F8FAFC',
   },
   topUtilityBar: {
     flexDirection: 'row',
@@ -638,8 +705,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.lg,
     paddingVertical: 12,
     backgroundColor: '#FFFFFF',
-    borderBottomWidth: 1.5,
-    borderBottomColor: '#BAE6FD',
+    borderBottomWidth: 1,
+    borderBottomColor: '#E2E8F0',
     zIndex: 10,
   },
   headerTitleRow: {
@@ -650,7 +717,7 @@ const styles = StyleSheet.create({
   mobileMenuBtn: {
     padding: 6,
     borderRadius: Radius.md,
-    backgroundColor: '#F0F9FF',
+    backgroundColor: '#F1F5F9',
   },
   pageTitle: {
     fontSize: 18,
@@ -660,8 +727,8 @@ const styles = StyleSheet.create({
   },
   pageSubtitle: {
     fontSize: 12,
-    color: '#0284C7',
-    fontWeight: '700',
+    color: '#64748B',
+    fontWeight: '600',
     marginTop: 1,
   },
   topActions: {
@@ -674,11 +741,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 6,
     paddingHorizontal: 12,
-    paddingVertical: 8,
+    paddingVertical: 7,
     borderRadius: Radius.full,
-    backgroundColor: '#F0F9FF',
-    borderWidth: 1.5,
-    borderColor: '#BAE6FD',
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
   },
   authHeaderBtnText: {
     fontSize: 13,
@@ -690,11 +757,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 6,
     paddingHorizontal: 12,
-    paddingVertical: 8,
+    paddingVertical: 7,
     borderRadius: Radius.full,
-    backgroundColor: '#F0F9FF',
-    borderWidth: 1.5,
-    borderColor: '#BAE6FD',
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
   },
   qrHeaderBtnText: {
     fontSize: 13,
@@ -706,10 +773,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 6,
     paddingHorizontal: 12,
-    paddingVertical: 8,
+    paddingVertical: 7,
     borderRadius: Radius.full,
     backgroundColor: '#FFF7ED',
-    borderWidth: 1.5,
+    borderWidth: 1,
     borderColor: '#FED7AA',
   },
   firebaseHeaderBtnText: {
@@ -721,13 +788,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    backgroundColor: '#16A34A', // Green Action Button
+    backgroundColor: '#16A34A',
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: Radius.full,
     shadowColor: '#16A34A',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
+    shadowOpacity: 0.2,
     shadowRadius: 6,
     elevation: 3,
   },
@@ -738,15 +805,42 @@ const styles = StyleSheet.create({
   },
   scrollArea: {
     flex: 1,
-    backgroundColor: '#E0F2FE',
+    backgroundColor: '#F8FAFC',
   },
   dashboardContainer: {
     padding: Spacing.lg,
     paddingBottom: 100,
-    maxWidth: 1200,
+    maxWidth: 1280,
     width: '100%',
     alignSelf: 'center',
     gap: Spacing.md,
+  },
+  actionRibbon: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginBottom: Spacing.xs,
+  },
+  actionPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: Radius.full,
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.04,
+    shadowRadius: 4,
+    elevation: 1,
+  },
+  actionPillText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#334155',
   },
   gridRow: {
     flexDirection: 'column',
@@ -764,14 +858,101 @@ const styles = StyleSheet.create({
   fullWidthBox: {
     width: '100%',
   },
-  cardFull: {
+  whiteCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: Radius.lg,
+    padding: Spacing.lg,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.04,
+    shadowRadius: 10,
+    elevation: 2,
     width: '100%',
+  },
+  cardHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: Spacing.sm,
   },
   cardLabel: {
     fontSize: 12,
     fontWeight: '800',
-    color: '#0284C7',
-    marginBottom: Spacing.sm,
+    color: '#0F172A',
     letterSpacing: 0.5,
+  },
+  stockCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: Radius.lg,
+    padding: Spacing.lg,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.04,
+    shadowRadius: 10,
+    elevation: 2,
+    width: '100%',
+  },
+  stockCardContent: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    flexWrap: 'wrap',
+    gap: 12,
+  },
+  stockIconBadge: {
+    width: 26,
+    height: 26,
+    borderRadius: 6,
+    backgroundColor: '#F0FDFA',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#CCFBF1',
+  },
+  stockCardHeaderTitle: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: '#0F172A',
+    letterSpacing: 0.5,
+  },
+  stockCardAmount: {
+    fontSize: 28,
+    fontWeight: '900',
+    color: '#0F172A',
+    marginTop: 4,
+    letterSpacing: -0.5,
+  },
+  stockCardSub: {
+    fontSize: 12,
+    color: '#64748B',
+    marginTop: 2,
+  },
+  stockCardRight: {
+    alignItems: 'flex-end',
+    gap: 8,
+  },
+  trendPill: {
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+    borderRadius: Radius.full,
+  },
+  trendPillText: {
+    fontSize: 12,
+    fontWeight: '800',
+  },
+  stockTerminalBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingVertical: 4,
+  },
+  stockTerminalBtnText: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: '#0284C7',
   },
 });
