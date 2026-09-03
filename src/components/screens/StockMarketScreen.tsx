@@ -57,6 +57,8 @@ import {
   getDseShareholding,
   getDseRegulatoryStatus,
 } from '../../finance/advancedStockFeatures';
+import { useWatchlist } from '../../hooks/useWatchlist';
+import { StockPortfolioDashboard } from '../stock/StockPortfolioDashboard';
 
 interface StockMarketScreenProps {
   stocks: StockHolding[];
@@ -66,14 +68,15 @@ interface StockMarketScreenProps {
 }
 
 type MainTabType =
-  | 'ai_intelligence'
+  | 'portfolio_dashboard'
+  | 'interested_stocks'
   | 'screener'
+  | 'ai_intelligence'
   | 'ai_assistant'
   | 'comparison_tool'
   | 'portfolio_optimizer'
-  | 'backtest'
   | 'paper_trading'
-  | 'my_holdings';
+  | 'backtest';
 
 export const StockMarketScreen: React.FC<StockMarketScreenProps> = ({
   stocks,
@@ -81,7 +84,8 @@ export const StockMarketScreen: React.FC<StockMarketScreenProps> = ({
   onDeleteStock,
   onUpdatePrice,
 }) => {
-  const [activeTab, setActiveTab] = useState<MainTabType>('ai_intelligence');
+  const [activeTab, setActiveTab] = useState<MainTabType>('portfolio_dashboard');
+  const watchlist = useWatchlist();
 
   // Live AI Assistant State
   const [assistantInput, setAssistantInput] = useState(
@@ -305,14 +309,15 @@ export const StockMarketScreen: React.FC<StockMarketScreenProps> = ({
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.tabsScroll}>
         <View style={styles.platformTabs}>
           {[
+            { id: 'portfolio_dashboard', label: '📊 Portfolio Dashboard' },
+            { id: 'interested_stocks', label: '⭐ Interested Watchlist' },
+            { id: 'screener', label: '🔍 DSE Stock Screener' },
             { id: 'ai_intelligence', label: '🧠 AI Intelligence & Top Picks' },
-            { id: 'screener', label: '📊 DSE Stock Screener' },
             { id: 'ai_assistant', label: '🤖 Live AI Assistant' },
             { id: 'comparison_tool', label: '⚖️ Multi-Stock Comparison' },
             { id: 'portfolio_optimizer', label: '💼 AI Portfolio Optimizer' },
-            { id: 'backtest', label: '🔬 Patterns & Backtesting' },
             { id: 'paper_trading', label: '🎮 Virtual Paper Trading' },
-            { id: 'my_holdings', label: '📈 My Real Holdings' },
+            { id: 'backtest', label: '🔬 Patterns & Backtesting' },
           ].map((tab) => (
             <TouchableOpacity
               key={tab.id}
@@ -698,7 +703,20 @@ export const StockMarketScreen: React.FC<StockMarketScreenProps> = ({
               >
                 <GlassCard style={{ width: '100%' }} padding={16} glowColor="#0284C7">
                   <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10 }}>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                      <TouchableOpacity
+                        onPress={(e) => {
+                          e.stopPropagation();
+                          watchlist.toggleInterested(stock.symbol);
+                        }}
+                        style={{ padding: 4 }}
+                      >
+                        <Ionicons
+                          name={watchlist.isInterested(stock.symbol) ? 'checkbox' : 'square-outline'}
+                          size={22}
+                          color={watchlist.isInterested(stock.symbol) ? '#0284C7' : '#94A3B8'}
+                        />
+                      </TouchableOpacity>
                       <View style={styles.stockIconBox}>
                         <Text style={{ fontSize: 16, fontWeight: '900', color: '#0284C7' }}>
                           {stock.symbol.slice(0, 2)}
@@ -1451,88 +1469,16 @@ export const StockMarketScreen: React.FC<StockMarketScreenProps> = ({
         </View>
       )}
 
-      {/* TAB 6: MY REAL HOLDINGS */}
-      {activeTab === 'my_holdings' && (
-        <View style={{ gap: Spacing.md }}>
-          <GlassCard style={styles.summaryCard} padding={20} glowColor={isProfitable ? Colors.success : Colors.danger}>
-            <View style={styles.summaryTop}>
-              <View>
-                <Text style={styles.summaryLabel}>MY REAL STOCK PORTFOLIO VALUATION</Text>
-                <Text style={styles.summaryAmount}>৳ {totalCurrentValue.toLocaleString('en-IN')}</Text>
-                <Text style={styles.summarySub}>
-                  Invested Capital: ৳ {totalInvested.toLocaleString('en-IN')} • {stocks.length} Positions
-                </Text>
-              </View>
-
-              <TouchableOpacity style={styles.addBtn} onPress={onAddStockPress} activeOpacity={0.85}>
-                <Ionicons name="add-circle" size={18} color="#FFFFFF" />
-                <Text style={styles.addBtnText}>+ Add Real Stock</Text>
-              </TouchableOpacity>
-            </View>
-
-            <View style={styles.pnlBar}>
-              <View style={styles.pnlItem}>
-                <Text style={styles.pnlLabel}>TOTAL UNREALIZED RETURN</Text>
-                <Text style={[styles.pnlVal, { color: isProfitable ? Colors.success : Colors.danger }]}>
-                  {isProfitable ? '+' : '−'}৳ {Math.abs(totalGainLoss).toLocaleString('en-IN')}
-                </Text>
-              </View>
-              <View style={styles.vLine} />
-              <View style={styles.pnlItem}>
-                <Text style={styles.pnlLabel}>OVERALL ROI</Text>
-                <Text style={[styles.pnlVal, { color: isProfitable ? Colors.success : Colors.danger }]}>
-                  {isProfitable ? '+' : ''}{totalGainLossPct.toFixed(2)}%
-                </Text>
-              </View>
-            </View>
-          </GlassCard>
-
-          {/* Holdings Cards */}
-          {stocks.length === 0 ? (
-            <GlassCard style={{ alignItems: 'center', padding: 32 }} padding={32}>
-              <Ionicons name="briefcase-outline" size={44} color="#0284C7" />
-              <Text style={{ fontSize: 16, fontWeight: '800', color: '#0F172A', marginTop: 8 }}>
-                No Real Stock Holdings Recorded
-              </Text>
-              <Text style={{ fontSize: 13, color: '#64748B', textAlign: 'center', marginTop: 4 }}>
-                Click "+ Add Real Stock" to enter your actual bought shares, buy prices, and brokerage accounts.
-              </Text>
-            </GlassCard>
-          ) : (
-            <View style={{ gap: 10 }}>
-              {stocks.map((stock) => {
-                const invested = stock.quantity * stock.buyPrice;
-                const currentVal = stock.quantity * stock.currentPrice;
-                const gain = currentVal - invested;
-                const isGain = gain >= 0;
-
-                return (
-                  <GlassCard key={stock.id} style={{ width: '100%' }} padding={16} glowColor={isGain ? Colors.success : Colors.danger}>
-                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10 }}>
-                      <View>
-                        <Text style={{ fontSize: 17, fontWeight: '900', color: '#0F172A' }}>{stock.symbol}</Text>
-                        <Text style={{ fontSize: 12, color: '#64748B' }}>
-                          {stock.quantity} shares @ ৳{stock.buyPrice} • Current: ৳{stock.currentPrice}
-                        </Text>
-                      </View>
-
-                      <View style={{ alignItems: 'flex-end' }}>
-                        <Text style={{ fontSize: 16, fontWeight: '900', color: '#0F172A' }}>৳{currentVal.toLocaleString('en-IN')}</Text>
-                        <Text style={{ fontSize: 12, fontWeight: '800', color: isGain ? '#16A34A' : '#EF4444' }}>
-                          {isGain ? '+' : ''}৳{gain.toLocaleString('en-IN')}
-                        </Text>
-                      </View>
-
-                      <TouchableOpacity onPress={() => onDeleteStock(stock.id)} style={{ padding: 6 }}>
-                        <Ionicons name="trash-outline" size={16} color="#EF4444" />
-                      </TouchableOpacity>
-                    </View>
-                  </GlassCard>
-                );
-              })}
-            </View>
-          )}
-        </View>
+      {/* TAB: PORTFOLIO DASHBOARD & INTERESTED WATCHLIST */}
+      {(activeTab === 'portfolio_dashboard' || activeTab === 'interested_stocks') && (
+        <StockPortfolioDashboard
+          stocks={stocks}
+          watchlist={watchlist}
+          onAddStockPress={onAddStockPress}
+          onDeleteStock={onDeleteStock}
+          onUpdatePrice={onUpdatePrice}
+          onDeepAnalyze={(item) => setSelectedStock(item)}
+        />
       )}
 
       {/* 3. Deep-Dive Stock Analysis Modal (Comprehensive Research Dossier) */}
@@ -1556,8 +1502,31 @@ export const StockMarketScreen: React.FC<StockMarketScreenProps> = ({
                     </Text>
                   </View>
 
-                  {/* Print / PDF, Share & Close Action Controls */}
+                  {/* Watchlist Checkmark Toggle, Print / PDF, Share & Close Action Controls */}
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                    <TouchableOpacity
+                      style={[
+                        styles.headerActionBtn,
+                        watchlist.isInterested(selectedStock.symbol) && { backgroundColor: '#E0F2FE', borderColor: '#0284C7' },
+                      ]}
+                      onPress={() => watchlist.toggleInterested(selectedStock.symbol)}
+                      activeOpacity={0.8}
+                    >
+                      <Ionicons
+                        name={watchlist.isInterested(selectedStock.symbol) ? 'checkbox' : 'square-outline'}
+                        size={16}
+                        color={watchlist.isInterested(selectedStock.symbol) ? '#0284C7' : '#64748B'}
+                      />
+                      <Text
+                        style={[
+                          styles.headerActionText,
+                          watchlist.isInterested(selectedStock.symbol) && { color: '#0284C7', fontWeight: '800' },
+                        ]}
+                      >
+                        {watchlist.isInterested(selectedStock.symbol) ? 'Interested' : 'Watchlist'}
+                      </Text>
+                    </TouchableOpacity>
+
                     <TouchableOpacity
                       style={styles.headerActionBtn}
                       onPress={handlePrintPdf}
@@ -1586,7 +1555,7 @@ export const StockMarketScreen: React.FC<StockMarketScreenProps> = ({
                 </View>
 
                 <ScrollView
-                  style={[styles.modalScrollView, { overflowY: 'auto' as any }]}
+                  style={styles.modalScrollView}
                   contentContainerStyle={styles.modalScrollContent}
                   showsVerticalScrollIndicator={true}
                   scrollEnabled={true}
@@ -1762,7 +1731,7 @@ export const StockMarketScreen: React.FC<StockMarketScreenProps> = ({
                             <Text style={[styles.td, { flex: 1, fontWeight: '800' }]}>Trend Direction:</Text>
                             <Text style={[styles.td, { flex: 1, fontWeight: '900', color: '#16A34A' }]}>{tech.trendDirection}</Text>
                             <Text style={[styles.td, { flex: 1, fontWeight: '800' }]}>Supertrend:</Text>
-                            <Text style={[styles.td, { flex: 1, fontWeight: '900', color: '#16A34A' }]}>৳{tech.supertrendValue} (Bullish)</Text>
+                            <Text style={[styles.td, { flex: 1, fontWeight: '900', color: '#16A34A' }]}>৳{tech.supertrend} (Bullish)</Text>
                           </View>
                           <View style={styles.tableRow}>
                             <Text style={[styles.td, { flex: 1, fontWeight: '800' }]}>Strong Support:</Text>
@@ -1783,7 +1752,7 @@ export const StockMarketScreen: React.FC<StockMarketScreenProps> = ({
                           </View>
                           <View style={styles.tableRow}>
                             <Text style={[styles.td, { flex: 1, fontWeight: '800' }]}>NAV / Book Value:</Text>
-                            <Text style={[styles.td, { flex: 1 }]}>৳{selectedStock.navPerShare}</Text>
+                            <Text style={[styles.td, { flex: 1 }]}>৳{selectedStock.nav}</Text>
                             <Text style={[styles.td, { flex: 1, fontWeight: '800' }]}>Return on Equity (ROE):</Text>
                             <Text style={[styles.td, { flex: 1, fontWeight: '900', color: '#16A34A' }]}>{selectedStock.roePercent}%</Text>
                           </View>
@@ -3429,8 +3398,8 @@ const styles = StyleSheet.create({
   modalCardLarge: {
     width: '96%',
     maxWidth: 1260,
-    height: '92vh',
-    maxHeight: '94vh',
+    height: '92%',
+    maxHeight: '94%',
     backgroundColor: '#FFFFFF',
     borderRadius: Radius.xl,
     paddingHorizontal: Spacing.lg,
