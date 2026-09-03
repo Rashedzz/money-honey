@@ -14,6 +14,7 @@ import { Colors, Typography, Spacing, Radius } from '../../src/theme';
 import { GlassCard } from '../../src/components/shared/GlassCard';
 import { useAuth } from '../../src/auth/AuthContext';
 import { FirebaseSyncService } from '../../src/services/firebaseSync';
+import { FormDraftManager } from '../../src/utils/formDrafts';
 
 export interface BankAccountItem {
   id: string;
@@ -76,7 +77,50 @@ export default function AccountsScreen() {
 
   useEffect(() => {
     setAccounts(getStoredBankAccounts());
+    // Restore draft if user minimized app while filling
+    const draft = FormDraftManager.loadDraft('account_form', {
+      bankName: '',
+      accountName: '',
+      accountNumber: '',
+      routingNumber: '',
+      branch: '',
+      address: '',
+      accountType: 'Savings',
+      initialBalance: '',
+      bankAppId: '',
+      isOpen: false,
+    });
+    if (draft.isOpen || draft.bankName || draft.accountNumber) {
+      setBankName(draft.bankName || '');
+      setAccountName(draft.accountName || '');
+      setAccountNumber(draft.accountNumber || '');
+      setRoutingNumber(draft.routingNumber || '');
+      setBranch(draft.branch || '');
+      setAddress(draft.address || '');
+      if (draft.accountType) setAccountType(draft.accountType as any);
+      setInitialBalance(draft.initialBalance || '');
+      setBankAppId(draft.bankAppId || '');
+      if (draft.isOpen) setShowAddForm(true);
+    }
   }, []);
+
+  // Auto-save draft on any change when creating
+  useEffect(() => {
+    if (!editingAccount && (showAddForm || bankName || accountNumber || routingNumber)) {
+      FormDraftManager.saveDraft('account_form', {
+        bankName,
+        accountName,
+        accountNumber,
+        routingNumber,
+        branch,
+        address,
+        accountType,
+        initialBalance,
+        bankAppId,
+        isOpen: showAddForm,
+      });
+    }
+  }, [showAddForm, bankName, accountName, accountNumber, routingNumber, branch, address, accountType, initialBalance, bankAppId, editingAccount]);
 
   const updateAccountsList = (updated: BankAccountItem[]) => {
     setAccounts(updated);
@@ -87,6 +131,7 @@ export default function AccountsScreen() {
   const totalBalance = accounts.reduce((sum, a) => sum + a.currentBalance, 0);
 
   const resetForm = () => {
+    FormDraftManager.clearDraft('account_form');
     setBankName('');
     setAccountName('');
     setAccountNumber('');

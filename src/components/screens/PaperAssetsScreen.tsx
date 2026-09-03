@@ -13,6 +13,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Colors, Typography, Spacing, Radius } from '../../theme';
 import { GlassCard } from '../shared/GlassCard';
 import { getStoredBankAccounts, BankAccountItem, saveStoredBankAccounts } from '../../../app/(tabs)/accounts';
+import { FormDraftManager } from '../../utils/formDrafts';
 
 export interface SanchaypatraAsset {
   id: string;
@@ -110,7 +111,7 @@ export const PaperAssetsScreen: React.FC = () => {
   // Tax Report View
   const [showTaxReport, setShowTaxReport] = useState(false);
 
-  // Load from local storage
+  // Load from local storage and restore draft if user minimized app
   useEffect(() => {
     try {
       if (typeof window !== 'undefined' && window.localStorage) {
@@ -120,7 +121,71 @@ export const PaperAssetsScreen: React.FC = () => {
     } catch (e) {}
 
     setBankAccounts(getStoredBankAccounts());
+
+    const draft = FormDraftManager.loadDraft('paper_asset_form', {
+      assetFormType: 'Sanchaypatra',
+      pName: '',
+      pInstitution: '',
+      pAddress: '',
+      pLinkedAcc: '',
+      pBankName: '',
+      pCertNo: '',
+      pAmount: '',
+      pActivationDate: '',
+      pMaturityDate: '',
+      pProfitRate: '11.04',
+      pSourceTax: '5',
+      pInterval: '3 Months',
+      pEmi: '',
+      pDepositDay: '10',
+      pTenorYears: '5',
+      modalOpen: false,
+    });
+    if (draft.modalOpen || draft.pName || draft.pCertNo || draft.pAmount) {
+      if (draft.assetFormType) setAssetFormType(draft.assetFormType as any);
+      setPName(draft.pName || '');
+      setPInstitution(draft.pInstitution || '');
+      setPAddress(draft.pAddress || '');
+      setPLinkedAcc(draft.pLinkedAcc || '');
+      setPBankName(draft.pBankName || '');
+      setPCertNo(draft.pCertNo || '');
+      setPAmount(draft.pAmount || '');
+      setPActivationDate(draft.pActivationDate || '');
+      setPMaturityDate(draft.pMaturityDate || '');
+      setPProfitRate(draft.pProfitRate || '11.04');
+      setPSourceTax(draft.pSourceTax || '5');
+      if (draft.pInterval) setPInterval(draft.pInterval as any);
+      setPEmi(draft.pEmi || '');
+      setPDepositDay(draft.pDepositDay || '10');
+      setPTenorYears(draft.pTenorYears || '5');
+      if (draft.modalOpen) setModalOpen(true);
+    }
   }, []);
+
+  // Auto-save paper asset draft on change
+  useEffect(() => {
+    if (modalOpen || pName || pCertNo || pAmount) {
+      FormDraftManager.saveDraft('paper_asset_form', {
+        assetFormType,
+        pName,
+        pInstitution,
+        pAddress,
+        pLinkedAcc,
+        pBankName,
+        pCertNo,
+        pAmount,
+        pActivationDate,
+        pMaturityDate,
+        pProfitRate,
+        pSourceTax,
+        pInterval,
+        pEmi,
+        pDepositDay,
+        pTenorYears,
+        modalOpen,
+      });
+    }
+  }, [modalOpen, assetFormType, pName, pInstitution, pAddress, pLinkedAcc, pBankName, pCertNo, pAmount, pActivationDate, pMaturityDate, pProfitRate, pSourceTax, pInterval, pEmi, pDepositDay, pTenorYears]);
 
   const saveAssets = (updated: PaperAssetUnion[]) => {
     setPaperAssets(updated);
@@ -257,6 +322,7 @@ export const PaperAssetsScreen: React.FC = () => {
   };
 
   const resetForm = () => {
+    FormDraftManager.clearDraft('paper_asset_form');
     setPName('');
     setPInstitution('');
     setPAddress('');
@@ -389,40 +455,42 @@ export const PaperAssetsScreen: React.FC = () => {
           </View>
 
           {/* Table */}
-          <View style={styles.table}>
-            <View style={styles.tableHeader}>
-              <Text style={[styles.th, { width: 36 }]}>SL</Text>
-              <Text style={[styles.th, { flex: 1.5 }]}>SANCHAYPATRA NAME & CERT NO</Text>
-              <Text style={[styles.th, { flex: 1 }]}>CAPITAL (৳)</Text>
-              <Text style={[styles.th, { flex: 1 }]}>CLOSING DATE</Text>
-              <Text style={[styles.th, { flex: 0.8 }]}>DAYS LEFT</Text>
-              <Text style={[styles.th, { flex: 1 }]}>MONTHLY PROFIT</Text>
-            </View>
-
-            {sanchaypatras.map((item, idx) => (
-              <View key={item.id} style={styles.tableRow}>
-                <Text style={[styles.td, { width: 36, fontWeight: '800' }]}>{idx + 1}</Text>
-                <View style={{ flex: 1.5 }}>
-                  <Text style={[styles.td, { fontWeight: '800' }]}>{item.name}</Text>
-                  <Text style={{ fontSize: 11, color: '#64748B' }}>#{item.certificateNumber}</Text>
-                </View>
-                <Text style={[styles.td, { flex: 1, fontWeight: '800', color: '#0F172A' }]}>
-                  ৳ {item.amount.toLocaleString('en-IN')}
-                </Text>
-                <Text style={[styles.td, { flex: 1 }]}>{item.maturityDate}</Text>
-                <View style={{ flex: 0.8 }}>
-                  <View style={[styles.daysBadge, item.closingDaysRemaining <= 30 && styles.daysBadgeUrgent]}>
-                    <Text style={[styles.daysBadgeText, item.closingDaysRemaining <= 30 && { color: '#EF4444' }]}>
-                      {item.closingDaysRemaining}d
-                    </Text>
-                  </View>
-                </View>
-                <Text style={[styles.td, { flex: 1, fontWeight: '800', color: '#16A34A' }]}>
-                  +৳ {item.monthlyProfit.toLocaleString('en-IN')}
-                </Text>
+          <ScrollView horizontal showsHorizontalScrollIndicator={true}>
+            <View style={[styles.table, { minWidth: 600 }]}>
+              <View style={styles.tableHeader}>
+                <Text style={[styles.th, { width: 40 }]}>SL</Text>
+                <Text style={[styles.th, { width: 160 }]}>SANCHAYPATRA NAME & CERT NO</Text>
+                <Text style={[styles.th, { width: 110 }]}>CAPITAL (৳)</Text>
+                <Text style={[styles.th, { width: 100 }]}>CLOSING DATE</Text>
+                <Text style={[styles.th, { width: 80 }]}>DAYS LEFT</Text>
+                <Text style={[styles.th, { width: 110 }]}>MONTHLY PROFIT</Text>
               </View>
-            ))}
-          </View>
+
+              {sanchaypatras.map((item, idx) => (
+                <View key={item.id} style={styles.tableRow}>
+                  <Text style={[styles.td, { width: 40, fontWeight: '800' }]}>{idx + 1}</Text>
+                  <View style={{ width: 160, paddingRight: 8 }}>
+                    <Text style={[styles.td, { fontWeight: '800' }]} numberOfLines={1}>{item.name}</Text>
+                    <Text style={{ fontSize: 11, color: '#64748B' }} numberOfLines={1}>#{item.certificateNumber}</Text>
+                  </View>
+                  <Text style={[styles.td, { width: 110, fontWeight: '800', color: '#0F172A' }]}>
+                    ৳ {item.amount.toLocaleString('en-IN')}
+                  </Text>
+                  <Text style={[styles.td, { width: 100 }]}>{item.maturityDate}</Text>
+                  <View style={{ width: 80 }}>
+                    <View style={[styles.daysBadge, item.closingDaysRemaining <= 30 && styles.daysBadgeUrgent]}>
+                      <Text style={[styles.daysBadgeText, item.closingDaysRemaining <= 30 && { color: '#EF4444' }]}>
+                        {item.closingDaysRemaining}d
+                      </Text>
+                    </View>
+                  </View>
+                  <Text style={[styles.td, { width: 110, fontWeight: '800', color: '#16A34A' }]}>
+                    +৳ {item.monthlyProfit.toLocaleString('en-IN')}
+                  </Text>
+                </View>
+              ))}
+            </View>
+          </ScrollView>
         </GlassCard>
       )}
 

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -11,6 +11,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, Typography, Spacing, Radius } from '../../theme';
 import { AssetItem } from '../../finance/assetEvaluation';
+import { FormDraftManager } from '../../utils/formDrafts';
 
 interface AddAssetModalProps {
   visible: boolean;
@@ -44,6 +45,55 @@ export const AddAssetModal: React.FC<AddAssetModalProps> = ({
   const [monthlyIncome, setMonthlyIncome] = useState('');
   const [appreciationRate, setAppreciationRate] = useState('12');
 
+  // Restore draft
+  useEffect(() => {
+    if (visible) {
+      const draft = FormDraftManager.loadDraft('physical_asset_form', {
+        name: '',
+        category: 'Real Estate',
+        customCategory: '',
+        currentValuation: '',
+        quantity: '',
+        uom: 'Katha',
+        monthlyIncome: '',
+        appreciationRate: '12',
+      });
+      setName(draft.name || '');
+      setCategory(draft.category || 'Real Estate');
+      setCustomCategory(draft.customCategory || '');
+      setCurrentValuation(draft.currentValuation || '');
+      setQuantity(draft.quantity || '');
+      setUom(draft.uom || 'Katha');
+      setMonthlyIncome(draft.monthlyIncome || '');
+      setAppreciationRate(draft.appreciationRate || '12');
+    }
+  }, [visible]);
+
+  // Auto-save draft
+  useEffect(() => {
+    if (visible && (name || currentValuation || monthlyIncome)) {
+      FormDraftManager.saveDraft('physical_asset_form', {
+        name,
+        category,
+        customCategory,
+        currentValuation,
+        quantity,
+        uom,
+        monthlyIncome,
+        appreciationRate,
+      });
+    }
+  }, [name, category, customCategory, currentValuation, quantity, uom, monthlyIncome, appreciationRate, visible]);
+
+  const resetForm = () => {
+    FormDraftManager.clearDraft('physical_asset_form');
+    setName('');
+    setCurrentValuation('');
+    setMonthlyIncome('');
+    setQuantity('');
+    setCustomCategory('');
+  };
+
   const handleSave = () => {
     if (!name.trim() || !currentValuation.trim()) return;
 
@@ -70,12 +120,7 @@ export const AddAssetModal: React.FC<AddAssetModalProps> = ({
     };
 
     onSave(newAsset);
-    // Reset form
-    setName('');
-    setCurrentValuation('');
-    setMonthlyIncome('');
-    setQuantity('');
-    setCustomCategory('');
+    resetForm();
     onClose();
   };
 

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, Typography, Spacing, Radius } from '../../theme';
+import { FormDraftManager } from '../../utils/formDrafts';
 
 export type EntryType = 'bank' | 'loan' | 'income' | 'expense' | 'asset' | 'stock' | 'insurance' | 'birthday';
 
@@ -36,7 +37,44 @@ export const UniversalEntryModal: React.FC<UniversalEntryModalProps> = ({
   const [subInfo, setSubInfo] = useState('');
   const [extraField, setExtraField] = useState('');
 
+  // Sync initialType
+  useEffect(() => {
+    if (initialType) setSelectedType(initialType);
+  }, [initialType]);
+
+  // Restore draft when modal opens or selectedType changes
+  useEffect(() => {
+    if (visible) {
+      const draft = FormDraftManager.loadDraft(`universal_${selectedType}`, {
+        title: '',
+        amount: '',
+        category: '',
+        subInfo: '',
+        extraField: '',
+      });
+      setTitle(draft.title || '');
+      setAmount(draft.amount || '');
+      setCategory(draft.category || '');
+      setSubInfo(draft.subInfo || '');
+      setExtraField(draft.extraField || '');
+    }
+  }, [visible, selectedType]);
+
+  // Auto-save draft on any input change so data is never lost if user minimizes app
+  useEffect(() => {
+    if (visible && (title || amount || category || subInfo || extraField)) {
+      FormDraftManager.saveDraft(`universal_${selectedType}`, {
+        title,
+        amount,
+        category,
+        subInfo,
+        extraField,
+      });
+    }
+  }, [title, amount, category, subInfo, extraField, selectedType, visible]);
+
   const resetForm = () => {
+    FormDraftManager.clearDraft(`universal_${selectedType}`);
     setTitle('');
     setAmount('');
     setCategory('');

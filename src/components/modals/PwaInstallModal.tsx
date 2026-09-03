@@ -9,6 +9,7 @@ import {
   ScrollView,
   Platform,
   Alert,
+  Linking,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, Typography, Spacing, Radius } from '../../theme';
@@ -55,6 +56,15 @@ export const PwaInstallModal: React.FC<PwaInstallModalProps> = ({
     }
   }, []);
 
+  const handleDownloadApk = () => {
+    const apkReleaseUrl = 'https://github.com/Rashedzz/money-honey/releases';
+    if (typeof window !== 'undefined') {
+      window.open(apkReleaseUrl, '_blank');
+    } else {
+      Linking.openURL(apkReleaseUrl);
+    }
+  };
+
   const handleDirectInstall = () => {
     if (typeof window !== 'undefined' && (window as any).deferredPWAInstallPrompt) {
       (window as any).deferredPWAInstallPrompt.prompt();
@@ -67,7 +77,7 @@ export const PwaInstallModal: React.FC<PwaInstallModalProps> = ({
       });
     } else {
       Alert.alert(
-        'Install Money-Honey',
+        'Install Money-Honey PWA',
         'In your browser top address bar, click the Install App icon (⊕ or computer icon) or click the browser menu (⋮) → "Install Money-Honey" / "Add to Home Screen".'
       );
     }
@@ -82,8 +92,8 @@ export const PwaInstallModal: React.FC<PwaInstallModalProps> = ({
             <View style={styles.titleRow}>
               <DynamicMoneyTree size={38} />
               <View>
-                <Text style={styles.title}>Install App on Laptop & Phone</Text>
-                <Text style={styles.subtitle}>Install as standalone desktop/mobile app</Text>
+                <Text style={styles.title}>Download & Install App</Text>
+                <Text style={styles.subtitle}>Install as standalone mobile APK or desktop PWA</Text>
               </View>
             </View>
 
@@ -97,16 +107,38 @@ export const PwaInstallModal: React.FC<PwaInstallModalProps> = ({
             style={{ flex: 1, width: '100%', overflowY: 'auto' as any }}
             contentContainerStyle={styles.body}
           >
-            {/* Direct 1-Click Install Button */}
+            {/* Action 1: Direct Android APK Download Button */}
+            <TouchableOpacity
+              style={styles.apkDownloadBtn}
+              onPress={handleDownloadApk}
+              activeOpacity={0.85}
+            >
+              <View style={styles.btnIconCol}>
+                <Ionicons name="logo-android" size={26} color="#FFFFFF" />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.apkDownloadBtnTitle}>🤖 Download Android APK (.apk)</Text>
+                <Text style={styles.apkDownloadBtnSub}>Direct standalone offline installer for Android</Text>
+              </View>
+              <Ionicons name="cloud-download-outline" size={20} color="#FFFFFF" />
+            </TouchableOpacity>
+
+            {/* Action 2: Direct 1-Click PWA Install Button */}
             <TouchableOpacity
               style={styles.directInstallBtn}
               onPress={handleDirectInstall}
               activeOpacity={0.85}
             >
-              <Ionicons name="download" size={20} color="#FFFFFF" />
-              <Text style={styles.directInstallBtnText}>
-                {canInstallDirectly ? '📥 Install App on this Device Now' : '📥 1-Click Install Money-Honey'}
-              </Text>
+              <View style={styles.btnIconCol}>
+                <Ionicons name="globe-outline" size={24} color="#FFFFFF" />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.directInstallBtnText}>
+                  {canInstallDirectly ? '📲 1-Click Install PWA App Now' : '📲 Install Progressive Web App (PWA)'}
+                </Text>
+                <Text style={styles.directInstallBtnSub}>Runs full-screen on Mobile, Laptop & Desktop</Text>
+              </View>
+              <Ionicons name="arrow-forward" size={18} color="#FFFFFF" />
             </TouchableOpacity>
 
             {/* QR Code Container */}
@@ -232,13 +264,44 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     width: '100%',
   },
+  apkDownloadBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    backgroundColor: '#16A34A',
+    width: '100%',
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    borderRadius: Radius.lg,
+    marginBottom: Spacing.sm,
+    shadowColor: '#16A34A',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.35,
+    shadowRadius: 6,
+    elevation: 4,
+  },
+  apkDownloadBtnTitle: {
+    color: '#FFFFFF',
+    fontSize: 15,
+    fontWeight: '900',
+  },
+  apkDownloadBtnSub: {
+    color: '#DCFCE7',
+    fontSize: 11,
+    marginTop: 2,
+  },
+  btnIconCol: {
+    width: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   directInstallBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
+    gap: 12,
     backgroundColor: '#0284C7',
     width: '100%',
+    paddingHorizontal: 16,
     paddingVertical: 14,
     borderRadius: Radius.lg,
     marginBottom: Spacing.md,
@@ -252,6 +315,11 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 15,
     fontWeight: '800',
+  },
+  directInstallBtnSub: {
+    color: '#E0F2FE',
+    fontSize: 11,
+    marginTop: 2,
   },
   qrCard: {
     backgroundColor: '#F0F9FF',

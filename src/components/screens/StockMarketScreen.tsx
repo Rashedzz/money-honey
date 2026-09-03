@@ -373,36 +373,38 @@ export const StockMarketScreen: React.FC<StockMarketScreenProps> = ({
               </View>
 
               {/* Top 5 Table */}
-              <View style={styles.table}>
-                <View style={styles.tableHeader}>
-                  <Text style={[styles.th, { width: 45 }]}>RANK</Text>
-                  <Text style={[styles.th, { flex: 1 }]}>SECURITY</Text>
-                  <Text style={[styles.th, { width: 80 }]}>AI SCORE</Text>
-                  <Text style={[styles.th, { width: 85 }]}>LTP (৳)</Text>
-                  <Text style={[styles.th, { width: 95 }]}>TARGET (৳)</Text>
-                  <Text style={[styles.th, { width: 85 }]}>UPSIDE %</Text>
-                </View>
-
-                {[
-                  { rank: '#1', symbol: 'SQURPHARMA', name: 'Square Pharmaceuticals', score: 92, ltp: 218.4, target: 264.8, upside: '+21.2%' },
-                  { rank: '#2', symbol: 'BRACBANK', name: 'BRAC Bank PLC', score: 90, ltp: 42.8, target: 54.0, upside: '+26.2%' },
-                  { rank: '#3', symbol: 'EBL', name: 'Eastern Bank PLC', score: 89, ltp: 28.6, target: 35.5, upside: '+24.1%' },
-                  { rank: '#4', symbol: 'LHBL', name: 'LafargeHolcim Bangladesh', score: 86, ltp: 68.2, target: 82.0, upside: '+20.2%' },
-                  { rank: '#5', symbol: 'MARICO', name: 'Marico Bangladesh Ltd.', score: 85, ltp: 2450.0, target: 2890.0, upside: '+18.0%' },
-                ].map((row, idx) => (
-                  <View key={row.symbol} style={[styles.tableRow, idx === 0 && { backgroundColor: '#F0FDF4' }]}>
-                    <Text style={[styles.td, { width: 45, fontWeight: '900', color: idx === 0 ? '#16A34A' : '#0F172A' }]}>{row.rank}</Text>
-                    <View style={{ flex: 1 }}>
-                      <Text style={{ fontWeight: '800', color: '#0F172A' }}>{row.symbol}</Text>
-                      <Text style={{ fontSize: 11, color: '#64748B' }}>{row.name}</Text>
-                    </View>
-                    <Text style={[styles.td, { width: 80, fontWeight: '900', color: '#16A34A' }]}>{row.score}/100</Text>
-                    <Text style={[styles.td, { width: 85, fontWeight: '700' }]}>৳{row.ltp}</Text>
-                    <Text style={[styles.td, { width: 95, fontWeight: '800', color: '#0284C7' }]}>৳{row.target}</Text>
-                    <Text style={[styles.td, { width: 85, fontWeight: '900', color: '#16A34A' }]}>{row.upside}</Text>
+              <ScrollView horizontal showsHorizontalScrollIndicator={true}>
+                <View style={[styles.table, { minWidth: 560 }]}>
+                  <View style={styles.tableHeader}>
+                    <Text style={[styles.th, { width: 50 }]}>RANK</Text>
+                    <Text style={[styles.th, { width: 150 }]}>SECURITY</Text>
+                    <Text style={[styles.th, { width: 80 }]}>AI SCORE</Text>
+                    <Text style={[styles.th, { width: 85 }]}>LTP (৳)</Text>
+                    <Text style={[styles.th, { width: 95 }]}>TARGET (৳)</Text>
+                    <Text style={[styles.th, { width: 85 }]}>UPSIDE %</Text>
                   </View>
-                ))}
-              </View>
+
+                  {[
+                    { rank: '#1', symbol: 'SQURPHARMA', name: 'Square Pharmaceuticals', score: 92, ltp: 218.4, target: 264.8, upside: '+21.2%' },
+                    { rank: '#2', symbol: 'BRACBANK', name: 'BRAC Bank PLC', score: 90, ltp: 42.8, target: 54.0, upside: '+26.2%' },
+                    { rank: '#3', symbol: 'EBL', name: 'Eastern Bank PLC', score: 89, ltp: 28.6, target: 35.5, upside: '+24.1%' },
+                    { rank: '#4', symbol: 'LHBL', name: 'LafargeHolcim Bangladesh', score: 86, ltp: 68.2, target: 82.0, upside: '+20.2%' },
+                    { rank: '#5', symbol: 'MARICO', name: 'Marico Bangladesh Ltd.', score: 85, ltp: 2450.0, target: 2890.0, upside: '+18.0%' },
+                  ].map((row, idx) => (
+                    <View key={row.symbol} style={[styles.tableRow, idx === 0 && { backgroundColor: '#F0FDF4' }]}>
+                      <Text style={[styles.td, { width: 50, fontWeight: '900', color: idx === 0 ? '#16A34A' : '#0F172A' }]}>{row.rank}</Text>
+                      <View style={{ width: 150, paddingRight: 6 }}>
+                        <Text style={{ fontWeight: '800', color: '#0F172A' }} numberOfLines={1}>{row.symbol}</Text>
+                        <Text style={{ fontSize: 11, color: '#64748B' }} numberOfLines={1}>{row.name}</Text>
+                      </View>
+                      <Text style={[styles.td, { width: 80, fontWeight: '900', color: '#16A34A' }]}>{row.score}/100</Text>
+                      <Text style={[styles.td, { width: 85, fontWeight: '700' }]}>৳{row.ltp}</Text>
+                      <Text style={[styles.td, { width: 95, fontWeight: '800', color: '#0284C7' }]}>৳{row.target}</Text>
+                      <Text style={[styles.td, { width: 85, fontWeight: '900', color: '#16A34A' }]}>{row.upside}</Text>
+                    </View>
+                  ))}
+                </View>
+              </ScrollView>
 
               {/* Explainable Why #1 Breakdown */}
               <View style={[styles.thesisBox, { backgroundColor: '#F8FAFC', borderColor: '#E2E8F0', marginTop: 12 }]}>
@@ -524,27 +526,29 @@ export const StockMarketScreen: React.FC<StockMarketScreenProps> = ({
                   <Text style={{ fontSize: 11, color: '#64748B', marginTop: 2, marginBottom: 8 }}>
                     Sector Health: {selectedDrilldownSector === 'Engineering' ? '🔴 Distribution / Cyclical Margin Pressure' : selectedDrilldownSector === 'Cement' ? '🟡 Consolidation & Rebound' : '🟢 Strongest Bullish Sector Setup'}
                   </Text>
-                  <View style={styles.table}>
-                    <View style={styles.tableHeader}>
-                      <Text style={[styles.th, { flex: 1 }]}>STOCK</Text>
-                      <Text style={[styles.th, { width: 75 }]}>LTP</Text>
-                      <Text style={[styles.th, { width: 65 }]}>P/E</Text>
-                      <Text style={[styles.th, { width: 75 }]}>ROE %</Text>
-                      <Text style={[styles.th, { width: 80 }]}>AI SCORE</Text>
-                    </View>
-                    {(secStocks.length > 0 ? secStocks : DSE_STOCK_UNIVERSE.slice(0, 3)).map((s) => (
-                      <View key={s.symbol} style={styles.tableRow}>
-                        <View style={{ flex: 1 }}>
-                          <Text style={{ fontWeight: '800', color: '#0F172A' }}>{s.symbol}</Text>
-                          <Text style={{ fontSize: 10, color: '#64748B' }}>{s.companyName}</Text>
-                        </View>
-                        <Text style={[styles.td, { width: 75, fontWeight: '700' }]}>৳{s.ltp}</Text>
-                        <Text style={[styles.td, { width: 65 }]}>{s.peRatio}x</Text>
-                        <Text style={[styles.td, { width: 75, fontWeight: '800', color: '#16A34A' }]}>{s.roePercent}%</Text>
-                        <Text style={[styles.td, { width: 80, fontWeight: '900', color: '#16A34A' }]}>{s.totalAiScore}/100</Text>
+                  <ScrollView horizontal showsHorizontalScrollIndicator={true}>
+                    <View style={[styles.table, { minWidth: 480 }]}>
+                      <View style={styles.tableHeader}>
+                        <Text style={[styles.th, { width: 140 }]}>STOCK</Text>
+                        <Text style={[styles.th, { width: 80 }]}>LTP</Text>
+                        <Text style={[styles.th, { width: 70 }]}>P/E</Text>
+                        <Text style={[styles.th, { width: 80 }]}>ROE %</Text>
+                        <Text style={[styles.th, { width: 90 }]}>AI SCORE</Text>
                       </View>
-                    ))}
-                  </View>
+                      {(secStocks.length > 0 ? secStocks : DSE_STOCK_UNIVERSE.slice(0, 3)).map((s) => (
+                        <View key={s.symbol} style={styles.tableRow}>
+                          <View style={{ width: 140, paddingRight: 8 }}>
+                            <Text style={{ fontWeight: '800', color: '#0F172A' }} numberOfLines={1}>{s.symbol}</Text>
+                            <Text style={{ fontSize: 10, color: '#64748B' }} numberOfLines={1}>{s.companyName}</Text>
+                          </View>
+                          <Text style={[styles.td, { width: 80, fontWeight: '700' }]}>৳{s.ltp}</Text>
+                          <Text style={[styles.td, { width: 70 }]}>{s.peRatio}x</Text>
+                          <Text style={[styles.td, { width: 80, fontWeight: '800', color: '#16A34A' }]}>{s.roePercent}%</Text>
+                          <Text style={[styles.td, { width: 90, fontWeight: '900', color: '#16A34A' }]}>{s.totalAiScore}/100</Text>
+                        </View>
+                      ))}
+                    </View>
+                  </ScrollView>
                 </View>
               );
             })()}
@@ -600,33 +604,35 @@ export const StockMarketScreen: React.FC<StockMarketScreenProps> = ({
               }
 
               return (
-                <View style={styles.table}>
-                  <View style={styles.tableHeader}>
-                    <Text style={[styles.th, { flex: 1 }]}>SECURITY</Text>
-                    <Text style={[styles.th, { width: 80 }]}>LTP (৳)</Text>
-                    <Text style={[styles.th, { width: 75 }]}>CHANGE</Text>
-                    <Text style={[styles.th, { width: 85 }]}>TURNOVER</Text>
-                    <Text style={[styles.th, { width: 80 }]}>AI SCORE</Text>
+                <ScrollView horizontal showsHorizontalScrollIndicator={true}>
+                  <View style={[styles.table, { minWidth: 500 }]}>
+                    <View style={styles.tableHeader}>
+                      <Text style={[styles.th, { width: 140 }]}>SECURITY</Text>
+                      <Text style={[styles.th, { width: 80 }]}>LTP (৳)</Text>
+                      <Text style={[styles.th, { width: 75 }]}>CHANGE</Text>
+                      <Text style={[styles.th, { width: 85 }]}>TURNOVER</Text>
+                      <Text style={[styles.th, { width: 80 }]}>AI SCORE</Text>
+                    </View>
+                    {moverList.slice(0, 5).map((s) => (
+                      <TouchableOpacity
+                        key={s.symbol}
+                        style={styles.tableRow}
+                        onPress={() => setSelectedStock(s)}
+                      >
+                        <View style={{ width: 140, paddingRight: 8 }}>
+                          <Text style={{ fontWeight: '800', color: '#0F172A' }} numberOfLines={1}>{s.symbol}</Text>
+                          <Text style={{ fontSize: 11, color: '#64748B' }} numberOfLines={1}>{s.companyName}</Text>
+                        </View>
+                        <Text style={[styles.td, { width: 80, fontWeight: '700' }]}>৳{s.ltp}</Text>
+                        <Text style={[styles.td, { width: 75, fontWeight: '800', color: s.change >= 0 ? '#16A34A' : '#EF4444' }]}>
+                          {s.change >= 0 ? '+' : ''}{s.changePercent}%
+                        </Text>
+                        <Text style={[styles.td, { width: 85 }]}>৳{s.turnoverCrore} Cr</Text>
+                        <Text style={[styles.td, { width: 80, fontWeight: '900', color: '#16A34A' }]}>{s.totalAiScore}/100</Text>
+                      </TouchableOpacity>
+                    ))}
                   </View>
-                  {moverList.slice(0, 5).map((s) => (
-                    <TouchableOpacity
-                      key={s.symbol}
-                      style={styles.tableRow}
-                      onPress={() => setSelectedStock(s)}
-                    >
-                      <View style={{ flex: 1 }}>
-                        <Text style={{ fontWeight: '800', color: '#0F172A' }}>{s.symbol}</Text>
-                        <Text style={{ fontSize: 11, color: '#64748B' }}>{s.companyName}</Text>
-                      </View>
-                      <Text style={[styles.td, { width: 80, fontWeight: '700' }]}>৳{s.ltp}</Text>
-                      <Text style={[styles.td, { width: 75, fontWeight: '800', color: s.change >= 0 ? '#16A34A' : '#EF4444' }]}>
-                        {s.change >= 0 ? '+' : ''}{s.changePercent}%
-                      </Text>
-                      <Text style={[styles.td, { width: 85 }]}>৳{s.turnoverCrore} Cr</Text>
-                      <Text style={[styles.td, { width: 80, fontWeight: '900', color: '#16A34A' }]}>{s.totalAiScore}/100</Text>
-                    </TouchableOpacity>
-                  ))}
-                </View>
+                </ScrollView>
               );
             })()}
           </GlassCard>
@@ -861,34 +867,36 @@ export const StockMarketScreen: React.FC<StockMarketScreenProps> = ({
               {assistantResult.recommendedPortfolio && (
                 <>
                   <Text style={styles.sectionHeading}>📊 OPTIMAL ALLOCATION MATRIX</Text>
-                  <View style={styles.table}>
-                    <View style={styles.tableHeader}>
-                      <Text style={[styles.th, { flex: 1 }]}>SECURITY</Text>
-                      <Text style={[styles.th, { width: 65 }]}>WEIGHT</Text>
-                      <Text style={[styles.th, { flex: 1 }]}>AMOUNT (৳)</Text>
-                      <Text style={[styles.th, { flex: 1 }]}>SHARES</Text>
-                      <Text style={[styles.th, { flex: 1 }]}>TARGET</Text>
-                    </View>
-                    {assistantResult.recommendedPortfolio.stockAllocations.map((item) => (
-                      <View key={item.symbol} style={styles.tableRow}>
-                        <View style={{ flex: 1 }}>
-                          <Text style={{ fontWeight: '800', color: '#0F172A' }}>{item.symbol}</Text>
-                          <Text style={{ fontSize: 10, color: '#64748B' }}>{item.sector}</Text>
-                        </View>
-                        <Text style={[styles.td, { width: 65, fontWeight: '800', color: '#0284C7' }]}>{item.weightPercent}%</Text>
-                        <Text style={[styles.td, { flex: 1, fontWeight: '800' }]}>৳{Math.round(item.allocatedAmount).toLocaleString('en-IN')}</Text>
-                        <Text style={[styles.td, { flex: 1 }]}>{item.sharesToBuy.toLocaleString()} shares</Text>
-                        <Text style={[styles.td, { flex: 1, fontWeight: '900', color: '#16A34A' }]}>৳{item.targetPrice} (+{item.expectedReturnPercent}%)</Text>
+                  <ScrollView horizontal showsHorizontalScrollIndicator={true}>
+                    <View style={[styles.table, { minWidth: 560 }]}>
+                      <View style={styles.tableHeader}>
+                        <Text style={[styles.th, { width: 130 }]}>SECURITY</Text>
+                        <Text style={[styles.th, { width: 70 }]}>WEIGHT</Text>
+                        <Text style={[styles.th, { width: 110 }]}>AMOUNT (৳)</Text>
+                        <Text style={[styles.th, { width: 100 }]}>SHARES</Text>
+                        <Text style={[styles.th, { width: 140 }]}>TARGET</Text>
                       </View>
-                    ))}
-                    <View style={[styles.tableRow, { backgroundColor: '#F0F9FF' }]}>
-                      <Text style={[styles.td, { flex: 1, fontWeight: '800', color: '#0284C7' }]}>Liquid Cash Reserve</Text>
-                      <Text style={[styles.td, { width: 65, fontWeight: '800' }]}>{assistantResult.recommendedPortfolio.cashReservePercent}%</Text>
-                      <Text style={[styles.td, { flex: 1, fontWeight: '800' }]}>৳{Math.round(assistantResult.recommendedPortfolio.cashReserveAmount).toLocaleString('en-IN')}</Text>
-                      <Text style={[styles.td, { flex: 1 }]}>Liquid Buffer</Text>
-                      <Text style={[styles.td, { flex: 1, color: '#64748B' }]}>Dip Protection</Text>
+                      {assistantResult.recommendedPortfolio.stockAllocations.map((item) => (
+                        <View key={item.symbol} style={styles.tableRow}>
+                          <View style={{ width: 130, paddingRight: 6 }}>
+                            <Text style={{ fontWeight: '800', color: '#0F172A' }} numberOfLines={1}>{item.symbol}</Text>
+                            <Text style={{ fontSize: 10, color: '#64748B' }} numberOfLines={1}>{item.sector}</Text>
+                          </View>
+                          <Text style={[styles.td, { width: 70, fontWeight: '800', color: '#0284C7' }]}>{item.weightPercent}%</Text>
+                          <Text style={[styles.td, { width: 110, fontWeight: '800' }]}>৳{Math.round(item.allocatedAmount).toLocaleString('en-IN')}</Text>
+                          <Text style={[styles.td, { width: 100 }]}>{item.sharesToBuy.toLocaleString()} shs</Text>
+                          <Text style={[styles.td, { width: 140, fontWeight: '900', color: '#16A34A' }]}>৳{item.targetPrice} (+{item.expectedReturnPercent}%)</Text>
+                        </View>
+                      ))}
+                      <View style={[styles.tableRow, { backgroundColor: '#F0F9FF' }]}>
+                        <Text style={[styles.td, { width: 130, fontWeight: '800', color: '#0284C7' }]}>Liquid Cash</Text>
+                        <Text style={[styles.td, { width: 70, fontWeight: '800' }]}>{assistantResult.recommendedPortfolio.cashReservePercent}%</Text>
+                        <Text style={[styles.td, { width: 110, fontWeight: '800' }]}>৳{Math.round(assistantResult.recommendedPortfolio.cashReserveAmount).toLocaleString('en-IN')}</Text>
+                        <Text style={[styles.td, { width: 100 }]}>Liquid Buffer</Text>
+                        <Text style={[styles.td, { width: 140, color: '#64748B' }]}>Dip Protection</Text>
+                      </View>
                     </View>
-                  </View>
+                  </ScrollView>
                 </>
               )}
 
@@ -1076,58 +1084,62 @@ export const StockMarketScreen: React.FC<StockMarketScreenProps> = ({
               </View>
 
               {/* Allocations Table */}
-              <View style={styles.table}>
-                <View style={styles.tableHeader}>
-                  <Text style={[styles.th, { flex: 1 }]}>EQUITY</Text>
-                  <Text style={[styles.th, { width: 60 }]}>WEIGHT</Text>
-                  <Text style={[styles.th, { flex: 1 }]}>ALLOCATION (৳)</Text>
-                  <Text style={[styles.th, { flex: 1 }]}>SHARES TO BUY</Text>
-                  <Text style={[styles.th, { flex: 1 }]}>TARGET UPSIDE</Text>
-                </View>
+              <ScrollView horizontal showsHorizontalScrollIndicator={true}>
+                <View style={[styles.table, { minWidth: 560 }]}>
+                  <View style={styles.tableHeader}>
+                    <Text style={[styles.th, { width: 130 }]}>EQUITY</Text>
+                    <Text style={[styles.th, { width: 70 }]}>WEIGHT</Text>
+                    <Text style={[styles.th, { width: 110 }]}>ALLOCATION (৳)</Text>
+                    <Text style={[styles.th, { width: 110 }]}>SHARES TO BUY</Text>
+                    <Text style={[styles.th, { width: 140 }]}>TARGET UPSIDE</Text>
+                  </View>
 
-                {optimizerResult.stockAllocations.map((item) => (
-                  <View key={item.symbol} style={styles.tableRow}>
-                    <View style={{ flex: 1 }}>
-                      <Text style={{ fontWeight: '800', color: '#0F172A', fontSize: 13 }}>{item.symbol}</Text>
-                      <Text style={{ fontSize: 11, color: '#64748B' }}>{item.sector}</Text>
+                  {optimizerResult.stockAllocations.map((item) => (
+                    <View key={item.symbol} style={styles.tableRow}>
+                      <View style={{ width: 130, paddingRight: 6 }}>
+                        <Text style={{ fontWeight: '800', color: '#0F172A', fontSize: 13 }} numberOfLines={1}>{item.symbol}</Text>
+                        <Text style={{ fontSize: 11, color: '#64748B' }} numberOfLines={1}>{item.sector}</Text>
+                      </View>
+                      <Text style={[styles.td, { width: 70, fontWeight: '800' }]}>{item.weightPercent}%</Text>
+                      <Text style={[styles.td, { width: 110, fontWeight: '800' }]}>৳{Math.round(item.allocatedAmount).toLocaleString('en-IN')}</Text>
+                      <Text style={[styles.td, { width: 110 }]}>{item.sharesToBuy.toLocaleString()} shares</Text>
+                      <Text style={[styles.td, { width: 140, fontWeight: '800', color: '#16A34A' }]}>+{item.expectedReturnPercent}%</Text>
                     </View>
-                    <Text style={[styles.td, { width: 60, fontWeight: '800' }]}>{item.weightPercent}%</Text>
-                    <Text style={[styles.td, { flex: 1, fontWeight: '800' }]}>৳{Math.round(item.allocatedAmount).toLocaleString('en-IN')}</Text>
-                    <Text style={[styles.td, { flex: 1 }]}>{item.sharesToBuy.toLocaleString()} shares</Text>
-                    <Text style={[styles.td, { flex: 1, fontWeight: '800', color: '#16A34A' }]}>+{item.expectedReturnPercent}%</Text>
-                  </View>
-                ))}
+                  ))}
 
-                <View style={[styles.tableRow, { backgroundColor: '#F0F9FF' }]}>
-                  <View style={{ flex: 1 }}>
-                    <Text style={{ fontWeight: '800', color: '#0284C7' }}>Liquid Cash Reserves</Text>
-                    <Text style={{ fontSize: 11, color: '#64748B' }}>Buffer for dips</Text>
+                  <View style={[styles.tableRow, { backgroundColor: '#F0F9FF' }]}>
+                    <View style={{ width: 130 }}>
+                      <Text style={{ fontWeight: '800', color: '#0284C7' }} numberOfLines={1}>Liquid Reserves</Text>
+                      <Text style={{ fontSize: 11, color: '#64748B' }} numberOfLines={1}>Dip buffer</Text>
+                    </View>
+                    <Text style={[styles.td, { width: 70, fontWeight: '800' }]}>{optimizerResult.cashReservePercent}%</Text>
+                    <Text style={[styles.td, { width: 110, fontWeight: '800' }]}>৳{Math.round(optimizerResult.cashReserveAmount).toLocaleString('en-IN')}</Text>
+                    <Text style={[styles.td, { width: 110 }]}>Liquid Cash</Text>
+                    <Text style={[styles.td, { width: 140, color: '#64748B' }]}>Risk buffer</Text>
                   </View>
-                  <Text style={[styles.td, { width: 60, fontWeight: '800' }]}>{optimizerResult.cashReservePercent}%</Text>
-                  <Text style={[styles.td, { flex: 1, fontWeight: '800' }]}>৳{Math.round(optimizerResult.cashReserveAmount).toLocaleString('en-IN')}</Text>
-                  <Text style={[styles.td, { flex: 1 }]}>Liquid Reserves</Text>
-                  <Text style={[styles.td, { flex: 1, color: '#64748B' }]}>Risk buffer</Text>
                 </View>
-              </View>
+              </ScrollView>
 
               {/* Sector Concentration */}
               <Text style={[styles.sectionHeading, { marginTop: Spacing.md }]}>
                 🏛️ SECTOR CONCENTRATION & DIVERSIFICATION
               </Text>
-              <View style={styles.table}>
-                <View style={styles.tableHeader}>
-                  <Text style={[styles.th, { flex: 1.5 }]}>SECTOR</Text>
-                  <Text style={[styles.th, { width: 80 }]}>WEIGHT %</Text>
-                  <Text style={[styles.th, { flex: 1 }]}>ALLOCATION (৳)</Text>
-                </View>
-                {optimizerResult.sectorBreakdown.map((sec) => (
-                  <View key={sec.sector} style={styles.tableRow}>
-                    <Text style={[styles.td, { flex: 1.5, fontWeight: '700' }]}>{sec.sector}</Text>
-                    <Text style={[styles.td, { width: 80, fontWeight: '800', color: '#0284C7' }]}>{sec.weightPercent}%</Text>
-                    <Text style={[styles.td, { flex: 1, fontWeight: '800' }]}>৳{Math.round(sec.amount).toLocaleString('en-IN')}</Text>
+              <ScrollView horizontal showsHorizontalScrollIndicator={true}>
+                <View style={[styles.table, { minWidth: 420 }]}>
+                  <View style={styles.tableHeader}>
+                    <Text style={[styles.th, { width: 160 }]}>SECTOR</Text>
+                    <Text style={[styles.th, { width: 90 }]}>WEIGHT %</Text>
+                    <Text style={[styles.th, { width: 150 }]}>ALLOCATION (৳)</Text>
                   </View>
-                ))}
-              </View>
+                  {optimizerResult.sectorBreakdown.map((sec) => (
+                    <View key={sec.sector} style={styles.tableRow}>
+                      <Text style={[styles.td, { width: 160, fontWeight: '700' }]} numberOfLines={1}>{sec.sector}</Text>
+                      <Text style={[styles.td, { width: 90, fontWeight: '800', color: '#0284C7' }]}>{sec.weightPercent}%</Text>
+                      <Text style={[styles.td, { width: 150, fontWeight: '800' }]}>৳{Math.round(sec.amount).toLocaleString('en-IN')}</Text>
+                    </View>
+                  ))}
+                </View>
+              </ScrollView>
             </GlassCard>
           )}
         </View>
@@ -1144,33 +1156,35 @@ export const StockMarketScreen: React.FC<StockMarketScreenProps> = ({
               Rather than blindly trusting candlestick theory, our engine analyzes thousands of historical DSE occurrences to measure true empirical success rates.
             </Text>
 
-            <View style={styles.table}>
-              <View style={styles.tableHeader}>
-                <Text style={[styles.th, { flex: 1.5 }]}>PATTERN NAME</Text>
-                <Text style={[styles.th, { width: 80 }]}>OCCURRENCES</Text>
-                <Text style={[styles.th, { width: 80 }]}>5-DAY WIN%</Text>
-                <Text style={[styles.th, { width: 80 }]}>20-DAY WIN%</Text>
-                <Text style={[styles.th, { width: 90 }]}>AVG 20D RETURN</Text>
-                <Text style={[styles.th, { flex: 1 }]}>CURRENT DSE MATCHES</Text>
-              </View>
-
-              {DSE_CANDLESTICK_STATS.map((pat) => (
-                <View key={pat.patternName} style={styles.tableRow}>
-                  <Text style={[styles.td, { flex: 1.5, fontWeight: '800' }]}>{pat.patternName}</Text>
-                  <Text style={[styles.td, { width: 80 }]}>{pat.historicalOccurrencesDSE.toLocaleString()}</Text>
-                  <Text style={[styles.td, { width: 80, fontWeight: '800', color: '#16A34A' }]}>{pat.winRateNext5Days}%</Text>
-                  <Text style={[styles.td, { width: 80, fontWeight: '800', color: '#16A34A' }]}>{pat.winRateNext20Days}%</Text>
-                  <Text style={[styles.td, { width: 90, fontWeight: '800', color: '#16A34A' }]}>+{pat.avgReturnNext20Days}%</Text>
-                  <View style={{ flex: 1, flexDirection: 'row', gap: 4, flexWrap: 'wrap' }}>
-                    {pat.currentMatches.map((sym) => (
-                      <View key={sym} style={styles.symBadge}>
-                        <Text style={styles.symBadgeText}>{sym}</Text>
-                      </View>
-                    ))}
-                  </View>
+            <ScrollView horizontal showsHorizontalScrollIndicator={true}>
+              <View style={[styles.table, { minWidth: 650 }]}>
+                <View style={styles.tableHeader}>
+                  <Text style={[styles.th, { width: 160 }]}>PATTERN NAME</Text>
+                  <Text style={[styles.th, { width: 90 }]}>OCCURRENCES</Text>
+                  <Text style={[styles.th, { width: 85 }]}>5-DAY WIN%</Text>
+                  <Text style={[styles.th, { width: 85 }]}>20-DAY WIN%</Text>
+                  <Text style={[styles.th, { width: 95 }]}>AVG 20D RETURN</Text>
+                  <Text style={[styles.th, { width: 135 }]}>CURRENT DSE MATCHES</Text>
                 </View>
-              ))}
-            </View>
+
+                {DSE_CANDLESTICK_STATS.map((pat) => (
+                  <View key={pat.patternName} style={styles.tableRow}>
+                    <Text style={[styles.td, { width: 160, fontWeight: '800' }]} numberOfLines={1}>{pat.patternName}</Text>
+                    <Text style={[styles.td, { width: 90 }]}>{pat.historicalOccurrencesDSE.toLocaleString()}</Text>
+                    <Text style={[styles.td, { width: 85, fontWeight: '800', color: '#16A34A' }]}>{pat.winRateNext5Days}%</Text>
+                    <Text style={[styles.td, { width: 85, fontWeight: '800', color: '#16A34A' }]}>{pat.winRateNext20Days}%</Text>
+                    <Text style={[styles.td, { width: 95, fontWeight: '800', color: '#16A34A' }]}>+{pat.avgReturnNext20Days}%</Text>
+                    <View style={{ width: 135, flexDirection: 'row', gap: 4, flexWrap: 'wrap' }}>
+                      {pat.currentMatches.map((sym) => (
+                        <View key={sym} style={styles.symBadge}>
+                          <Text style={styles.symBadgeText}>{sym}</Text>
+                        </View>
+                      ))}
+                    </View>
+                  </View>
+                ))}
+              </View>
+            </ScrollView>
           </GlassCard>
 
           {/* Multi-Factor Strategy Backtest Summary & Comparison */}
@@ -1254,31 +1268,33 @@ export const StockMarketScreen: React.FC<StockMarketScreenProps> = ({
                 <Text style={[styles.sectionHeading, { marginTop: Spacing.md }]}>
                   📜 SAMPLE BACKTEST EXECUTIONS & PROVEN OUTCOMES
                 </Text>
-                <View style={styles.table}>
-                  <View style={styles.tableHeader}>
-                    <Text style={[styles.th, { width: 80 }]}>SYMBOL</Text>
-                    <Text style={[styles.th, { width: 85 }]}>ENTRY DATE</Text>
-                    <Text style={[styles.th, { width: 85 }]}>EXIT DATE</Text>
-                    <Text style={[styles.th, { width: 70 }]}>RETURN</Text>
-                    <Text style={[styles.th, { width: 65 }]}>DAYS</Text>
-                    <Text style={[styles.th, { flex: 1 }]}>TRIGGER & EXIT REASON</Text>
-                  </View>
-
-                  {bt.tradesLedger.map((tr) => (
-                    <View key={tr.tradeId} style={styles.tableRow}>
-                      <Text style={[styles.td, { width: 80, fontWeight: '800' }]}>{tr.symbol}</Text>
-                      <Text style={[styles.td, { width: 85, fontSize: 11 }]}>{tr.entryDate}</Text>
-                      <Text style={[styles.td, { width: 85, fontSize: 11 }]}>{tr.exitDate}</Text>
-                      <Text style={[styles.td, { width: 70, fontWeight: '900', color: tr.returnPercent >= 0 ? '#16A34A' : '#EF4444' }]}>
-                        {tr.returnPercent >= 0 ? '+' : ''}{tr.returnPercent}%
-                      </Text>
-                      <Text style={[styles.td, { width: 65, fontSize: 11 }]}>{tr.holdingDays}d</Text>
-                      <Text style={[styles.td, { flex: 1, fontSize: 11, color: '#64748B' }]}>
-                        {tr.entryTrigger} → {tr.exitReason}
-                      </Text>
+                <ScrollView horizontal showsHorizontalScrollIndicator={true}>
+                  <View style={[styles.table, { minWidth: 640 }]}>
+                    <View style={styles.tableHeader}>
+                      <Text style={[styles.th, { width: 85 }]}>SYMBOL</Text>
+                      <Text style={[styles.th, { width: 85 }]}>ENTRY DATE</Text>
+                      <Text style={[styles.th, { width: 85 }]}>EXIT DATE</Text>
+                      <Text style={[styles.th, { width: 75 }]}>RETURN</Text>
+                      <Text style={[styles.th, { width: 65 }]}>DAYS</Text>
+                      <Text style={[styles.th, { width: 240 }]}>TRIGGER & EXIT REASON</Text>
                     </View>
-                  ))}
-                </View>
+
+                    {bt.tradesLedger.map((tr) => (
+                      <View key={tr.tradeId} style={styles.tableRow}>
+                        <Text style={[styles.td, { width: 85, fontWeight: '800' }]}>{tr.symbol}</Text>
+                        <Text style={[styles.td, { width: 85, fontSize: 11 }]}>{tr.entryDate}</Text>
+                        <Text style={[styles.td, { width: 85, fontSize: 11 }]}>{tr.exitDate}</Text>
+                        <Text style={[styles.td, { width: 75, fontWeight: '900', color: tr.returnPercent >= 0 ? '#16A34A' : '#EF4444' }]}>
+                          {tr.returnPercent >= 0 ? '+' : ''}{tr.returnPercent}%
+                        </Text>
+                        <Text style={[styles.td, { width: 65, fontSize: 11 }]}>{tr.holdingDays}d</Text>
+                        <Text style={[styles.td, { width: 240, fontSize: 11, color: '#64748B' }]} numberOfLines={1}>
+                          {tr.entryTrigger} → {tr.exitReason}
+                        </Text>
+                      </View>
+                    ))}
+                  </View>
+                </ScrollView>
               </GlassCard>
             );
           })()}
@@ -1881,38 +1897,40 @@ export const StockMarketScreen: React.FC<StockMarketScreenProps> = ({
                         <Text style={[styles.sectionHeading, { marginTop: Spacing.md }]}>
                           📋 5-TIER REAL-TIME BUY & SELL LIQUIDITY LADDER
                         </Text>
-                        <View style={styles.table}>
-                          <View style={styles.tableHeader}>
-                            <Text style={[styles.th, { width: 60 }]}>ORDERS</Text>
-                            <Text style={[styles.th, { flex: 1 }]}>BID QTY</Text>
-                            <Text style={[styles.th, { flex: 1, color: '#16A34A' }]}>BID PRICE</Text>
-                            <Text style={[styles.th, { flex: 1, color: '#EF4444' }]}>ASK PRICE</Text>
-                            <Text style={[styles.th, { flex: 1 }]}>ASK QTY</Text>
-                            <Text style={[styles.th, { width: 60 }]}>ORDERS</Text>
+                        <ScrollView horizontal showsHorizontalScrollIndicator={true}>
+                          <View style={[styles.table, { minWidth: 460 }]}>
+                            <View style={styles.tableHeader}>
+                              <Text style={[styles.th, { width: 60 }]}>ORDERS</Text>
+                              <Text style={[styles.th, { width: 85 }]}>BID QTY</Text>
+                              <Text style={[styles.th, { width: 80, color: '#16A34A' }]}>BID PRICE</Text>
+                              <Text style={[styles.th, { width: 80, color: '#EF4444' }]}>ASK PRICE</Text>
+                              <Text style={[styles.th, { width: 85 }]}>ASK QTY</Text>
+                              <Text style={[styles.th, { width: 60 }]}>ORDERS</Text>
+                            </View>
+                            {[0, 1, 2, 3, 4].map((i) => {
+                              const b = depth.bids[i];
+                              const a = depth.asks[i];
+                              return (
+                                <View key={i} style={styles.tableRow}>
+                                  <Text style={[styles.td, { width: 60, fontSize: 11, color: '#64748B' }]}>{b.ordersCount}</Text>
+                                  <Text style={[styles.td, { width: 85, fontWeight: '700' }]}>{b.quantity.toLocaleString()}</Text>
+                                  <Text style={[styles.td, { width: 80, fontWeight: '900', color: '#16A34A' }]}>৳{b.price}</Text>
+                                  <Text style={[styles.td, { width: 80, fontWeight: '900', color: '#EF4444' }]}>৳{a.price}</Text>
+                                  <Text style={[styles.td, { width: 85, fontWeight: '700' }]}>{a.quantity.toLocaleString()}</Text>
+                                  <Text style={[styles.td, { width: 60, fontSize: 11, color: '#64748B' }]}>{a.ordersCount}</Text>
+                                </View>
+                              );
+                            })}
+                            <View style={[styles.tableRow, { backgroundColor: '#F1F5F9' }]}>
+                              <Text style={[styles.td, { width: 60, fontWeight: '800' }]}>Total</Text>
+                              <Text style={[styles.td, { width: 85, fontWeight: '900', color: '#16A34A' }]}>{depth.totalBidQuantity.toLocaleString()}</Text>
+                              <Text style={[styles.td, { width: 80 }]}>Shares</Text>
+                              <Text style={[styles.td, { width: 80 }]}>Shares</Text>
+                              <Text style={[styles.td, { width: 85, fontWeight: '900', color: '#EF4444' }]}>{depth.totalAskQuantity.toLocaleString()}</Text>
+                              <Text style={[styles.td, { width: 60, fontWeight: '800' }]}>Total</Text>
+                            </View>
                           </View>
-                          {[0, 1, 2, 3, 4].map((i) => {
-                            const b = depth.bids[i];
-                            const a = depth.asks[i];
-                            return (
-                              <View key={i} style={styles.tableRow}>
-                                <Text style={[styles.td, { width: 60, fontSize: 11, color: '#64748B' }]}>{b.ordersCount}</Text>
-                                <Text style={[styles.td, { flex: 1, fontWeight: '700' }]}>{b.quantity.toLocaleString()}</Text>
-                                <Text style={[styles.td, { flex: 1, fontWeight: '900', color: '#16A34A' }]}>৳{b.price}</Text>
-                                <Text style={[styles.td, { flex: 1, fontWeight: '900', color: '#EF4444' }]}>৳{a.price}</Text>
-                                <Text style={[styles.td, { flex: 1, fontWeight: '700' }]}>{a.quantity.toLocaleString()}</Text>
-                                <Text style={[styles.td, { width: 60, fontSize: 11, color: '#64748B' }]}>{a.ordersCount}</Text>
-                              </View>
-                            );
-                          })}
-                          <View style={[styles.tableRow, { backgroundColor: '#F1F5F9' }]}>
-                            <Text style={[styles.td, { width: 60, fontWeight: '800' }]}>Total</Text>
-                            <Text style={[styles.td, { flex: 1, fontWeight: '900', color: '#16A34A' }]}>{depth.totalBidQuantity.toLocaleString()}</Text>
-                            <Text style={[styles.td, { flex: 1 }]}>Shares</Text>
-                            <Text style={[styles.td, { flex: 1 }]}>Shares</Text>
-                            <Text style={[styles.td, { flex: 1, fontWeight: '900', color: '#EF4444' }]}>{depth.totalAskQuantity.toLocaleString()}</Text>
-                            <Text style={[styles.td, { width: 60, fontWeight: '800' }]}>Total</Text>
-                          </View>
-                        </View>
+                        </ScrollView>
                       </>
                     );
                   })()}
@@ -2025,28 +2043,30 @@ export const StockMarketScreen: React.FC<StockMarketScreenProps> = ({
                         <Text style={[styles.sectionHeading, { marginTop: Spacing.md }]}>
                           🤖 5 COMPETING AI FORECASTING ARCHITECTURES (MULTI-MODEL ENSEMBLE)
                         </Text>
-                        <View style={styles.table}>
-                          <View style={styles.tableHeader}>
-                            <Text style={[styles.th, { width: 85 }]}>MODEL</Text>
-                            <Text style={[styles.th, { flex: 1.5 }]}>TECH STACK</Text>
-                            <Text style={[styles.th, { width: 75 }]}>TARGET</Text>
-                            <Text style={[styles.th, { width: 65 }]}>UPSIDE</Text>
-                            <Text style={[styles.th, { width: 60 }]}>WEIGHT</Text>
-                          </View>
-
-                          {[ens.modelA_TimeSeries, ens.modelB_MachineLearning, ens.modelC_DeepLearning, ens.modelD_MarketRegime, ens.modelE_NlpLlmSentiment].map((m) => (
-                            <View key={m.modelGroup} style={styles.tableRow}>
-                              <View style={{ width: 85 }}>
-                                <Text style={{ fontSize: 12, fontWeight: '800', color: '#0F172A' }}>{m.modelGroup}</Text>
-                                <Text style={{ fontSize: 10, color: '#64748B' }}>{m.modelTitle}</Text>
-                              </View>
-                              <Text style={[styles.td, { flex: 1.5, fontSize: 11 }]}>{m.technologiesUsed}</Text>
-                              <Text style={[styles.td, { width: 75, fontWeight: '900' }]}>৳{m.forecastPrice}</Text>
-                              <Text style={[styles.td, { width: 65, fontWeight: '800', color: '#16A34A' }]}>+{m.expectedReturnPercent}%</Text>
-                              <Text style={[styles.td, { width: 60, fontWeight: '800', color: '#0284C7' }]}>{m.weightInEnsemblePercent}%</Text>
+                        <ScrollView horizontal showsHorizontalScrollIndicator={true}>
+                          <View style={[styles.table, { minWidth: 500 }]}>
+                            <View style={styles.tableHeader}>
+                              <Text style={[styles.th, { width: 95 }]}>MODEL</Text>
+                              <Text style={[styles.th, { width: 175 }]}>TECH STACK</Text>
+                              <Text style={[styles.th, { width: 80 }]}>TARGET</Text>
+                              <Text style={[styles.th, { width: 75 }]}>UPSIDE</Text>
+                              <Text style={[styles.th, { width: 75 }]}>WEIGHT</Text>
                             </View>
-                          ))}
-                        </View>
+
+                            {[ens.modelA_TimeSeries, ens.modelB_MachineLearning, ens.modelC_DeepLearning, ens.modelD_MarketRegime, ens.modelE_NlpLlmSentiment].map((m) => (
+                              <View key={m.modelGroup} style={styles.tableRow}>
+                                <View style={{ width: 95, paddingRight: 6 }}>
+                                  <Text style={{ fontSize: 12, fontWeight: '800', color: '#0F172A' }} numberOfLines={1}>{m.modelGroup}</Text>
+                                  <Text style={{ fontSize: 10, color: '#64748B' }} numberOfLines={1}>{m.modelTitle}</Text>
+                                </View>
+                                <Text style={[styles.td, { width: 175, fontSize: 11 }]} numberOfLines={1}>{m.technologiesUsed}</Text>
+                                <Text style={[styles.td, { width: 80, fontWeight: '900' }]}>৳{m.forecastPrice}</Text>
+                                <Text style={[styles.td, { width: 75, fontWeight: '800', color: '#16A34A' }]}>+{m.expectedReturnPercent}%</Text>
+                                <Text style={[styles.td, { width: 75, fontWeight: '800', color: '#0284C7' }]}>{m.weightInEnsemblePercent}%</Text>
+                              </View>
+                            ))}
+                          </View>
+                        </ScrollView>
 
                         {/* Model E NLP Sentiment Highlights */}
                         <View style={{ backgroundColor: '#F8FAFC', borderRadius: Radius.sm, padding: 12, marginTop: 8, borderWidth: 1, borderColor: '#E2E8F0' }}>
@@ -2103,25 +2123,27 @@ export const StockMarketScreen: React.FC<StockMarketScreenProps> = ({
                         <Text style={[styles.sectionHeading, { marginTop: Spacing.md }]}>
                           💎 STEP-BY-STEP DCF WATERFALL (REVENUE TO INTRINSIC VALUE)
                         </Text>
-                        <View style={styles.table}>
-                          <View style={styles.tableHeader}>
-                            <Text style={[styles.th, { flex: 1.5 }]}>FINANCIAL WATERFALL STEP</Text>
-                            <Text style={[styles.th, { flex: 1 }]}>AMOUNT (৳ CRORE)</Text>
-                            <Text style={[styles.th, { flex: 1.8 }]}>FINANCIAL FORMULA / BASIS</Text>
-                          </View>
-
-                          {dcf.waterfallSteps.map((s, idx) => (
-                            <View key={idx} style={[styles.tableRow, idx === dcf.waterfallSteps.length - 1 && { backgroundColor: '#F0FDF4' }]}>
-                              <Text style={[styles.td, { flex: 1.5, fontWeight: idx === dcf.waterfallSteps.length - 1 ? '900' : '700', color: idx === dcf.waterfallSteps.length - 1 ? '#16A34A' : '#0F172A' }]}>
-                                {s.stepName}
-                              </Text>
-                              <Text style={[styles.td, { flex: 1, fontWeight: '800', color: s.amountCrore < 0 ? '#EF4444' : '#0F172A' }]}>
-                                {s.amountCrore < 0 ? `-৳${Math.abs(s.amountCrore)} Cr` : `৳${s.amountCrore} Cr`}
-                              </Text>
-                              <Text style={[styles.td, { flex: 1.8, fontSize: 11, color: '#64748B' }]}>{s.formulaDescription}</Text>
+                        <ScrollView horizontal showsHorizontalScrollIndicator={true}>
+                          <View style={[styles.table, { minWidth: 560 }]}>
+                            <View style={styles.tableHeader}>
+                              <Text style={[styles.th, { width: 180 }]}>FINANCIAL WATERFALL STEP</Text>
+                              <Text style={[styles.th, { width: 130 }]}>AMOUNT (৳ CRORE)</Text>
+                              <Text style={[styles.th, { width: 250 }]}>FINANCIAL FORMULA / BASIS</Text>
                             </View>
-                          ))}
-                        </View>
+
+                            {dcf.waterfallSteps.map((s, idx) => (
+                              <View key={idx} style={[styles.tableRow, idx === dcf.waterfallSteps.length - 1 && { backgroundColor: '#F0FDF4' }]}>
+                                <Text style={[styles.td, { width: 180, fontWeight: idx === dcf.waterfallSteps.length - 1 ? '900' : '700', color: idx === dcf.waterfallSteps.length - 1 ? '#16A34A' : '#0F172A' }]} numberOfLines={1}>
+                                  {s.stepName}
+                                </Text>
+                                <Text style={[styles.td, { width: 130, fontWeight: '800', color: s.amountCrore < 0 ? '#EF4444' : '#0F172A' }]}>
+                                  {s.amountCrore < 0 ? `-৳${Math.abs(s.amountCrore)} Cr` : `৳${s.amountCrore} Cr`}
+                                </Text>
+                                <Text style={[styles.td, { width: 250, fontSize: 11, color: '#64748B' }]} numberOfLines={1}>{s.formulaDescription}</Text>
+                              </View>
+                            ))}
+                          </View>
+                        </ScrollView>
 
                         {/* Key Valuation Inputs */}
                         <View style={[styles.kpiGrid, { marginTop: Spacing.sm }]}>

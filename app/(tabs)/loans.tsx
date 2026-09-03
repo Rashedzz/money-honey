@@ -17,6 +17,7 @@ import {
   AmortizationRow,
 } from '../../src/finance/amortization';
 import { FirebaseSyncService } from '../../src/services/firebaseSync';
+import { FormDraftManager } from '../../src/utils/formDrafts';
 
 export interface LoanItem {
   id: string;
@@ -110,7 +111,71 @@ export default function LoansScreen() {
 
   useEffect(() => {
     setLoans(getStoredLoans());
+    // Restore loan draft if user minimized app
+    const draft = FormDraftManager.loadDraft('loan_form', {
+      title: '',
+      lenderName: '',
+      loanAccountNumber: '',
+      category: 'Home Loan',
+      isOutsideBank: false,
+      disbursedAmount: '',
+      outstandingPrincipal: '',
+      annualInterestRate: '11.0',
+      tenorMonthsTotal: '60',
+      tenorMonthsRemaining: '60',
+      monthlyEMI: '',
+      manualEmiOverride: false,
+      startDate: '2024-01-15',
+      nextDueDate: '2026-09-10',
+      linkedAccountName: '',
+      collateralDetails: '',
+      isOpen: false,
+    });
+    if (draft.isOpen || draft.title || draft.disbursedAmount || draft.outstandingPrincipal) {
+      setTitle(draft.title || '');
+      setLenderName(draft.lenderName || '');
+      setLoanAccountNumber(draft.loanAccountNumber || '');
+      if (draft.category) setCategory(draft.category as any);
+      setIsOutsideBank(!!draft.isOutsideBank);
+      setDisbursedAmount(draft.disbursedAmount || '');
+      setOutstandingPrincipal(draft.outstandingPrincipal || '');
+      setAnnualInterestRate(draft.annualInterestRate || '11.0');
+      setTenorMonthsTotal(draft.tenorMonthsTotal || '60');
+      setTenorMonthsRemaining(draft.tenorMonthsRemaining || '60');
+      setMonthlyEMI(draft.monthlyEMI || '');
+      setManualEmiOverride(!!draft.manualEmiOverride);
+      setStartDate(draft.startDate || '2024-01-15');
+      setNextDueDate(draft.nextDueDate || '2026-09-10');
+      setLinkedAccountName(draft.linkedAccountName || '');
+      setCollateralDetails(draft.collateralDetails || '');
+      if (draft.isOpen) setShowAddForm(true);
+    }
   }, []);
+
+  // Auto-save draft on any input change
+  useEffect(() => {
+    if (!editingLoan && (showAddForm || title || disbursedAmount || outstandingPrincipal)) {
+      FormDraftManager.saveDraft('loan_form', {
+        title,
+        lenderName,
+        loanAccountNumber,
+        category,
+        isOutsideBank,
+        disbursedAmount,
+        outstandingPrincipal,
+        annualInterestRate,
+        tenorMonthsTotal,
+        tenorMonthsRemaining,
+        monthlyEMI,
+        manualEmiOverride,
+        startDate,
+        nextDueDate,
+        linkedAccountName,
+        collateralDetails,
+        isOpen: showAddForm,
+      });
+    }
+  }, [showAddForm, title, lenderName, loanAccountNumber, category, isOutsideBank, disbursedAmount, outstandingPrincipal, annualInterestRate, tenorMonthsTotal, tenorMonthsRemaining, monthlyEMI, manualEmiOverride, startDate, nextDueDate, linkedAccountName, collateralDetails, editingLoan]);
 
   const updateLoansList = (updated: LoanItem[]) => {
     setLoans(updated);
@@ -131,6 +196,7 @@ export default function LoansScreen() {
   }, [outstandingPrincipal, disbursedAmount, annualInterestRate, tenorMonthsTotal, isOutsideBank, manualEmiOverride]);
 
   const resetForm = () => {
+    FormDraftManager.clearDraft('loan_form');
     setTitle('');
     setLenderName('');
     setLoanAccountNumber('');
