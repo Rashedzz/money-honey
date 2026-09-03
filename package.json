@@ -12,6 +12,8 @@
     "build:web": "expo export --platform web",
     "build:apk": "eas build --platform android --profile preview",
     "build:aab": "eas build --platform android --profile production",
+    "sync-apk": "node scripts/sync-apk.js",
+    "get-apk": "node scripts/sync-apk.js",
     "test": "jest --watchAll=false"
   },
   "dependencies": {
