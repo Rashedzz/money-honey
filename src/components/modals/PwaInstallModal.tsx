@@ -89,7 +89,7 @@ export const PwaInstallModal: React.FC<PwaInstallModalProps> = ({
         <View style={styles.modalCard}>
           {/* Header */}
           <View style={styles.header}>
-            <View style={styles.titleRow}>
+            <View style={styles.headerLeft}>
               <DynamicMoneyTree size={38} />
               <View>
                 <Text style={styles.title}>Download & Install App</Text>
@@ -104,7 +104,7 @@ export const PwaInstallModal: React.FC<PwaInstallModalProps> = ({
 
           <ScrollView
             showsVerticalScrollIndicator={true}
-            style={{ flex: 1, width: '100%', overflowY: 'auto' as any }}
+            style={{ flex: 1, width: '100%' }}
             contentContainerStyle={styles.body}
           >
             {/* Action 1: Direct Android APK Download Button */}
@@ -122,6 +122,26 @@ export const PwaInstallModal: React.FC<PwaInstallModalProps> = ({
               </View>
               <Ionicons name="cloud-download-outline" size={20} color="#FFFFFF" />
             </TouchableOpacity>
+
+            {/* Google Play Protect Warning Guide */}
+            <View style={{
+              backgroundColor: '#FEF3C7',
+              borderRadius: 10,
+              padding: 12,
+              marginBottom: 12,
+              borderWidth: 1,
+              borderColor: '#FCD34D',
+            }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+                <Ionicons name="shield-half" size={16} color="#B45309" />
+                <Text style={{ fontSize: 12, fontWeight: '800', color: '#B45309' }}>
+                  GOOGLE PLAY PROTECT NOTICE (ANDROID APK)
+                </Text>
+              </View>
+              <Text style={{ fontSize: 11, color: '#78350F', lineHeight: 16 }}>
+                When installing the downloaded APK, if Google Play Protect warns: <Text style={{ fontWeight: '800' }}>"Unrecognized app"</Text> or <Text style={{ fontWeight: '800' }}>"Blocked by Play Protect"</Text>, tap <Text style={{ fontWeight: '800', textDecorationLine: 'underline' }}>"More details"</Text> and then tap <Text style={{ fontWeight: '800', textDecorationLine: 'underline' }}>"Install anyway"</Text>. This is standard for private build APKs not uploaded to the public Play Store.
+              </Text>
+            </View>
 
             {/* Action 2: Direct 1-Click PWA Install Button */}
             <TouchableOpacity
@@ -145,7 +165,7 @@ export const PwaInstallModal: React.FC<PwaInstallModalProps> = ({
             <View style={styles.qrCard}>
               <Image
                 source={{ uri: qrCodeUrl }}
-                style={styles.qrImage}
+                style={styles.qrImage as any}
                 resizeMode="contain"
               />
               <Text style={styles.scanHint}>
@@ -211,7 +231,7 @@ const styles = StyleSheet.create({
   modalCard: {
     width: '96%',
     maxWidth: 480,
-    maxHeight: '90vh',
+    maxHeight: '90%',
     backgroundColor: '#FFFFFF',
     borderRadius: Radius.xl,
     borderWidth: 2,

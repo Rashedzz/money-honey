@@ -52,6 +52,7 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({
     { id: 'stocks', label: 'Stock Market', icon: 'trending-up-outline', badge: 'DSE/CSE' },
     { id: 'accounts', label: 'Bank Accounts', icon: 'wallet-outline' },
     { id: 'loans', label: 'Loans & Debts', icon: 'card-outline' },
+    { id: 'schedules', label: 'Income & Expense Schedules', icon: 'calendar-outline', badge: 'Auto' },
     { id: 'paper_assets', label: 'Paper Assets', icon: 'document-text-outline', badge: 'Govt' },
     { id: 'physical_assets', label: 'Physical Assets', icon: 'business-outline', badge: 'Land/Gold' },
     { id: 'expenses', label: 'Expenses', icon: 'receipt-outline' },

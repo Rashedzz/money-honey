@@ -74,7 +74,7 @@ export class BackupExporter {
     for (const table of tables) {
       const collection = database.collections.get(table);
       const records = await collection.query().fetch();
-      backupData.tables[table] = records.map(r => r._raw);
+      backupData.tables[table] = records.map((r: any) => r._raw);
     }
 
     const jsonString = JSON.stringify(backupData);
@@ -106,11 +106,11 @@ export class BackupExporter {
           const collection = database.collections.get(table);
           // Delete existing
           const existing = await collection.query().fetch();
-          const deleteOps = existing.map(record => record.prepareDestroyPermanently());
+          const deleteOps = existing.map((record: any) => record.prepareDestroyPermanently());
           
           // Insert new
           const newOps = backupData.tables[table].map((rawRecord: any) => {
-            return collection.prepareCreate(record => {
+            return collection.prepareCreate((record: any) => {
               record._raw = rawRecord;
             });
           });

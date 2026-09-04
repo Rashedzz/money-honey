@@ -26,25 +26,52 @@ export default function Root({ children }: PropsWithChildren) {
         <meta name="mobile-web-app-capable" content="yes" />
 
         {/* Icons & Manifest */}
-        <link rel="manifest" href="/manifest.json" />
-        <link rel="icon" type="image/png" href="/favicon.png" />
-        <link rel="apple-touch-icon" href="/icons/icon-192.png" />
+        <link rel="manifest" id="pwa-manifest" href="./manifest.json" />
+        <link rel="icon" type="image/png" href="./favicon.png" />
+        <link rel="apple-touch-icon" href="./icon-192.png" />
 
         {/* Expo Scroll Reset */}
         <ScrollViewStyleReset />
 
-        {/* PWA Service Worker Registration */}
+        {/* PWA Service Worker Registration & Install Prompt Capture */}
         <script
           dangerouslySetInnerHTML={{
             __html: `
-              if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
-                window.addEventListener('load', function() {
-                  navigator.serviceWorker.register('/sw.js').then(function(reg) {
-                    console.log('Money-Honey PWA Service Worker active:', reg.scope);
-                  }).catch(function(err) {
-                    console.warn('Money-Honey PWA Service Worker failed:', err);
-                  });
+              if (typeof window !== 'undefined') {
+                // 1. Capture PWA deferred install prompt for Chrome/Edge/Mobile
+                window.deferredPWAInstallPrompt = null;
+                window.addEventListener('beforeinstallprompt', function(e) {
+                  e.preventDefault();
+                  window.deferredPWAInstallPrompt = e;
+                  window.dispatchEvent(new Event('pwa-installable'));
+                  console.log('Money-Honey: PWA Install Prompt captured and ready!');
                 });
+
+                window.addEventListener('appinstalled', function() {
+                  window.deferredPWAInstallPrompt = null;
+                  console.log('Money-Honey: App successfully installed!');
+                });
+
+                // 2. Dynamic Service Worker Registration with GitHub Pages subpath awareness
+                if ('serviceWorker' in navigator) {
+                  window.addEventListener('load', function() {
+                    var isGhPages = window.location.pathname.indexOf('/money-honey') === 0;
+                    var basePath = isGhPages ? '/money-honey' : '';
+                    var swUrl = basePath + '/sw.js';
+                    var manifestElem = document.getElementById('pwa-manifest');
+                    if (manifestElem && isGhPages) {
+                      manifestElem.setAttribute('href', basePath + '/manifest.json');
+                    }
+
+                    navigator.serviceWorker.register(swUrl, { scope: basePath + '/' })
+                      .then(function(reg) {
+                        console.log('Money-Honey PWA Service Worker active:', reg.scope);
+                      })
+                      .catch(function(err) {
+                        console.warn('Money-Honey PWA Service Worker registration:', err);
+                      });
+                  });
+                }
               }
             `,
           }}

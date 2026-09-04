@@ -21,22 +21,22 @@ export function useInvestments() {
     const invCollection = database.collections.get('investments');
     const observable = invCollection.query(Q.where('is_active', true)).observe();
 
-    const sub = observable.subscribe((data) => {
-      const activeInvestments = data.map(d => ({
+    const sub = observable.subscribe((data: any[]) => {
+      const activeInvestments: IInvestment[] = data.map((d: any) => ({
         id: d.id,
-        type: (d as any).type,
-        principal: (d as any).principal,
-        maturity_date: (d as any).maturity_date,
-        is_active: (d as any).is_active
+        type: d.type,
+        principal: d.principal,
+        maturity_date: d.maturity_date,
+        is_active: d.is_active
       }));
 
-      const activeFDRs = activeInvestments.filter(i => i.type === 'fdr');
-      const activeSPs = activeInvestments.filter(i => i.type === 'sanchaypatra');
+      const activeFDRs = activeInvestments.filter((i: IInvestment) => i.type === 'fdr');
+      const activeSPs = activeInvestments.filter((i: IInvestment) => i.type === 'sanchaypatra');
 
       setFdrs(activeFDRs);
       setSanchaypatras(activeSPs);
-      setTotalFDRValue(activeFDRs.reduce((acc, curr) => acc + curr.principal, 0));
-      setTotalSanchaypatraValue(activeSPs.reduce((acc, curr) => acc + curr.principal, 0));
+      setTotalFDRValue(activeFDRs.reduce((acc: number, curr: IInvestment) => acc + curr.principal, 0));
+      setTotalSanchaypatraValue(activeSPs.reduce((acc: number, curr: IInvestment) => acc + curr.principal, 0));
     });
 
     return () => sub.unsubscribe();
@@ -44,11 +44,11 @@ export function useInvestments() {
 
   const addFDR = async (data: any): Promise<void> => {
     await database.write(async () => {
-      await database.collections.get('investments').create(record => {
-        (record as any).type = 'fdr';
-        (record as any).principal = data.principal;
-        (record as any).maturity_date = data.maturity_date;
-        (record as any).is_active = true;
+      await database.collections.get('investments').create((record: any) => {
+        record.type = 'fdr';
+        record.principal = data.principal;
+        record.maturity_date = data.maturity_date;
+        record.is_active = true;
       });
       // Generate disbursement schedule and schedule notifications...
     });
@@ -56,11 +56,11 @@ export function useInvestments() {
 
   const addSanchaypatra = async (data: any): Promise<void> => {
     await database.write(async () => {
-      await database.collections.get('investments').create(record => {
-        (record as any).type = 'sanchaypatra';
-        (record as any).principal = data.principal;
-        (record as any).maturity_date = data.maturity_date;
-        (record as any).is_active = true;
+      await database.collections.get('investments').create((record: any) => {
+        record.type = 'sanchaypatra';
+        record.principal = data.principal;
+        record.maturity_date = data.maturity_date;
+        record.is_active = true;
       });
       // Generate coupon schedule and schedule notifications...
     });

@@ -112,7 +112,7 @@ export const FirebaseSyncModal: React.FC<FirebaseSyncModalProps> = ({
 
           <ScrollView
             showsVerticalScrollIndicator={true}
-            style={{ flex: 1, width: '100%', overflowY: 'auto' as any }}
+            style={{ flex: 1, width: '100%' }}
             contentContainerStyle={styles.body}
           >
             {/* Connection Status Card */}
@@ -227,8 +227,8 @@ const styles = StyleSheet.create({
   modalCard: {
     width: '96%',
     maxWidth: 580,
-    height: '88vh',
-    maxHeight: '90vh',
+    height: '88%',
+    maxHeight: '90%',
     backgroundColor: '#FFFFFF',
     borderRadius: Radius.xl,
     borderWidth: 2,

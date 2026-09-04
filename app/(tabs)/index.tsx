@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -44,8 +44,10 @@ import { PhysicalAssetsScreen } from '../../src/components/screens/PhysicalAsset
 import { PaperAssetsScreen } from '../../src/components/screens/PaperAssetsScreen';
 import { ExpensesScreen } from '../../src/components/screens/ExpensesScreen';
 import { SettingsScreen } from '../../src/components/screens/SettingsScreen';
-import AccountsScreen from './accounts';
+import { ScheduleScreen } from '../../src/components/screens/ScheduleScreen';
+import AccountsScreen, { getStoredBankAccounts, BankAccountItem } from './accounts';
 import LoansScreen from './loans';
+import { useAutoCloudSync } from '../../src/hooks/useAutoCloudSync';
 
 // Math Engines
 import { AssetItem, evaluateAssets } from '../../src/finance/assetEvaluation';
@@ -95,6 +97,9 @@ export default function MasterDashboardScreen() {
     setStoredData('mh_user_birthdate', newDob);
   };
 
+  const { syncStatus, lastSyncedAt, isSyncing, syncNow } = useAutoCloudSync(user?.id || 'rashed01');
+  const [bankAccounts, setBankAccounts] = useState<BankAccountItem[]>(() => getStoredBankAccounts());
+
   // Master State - Clean slate without dummy data, persisted to local device storage
   const [assets, setAssetsState] = useState<AssetItem[]>(() => getStoredData('mh_user_assets', []));
   const [cashList, setCashListState] = useState<any[]>(() => getStoredData('mh_user_cash', []));
@@ -104,6 +109,13 @@ export default function MasterDashboardScreen() {
   const [policies, setPoliciesState] = useState<LifeInsurancePolicy[]>(() => getStoredData('mh_user_policies', []));
   const [birthdays, setBirthdaysState] = useState<BirthdayEvent[]>(() => getStoredData('mh_user_birthdays', []));
   const [schedules, setSchedulesState] = useState<ScheduleEvent[]>(() => getStoredData('mh_user_schedules', []));
+
+  // Sync bank accounts when tab changes to dashboard
+  useEffect(() => {
+    if (activeTab === 'dashboard') {
+      setBankAccounts(getStoredBankAccounts());
+    }
+  }, [activeTab]);
 
   const setAssets = (updater: any) => {
     setAssetsState((prev) => {
@@ -162,8 +174,21 @@ export default function MasterDashboardScreen() {
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
   const [firebaseModalVisible, setFirebaseModalVisible] = useState(false);
 
-  // Computed Values
-  const totalCashInHand = cashList.reduce((sum, item) => sum + (item.amount || item.currentBalance || 0), 0);
+  // Computed Values - Harmonized with AccountsScreen storage
+  const totalBankBalances = bankAccounts.reduce((sum, a) => sum + (a.currentBalance || 0), 0);
+  const totalCashListBalances = cashList.reduce((sum, item) => sum + (item.amount || item.currentBalance || 0), 0);
+  const totalCashInHand = totalBankBalances > 0 ? totalBankBalances : totalCashListBalances;
+
+  // Active liquid display segments: prefer actual bank accounts if available, otherwise cashList
+  const liquidSegments = bankAccounts.length > 0
+    ? bankAccounts.map((b) => ({
+        id: b.id,
+        label: b.bankName,
+        amount: b.currentBalance,
+        color: b.color || '#0284C7',
+      }))
+    : cashList;
+
   const totalLoans = loanList.reduce((sum, item) => sum + (item.outstandingPrincipal !== undefined ? item.outstandingPrincipal : (item.amount || 0)), 0);
   const assetSummary = evaluateAssets(assets);
   const insuranceSummary = calculateInsuranceSummary(policies, totalLoans);
@@ -285,9 +310,21 @@ export default function MasterDashboardScreen() {
         return next;
       });
     } else if (type === 'bank') {
+      const newAcc: BankAccountItem = {
+        id: `ACC-${Date.now()}-${Math.floor(100 + Math.random() * 900)}`,
+        bankName: data.title,
+        accountName: data.title,
+        accountType: data.category || 'Savings Account',
+        accountNumber: data.subInfo || `****${Math.floor(1000 + Math.random() * 9000)}`,
+        currentBalance: data.amount,
+        color: '#0284C7',
+      };
+      const updatedBanks = [...getStoredBankAccounts(), newAcc];
+      setStoredData('mh_user_bank_accounts', updatedBanks);
+      setBankAccounts(updatedBanks);
       setCashList((prev: any) => {
-        const next = [...prev, { id: data.id, label: data.title, amount: data.amount, color: '#22C55E' }];
-        FirebaseSyncService.pushCategory(currentUid, 'bank_accounts', next);
+        const next = [...prev, { id: newAcc.id, label: newAcc.bankName, amount: newAcc.currentBalance, color: '#0284C7' }];
+        FirebaseSyncService.pushCategory(currentUid, 'bank_accounts', updatedBanks);
         return next;
       });
     } else if (type === 'loan') {
@@ -306,6 +343,8 @@ export default function MasterDashboardScreen() {
 
   const onRefresh = () => {
     setRefreshing(true);
+    setBankAccounts(getStoredBankAccounts());
+    syncNow();
     setTimeout(() => setRefreshing(false), 500);
   };
 
@@ -314,6 +353,7 @@ export default function MasterDashboardScreen() {
     stocks: 'Stock Market Equities (DSE / CSE & Global)',
     accounts: 'Liquid Bank Accounts & Cash Vault',
     loans: 'Institutional Loans & Debt Service',
+    schedules: 'Automated Cash Flow & Schedules',
     paper_assets: 'Paper Assets (Sanchaypatra / FDR / DPS)',
     physical_assets: 'Physical Assets (Land / Gold / Flats)',
     expenses: 'Expenses & Asset Maintenance Costs',
@@ -399,6 +439,31 @@ export default function MasterDashboardScreen() {
               </TouchableOpacity>
 
               <TouchableOpacity
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: 5,
+                  paddingHorizontal: 10,
+                  paddingVertical: 6,
+                  borderRadius: Radius.full,
+                  backgroundColor: syncStatus === 'synced' ? '#F0FDF4' : syncStatus === 'syncing' ? '#FEF3C7' : '#F8FAFC',
+                  borderWidth: 1,
+                  borderColor: syncStatus === 'synced' ? '#BBF7D0' : '#CBD5E1',
+                }}
+                onPress={syncNow}
+                activeOpacity={0.8}
+              >
+                <Ionicons
+                  name={isSyncing ? 'sync' : 'cloud-done'}
+                  size={14}
+                  color={syncStatus === 'synced' ? '#16A34A' : '#D97706'}
+                />
+                <Text style={{ fontSize: 11, fontWeight: '800', color: syncStatus === 'synced' ? '#16A34A' : '#475569' }}>
+                  {isSyncing ? 'Syncing...' : lastSyncedAt ? 'Cloud Synced' : 'Sync Now'}
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
                 style={styles.quickEntryHeaderBtn}
                 onPress={() => openModal('stock')}
                 activeOpacity={0.85}
@@ -420,6 +485,7 @@ export default function MasterDashboardScreen() {
           )}
           {activeTab === 'accounts' && <AccountsScreen />}
           {activeTab === 'loans' && <LoansScreen />}
+          {activeTab === 'schedules' && <ScheduleScreen />}
           {activeTab === 'paper_assets' && <PaperAssetsScreen />}
           {activeTab === 'physical_assets' && (
             <PhysicalAssetsScreen assets={assets} onAddAsset={(a) => setAssets([a, ...assets])} />
@@ -496,18 +562,25 @@ export default function MasterDashboardScreen() {
               <View style={styles.fullWidthBox}>
                 <View style={styles.stockCard}>
                   <View style={styles.stockCardContent}>
-                    <View>
+                    <View style={{ flex: 1, minWidth: 240 }}>
                       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                         <View style={styles.stockIconBadge}>
                           <Ionicons name="trending-up" size={16} color="#0D9488" />
                         </View>
                         <Text style={styles.stockCardHeaderTitle}>DSE / CSE EQUITIES & PORTFOLIO SURVEILLANCE</Text>
                       </View>
-                      <Text style={styles.stockCardAmount}>
-                        ৳ {stockSummary.currentValue.toLocaleString('en-IN')}
-                      </Text>
+                      <View style={{ flexDirection: 'row', alignItems: 'baseline', flexWrap: 'wrap', gap: 8, marginTop: 4 }}>
+                        <Text style={styles.stockCardAmount}>
+                          ৳ {stockSummary.currentValue.toLocaleString('en-IN')}
+                        </Text>
+                        <View style={{ backgroundColor: '#F0FDFA', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6, borderWidth: 1, borderColor: '#CCFBF1' }}>
+                          <Text style={{ fontSize: 13, fontWeight: '800', color: '#0D9488' }}>
+                            (৳ {(stockSummary.currentValue / 100000).toFixed(2)} Lakhs)
+                          </Text>
+                        </View>
+                      </View>
                       <Text style={styles.stockCardSub}>
-                        Capital Invested: ৳ {stockSummary.totalInvested.toLocaleString('en-IN')} • {stockSummary.totalHoldingsCount} Stock Positions (Dhaka & Chittagong Stock Exchanges)
+                        Capital Invested: ৳ {stockSummary.totalInvested.toLocaleString('en-IN')} (৳ {(stockSummary.totalInvested / 100000).toFixed(2)} Lakhs) • {stockSummary.totalHoldingsCount} Stock Positions (Dhaka & Chittagong Stock Exchanges)
                       </Text>
                     </View>
 
@@ -533,6 +606,57 @@ export default function MasterDashboardScreen() {
                       </TouchableOpacity>
                     </View>
                   </View>
+
+                  {/* Quick Holdings Snapshot Table */}
+                  {stocks.length > 0 && (
+                    <View style={{ marginTop: 14, borderTopWidth: 1, borderTopColor: '#F1F5F9', paddingTop: 10 }}>
+                      <Text style={{ fontSize: 11, fontWeight: '800', color: '#64748B', letterSpacing: 0.5, marginBottom: 6 }}>
+                        PORTFOLIO POSITIONS & UNREALIZED P/L (DSE/CSE)
+                      </Text>
+                      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+                        {stocks.map((s) => {
+                          const sInv = s.quantity * s.buyPrice;
+                          const sVal = s.quantity * s.currentPrice;
+                          const sGain = sVal - sInv;
+                          const sGainPct = sInv > 0 ? (sGain / sInv) * 100 : 0;
+                          const isGain = sGain >= 0;
+
+                          return (
+                            <View
+                              key={s.id}
+                              style={{
+                                flex: 1,
+                                minWidth: 180,
+                                backgroundColor: '#F8FAFC',
+                                borderRadius: Radius.md,
+                                padding: 10,
+                                borderWidth: 1,
+                                borderColor: '#E2E8F0',
+                              }}
+                            >
+                              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <Text style={{ fontSize: 14, fontWeight: '900', color: '#0F172A' }}>{s.symbol}</Text>
+                                <View style={{ paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4, backgroundColor: isGain ? '#DCFCE7' : '#FEE2E2' }}>
+                                  <Text style={{ fontSize: 10, fontWeight: '800', color: isGain ? '#15803D' : '#B91C1C' }}>
+                                    {isGain ? '+' : ''}{sGainPct.toFixed(1)}%
+                                  </Text>
+                                </View>
+                              </View>
+                              <Text style={{ fontSize: 11, color: '#64748B', marginTop: 2 }}>
+                                {s.quantity} shrs • Buy: ৳{s.buyPrice.toFixed(1)} • CMP: ৳{s.currentPrice.toFixed(1)}
+                              </Text>
+                              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 6, borderTopWidth: 1, borderTopColor: '#EEF2F6', paddingTop: 4 }}>
+                                <Text style={{ fontSize: 11, color: '#64748B' }}>Val: ৳{Math.round(sVal).toLocaleString('en-IN')}</Text>
+                                <Text style={{ fontSize: 11, fontWeight: '800', color: isGain ? '#16A34A' : '#DC2626' }}>
+                                  {isGain ? '+' : '−'}৳{Math.round(Math.abs(sGain)).toLocaleString('en-IN')}
+                                </Text>
+                              </View>
+                            </View>
+                          );
+                        })}
+                      </View>
+                    </View>
+                  )}
                 </View>
               </View>
 
@@ -547,19 +671,56 @@ export default function MasterDashboardScreen() {
                       <Ionicons name="wallet-outline" size={16} color="#0284C7" />
                       <Text style={styles.cardLabel}>LIQUID CAPITAL & ACTIVE BANK ACCOUNTS</Text>
                     </View>
-                    {cashList.length === 0 ? (
+                    {liquidSegments.length === 0 ? (
                       <View style={{ alignItems: 'center', paddingVertical: 20 }}>
-                        <Text style={{ fontSize: 13, color: '#64748B', fontStyle: 'italic' }}>
+                        <Text style={{ fontSize: 13, color: '#64748B', fontStyle: 'italic', textAlign: 'center' }}>
                           No bank accounts recorded. Click "+ Bank Account" above.
                         </Text>
+                        <TouchableOpacity
+                          style={{ marginTop: 10, paddingHorizontal: 12, paddingVertical: 6, backgroundColor: '#0284C7', borderRadius: 6 }}
+                          onPress={() => openModal('bank')}
+                        >
+                          <Text style={{ color: '#FFFFFF', fontSize: 12, fontWeight: '700' }}>+ Add Bank Account</Text>
+                        </TouchableOpacity>
                       </View>
                     ) : (
-                      <SegmentedDonut
-                        segments={cashList}
-                        totalLabel="Total Liquid"
-                        totalFormatted={`৳ ${(totalCashInHand / 100000).toFixed(1)}L`}
-                        size={140}
-                      />
+                      <>
+                        <SegmentedDonut
+                          segments={liquidSegments}
+                          totalLabel="Total Liquid"
+                          totalFormatted={`৳ ${totalCashInHand.toLocaleString('en-IN')}`}
+                          size={140}
+                        />
+                        <View style={{ marginTop: 4, alignItems: 'center' }}>
+                          <Text style={{ fontSize: 12, fontWeight: '700', color: '#0284C7' }}>
+                            (৳ {(totalCashInHand / 100000).toFixed(2)} Lakhs)
+                          </Text>
+                        </View>
+                        {/* List of active bank accounts */}
+                        {bankAccounts.length > 0 && (
+                          <View style={{ marginTop: 12, borderTopWidth: 1, borderTopColor: '#F1F5F9', paddingTop: 8 }}>
+                            {bankAccounts.slice(0, 4).map((b) => (
+                              <View key={b.id} style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 4 }}>
+                                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                                  <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: b.color || '#0284C7' }} />
+                                  <Text style={{ fontSize: 12, fontWeight: '700', color: '#0F172A' }}>{b.bankName}</Text>
+                                  <Text style={{ fontSize: 11, color: '#64748B' }}>({b.accountNumber ? b.accountNumber.slice(-4) : '****'})</Text>
+                                </View>
+                                <Text style={{ fontSize: 12, fontWeight: '800', color: '#0F172A' }}>
+                                  ৳ {b.currentBalance.toLocaleString('en-IN')}
+                                </Text>
+                              </View>
+                            ))}
+                            {bankAccounts.length > 4 && (
+                              <TouchableOpacity onPress={() => setActiveTab('accounts')} style={{ marginTop: 4 }}>
+                                <Text style={{ fontSize: 11, color: '#0284C7', fontWeight: '700', textAlign: 'right' }}>
+                                  View all {bankAccounts.length} accounts →
+                                </Text>
+                              </TouchableOpacity>
+                            )}
+                          </View>
+                        )}
+                      </>
                     )}
                   </View>
                 </View>
@@ -932,8 +1093,9 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   stockCardRight: {
-    alignItems: 'flex-end',
+    alignItems: 'flex-start',
     gap: 8,
+    marginTop: 4,
   },
   trendPill: {
     paddingHorizontal: 12,

@@ -624,7 +624,7 @@ export const PaperAssetsScreen: React.FC = () => {
             </View>
 
             <ScrollView
-              style={[styles.modalScrollView, { overflowY: 'auto' as any }]}
+              style={styles.modalScrollView}
               contentContainerStyle={styles.modalScrollContent}
               showsVerticalScrollIndicator={true}
               scrollEnabled={true}
@@ -1195,8 +1195,8 @@ const styles = StyleSheet.create({
   modalCard: {
     width: '96%',
     maxWidth: 680,
-    height: '90vh',
-    maxHeight: '92vh',
+    height: '90%',
+    maxHeight: '92%',
     backgroundColor: '#FFFFFF',
     borderRadius: Radius.xl,
     paddingHorizontal: Spacing.lg,

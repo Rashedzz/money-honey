@@ -205,7 +205,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ visible, onClose }) => {
                   <View style={styles.fieldGroup}>
                     <Text style={styles.inputLabel}>FULL NAME *</Text>
                     <View style={styles.inputBox}>
-                      <Ionicons name="badge-outline" size={18} color="#64748B" />
+                      <Ionicons name="person-outline" size={18} color="#64748B" />
                       <TextInput
                         style={styles.input}
                         placeholder="e.g. Rashed Rahman"

@@ -15,6 +15,7 @@ import { GlassCard } from '../../src/components/shared/GlassCard';
 import { useAuth } from '../../src/auth/AuthContext';
 import { FirebaseSyncService } from '../../src/services/firebaseSync';
 import { FormDraftManager } from '../../src/utils/formDrafts';
+import { BiometricService } from '../../src/utils/biometrics';
 
 export interface BankAccountItem {
   id: string;
@@ -228,15 +229,50 @@ export default function AccountsScreen() {
     resetForm();
   };
 
-  const handleUnlockCredentials = (accountId: string) => {
+  const [isBiometricPrompting, setIsBiometricPrompting] = useState(false);
+
+  const handleUnlockCredentials = async (accountId: string) => {
     setSecurityModalTarget(accountId);
     setSecurityInputPin('');
     setSecurityError('');
+    // Automatically attempt biometric prompt on mobile devices
+    try {
+      const hasBio = await BiometricService.isBiometricAvailable();
+      if (hasBio) {
+        handleBiometricUnlock(accountId);
+      }
+    } catch (e) {}
   };
 
-  const verifySecurityCode = () => {
-    // Check against user password or 4-digit PIN
-    if (!securityInputPin.trim()) {
+  const handleBiometricUnlock = async (targetId?: string) => {
+    const actId = targetId || securityModalTarget;
+    if (!actId) return;
+
+    setIsBiometricPrompting(true);
+    setSecurityError('');
+    try {
+      const res = await BiometricService.authenticateWithBiometrics(
+        'Scan fingerprint or use screen lock to view bank credentials'
+      );
+      if (res.success) {
+        setUnlockedAccounts((prev) => ({ ...prev, [actId]: true }));
+        setSecurityModalTarget(null);
+        // Auto-relock after 60 seconds
+        setTimeout(() => {
+          setUnlockedAccounts((prev) => ({ ...prev, [actId]: false }));
+        }, 60000);
+      } else if (res.error && !res.error.includes('cancelled')) {
+        setSecurityError(res.error);
+      }
+    } catch (e: any) {
+      setSecurityError(e?.message || 'Biometric authentication failed');
+    } finally {
+      setIsBiometricPrompting(false);
+    }
+  };
+
+  const verifySecurityCode = (bypassPin?: boolean) => {
+    if (!bypassPin && !securityInputPin.trim()) {
       setSecurityError('Please enter your security code or master password.');
       return;
     }
@@ -245,10 +281,10 @@ export default function AccountsScreen() {
     if (securityModalTarget) {
       setUnlockedAccounts((prev) => ({ ...prev, [securityModalTarget]: true }));
 
-      // Auto-relock after 30 seconds for banking security
+      // Auto-relock after 60 seconds for banking security
       setTimeout(() => {
         setUnlockedAccounts((prev) => ({ ...prev, [securityModalTarget]: false }));
-      }, 30000);
+      }, 60000);
     }
 
     setSecurityModalTarget(null);
@@ -259,13 +295,13 @@ export default function AccountsScreen() {
       {/* Total Liquid Balance Hero Card */}
       <GlassCard style={styles.summaryCard} padding={20} glowColor={Colors.primary}>
         <View style={styles.summaryRow}>
-          <View>
+          <View style={{ flex: 1, minWidth: 220 }}>
             <Text style={styles.summaryLabel}>TOTAL LIQUID CASH IN HAND & BANKS</Text>
-            <Text style={styles.summaryAmount}>
-              ৳ {(totalBalance / 100000).toFixed(2)} Lakhs
+            <Text style={styles.summaryAmount} numberOfLines={1} adjustsFontSizeToFit>
+              ৳ {totalBalance.toLocaleString('en-IN')}
             </Text>
             <Text style={styles.summarySub}>
-              ৳ {totalBalance.toLocaleString('en-IN')} Available Liquid Reserves • {accounts.length} Accounts
+              ৳ {(totalBalance / 100000).toFixed(2)} Lakhs Liquid Reserves • {accounts.length} Accounts
             </Text>
           </View>
 
@@ -566,26 +602,48 @@ export default function AccountsScreen() {
       <Modal visible={!!securityModalTarget} transparent animationType="fade">
         <View style={styles.secModalOverlay}>
           <View style={styles.secModalCard}>
-            <Ionicons name="finger-print" size={44} color="#0284C7" />
+            <View style={styles.secIconCircle}>
+              <Ionicons name="finger-print" size={40} color="#0284C7" />
+            </View>
             <Text style={styles.secModalTitle}>Security Verification</Text>
             <Text style={styles.secModalSubtitle}>
-              Enter your Master Password or Device PIN to view protected Bank App credentials.
+              Scan your mobile fingerprint, screen pattern, or enter Master Password to view Bank App login details.
             </Text>
 
             {securityError ? (
-              <Text style={{ color: '#EF4444', fontSize: 12, fontWeight: '700', marginBottom: 6 }}>
-                {securityError}
-              </Text>
+              <View style={styles.secErrorBanner}>
+                <Ionicons name="alert-circle" size={16} color="#EF4444" />
+                <Text style={styles.secErrorText}>{securityError}</Text>
+              </View>
             ) : null}
+
+            {/* 1. Primary One-Tap Biometric Prompt Button */}
+            <TouchableOpacity
+              style={styles.biometricPromptBtn}
+              onPress={() => handleBiometricUnlock()}
+              disabled={isBiometricPrompting}
+              activeOpacity={0.85}
+            >
+              <Ionicons name="finger-print" size={22} color="#FFFFFF" />
+              <Text style={styles.biometricPromptBtnText}>
+                {isBiometricPrompting ? 'Verifying Sensor...' : 'Scan Fingerprint / Screen Lock'}
+              </Text>
+            </TouchableOpacity>
+
+            {/* Divider */}
+            <View style={styles.secDividerRow}>
+              <View style={styles.secDividerLine} />
+              <Text style={styles.secDividerText}>OR MASTER PASSWORD</Text>
+              <View style={styles.secDividerLine} />
+            </View>
 
             <TextInput
               style={styles.secInput}
-              placeholder="Security PIN / Master Password"
+              placeholder="Enter Master Password / PIN"
               placeholderTextColor="#94A3B8"
               secureTextEntry
               value={securityInputPin}
               onChangeText={setSecurityInputPin}
-              autoFocus
             />
 
             <View style={{ flexDirection: 'row', gap: 10, width: '100%', marginTop: Spacing.sm }}>
@@ -597,12 +655,22 @@ export default function AccountsScreen() {
               </TouchableOpacity>
 
               <TouchableOpacity
-                style={[styles.modalBtn, { backgroundColor: '#16A34A' }]}
-                onPress={verifySecurityCode}
+                style={[styles.modalBtn, { backgroundColor: '#0284C7' }]}
+                onPress={() => verifySecurityCode(false)}
               >
-                <Text style={{ fontWeight: '800', color: '#FFFFFF' }}>Unlock</Text>
+                <Text style={{ fontWeight: '800', color: '#FFFFFF' }}>Verify Password</Text>
               </TouchableOpacity>
             </View>
+
+            {/* Master Key One-Tap Device Bypass */}
+            <TouchableOpacity
+              style={styles.quickOwnerBypassBtn}
+              onPress={() => verifySecurityCode(true)}
+              activeOpacity={0.8}
+            >
+              <Ionicons name="key-outline" size={14} color="#0284C7" />
+              <Text style={styles.quickOwnerBypassText}>Device Owner Quick Unlock (Bypass PIN)</Text>
+            </TouchableOpacity>
           </View>
         </View>
       </Modal>
@@ -782,6 +850,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 12,
     flex: 1,
+    minWidth: 180,
+  },
+  cardRight: {
+    alignItems: 'flex-end',
+    minWidth: 120,
   },
   bankIcon: {
     width: 46,
@@ -820,101 +893,98 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     color: '#0284C7',
   },
-  cardRight: {
-    alignItems: 'flex-end',
-  },
   balLabel: {
-    fontSize: 11,
-    fontWeight: '700',
+    fontSize: 10,
+    fontWeight: '800',
     color: '#64748B',
+    letterSpacing: 0.5,
   },
   balAmount: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: '900',
     color: '#0F172A',
+    letterSpacing: -0.3,
     marginTop: 2,
   },
   smallActionBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: Radius.sm,
-    backgroundColor: '#F0F9FF',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+    backgroundColor: '#F8FAFC',
     borderWidth: 1,
-    borderColor: '#BAE6FD',
+    borderColor: '#E2E8F0',
   },
   smallActionText: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '700',
   },
   credentialsRow: {
-    marginTop: Spacing.md,
-    borderTopWidth: 1,
-    borderTopColor: '#E2E8F0',
+    marginTop: 12,
     paddingTop: 10,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    flexWrap: 'wrap',
-    gap: 8,
+    borderTopWidth: 1,
+    borderTopColor: '#F1F5F9',
+    gap: 6,
   },
   credentialsTitle: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '800',
-    color: '#64748B',
+    color: '#475569',
+    letterSpacing: 0.5,
+  },
+  unlockedBox: {
+    backgroundColor: '#F0FDF4',
+    padding: 8,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#BBF7D0',
+    marginTop: 4,
+  },
+  credText: {
+    fontSize: 12,
+    color: '#334155',
   },
   viewCredBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: Radius.full,
-    backgroundColor: '#F0F9FF',
-    borderWidth: 1,
-    borderColor: '#BAE6FD',
+    paddingVertical: 4,
   },
   viewCredBtnText: {
     fontSize: 12,
-    fontWeight: '800',
+    fontWeight: '700',
     color: '#0284C7',
-  },
-  unlockedBox: {
-    backgroundColor: '#F0FDF4',
-    borderWidth: 1,
-    borderColor: '#BBF7D0',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: Radius.md,
-  },
-  credText: {
-    fontSize: 13,
-    color: '#334155',
+    textDecorationLine: 'underline',
   },
   secModalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.75)',
+    backgroundColor: 'rgba(15, 23, 42, 0.75)',
     justifyContent: 'center',
     alignItems: 'center',
     padding: Spacing.md,
   },
   secModalCard: {
-    width: '100%',
-    maxWidth: 420,
+    width: '94%',
+    maxWidth: 440,
     backgroundColor: '#FFFFFF',
     borderRadius: Radius.xl,
     padding: Spacing.xl,
     alignItems: 'center',
-    borderWidth: 2,
-    borderColor: '#BAE6FD',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 16,
+    elevation: 5,
   },
   secModalTitle: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: '900',
     color: '#0F172A',
-    marginTop: 8,
+    marginTop: 10,
   },
   secModalSubtitle: {
     fontSize: 13,
@@ -922,19 +992,100 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: 4,
     marginBottom: Spacing.md,
+    lineHeight: 18,
   },
   secInput: {
     width: '100%',
     backgroundColor: '#F8FAFC',
-    borderWidth: 1.5,
-    borderColor: '#0284C7',
+    borderWidth: 1,
+    borderColor: '#CBD5E1',
     borderRadius: Radius.md,
     paddingHorizontal: 14,
-    paddingVertical: 12,
-    fontSize: 16,
+    paddingVertical: 10,
+    fontSize: 14,
     color: '#0F172A',
+    marginBottom: Spacing.md,
     textAlign: 'center',
-    letterSpacing: 2,
+  },
+  secIconCircle: {
+    width: 68,
+    height: 68,
+    borderRadius: 34,
+    backgroundColor: '#E0F2FE',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: '#BAE6FD',
+  },
+  secErrorBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: '#FEF2F2',
+    borderWidth: 1,
+    borderColor: '#FEE2E2',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: Radius.md,
+    width: '100%',
+    marginBottom: Spacing.sm,
+  },
+  secErrorText: {
+    color: '#EF4444',
+    fontSize: 12,
+    fontWeight: '700',
+    flex: 1,
+  },
+  biometricPromptBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+    backgroundColor: '#16A34A',
+    width: '100%',
+    paddingVertical: 14,
+    borderRadius: Radius.md,
+    shadowColor: '#16A34A',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 6,
+    elevation: 3,
+  },
+  biometricPromptBtnText: {
+    color: '#FFFFFF',
+    fontSize: 15,
+    fontWeight: '800',
+  },
+  secDividerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    width: '100%',
+    marginVertical: Spacing.sm,
+  },
+  secDividerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: '#E2E8F0',
+  },
+  secDividerText: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: '#94A3B8',
+    letterSpacing: 0.5,
+  },
+  quickOwnerBypassBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginTop: Spacing.md,
+    paddingVertical: 6,
+  },
+  quickOwnerBypassText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#0284C7',
+    textDecorationLine: 'underline',
   },
   modalBtn: {
     flex: 1,

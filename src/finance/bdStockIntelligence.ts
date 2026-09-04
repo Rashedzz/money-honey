@@ -59,10 +59,10 @@ export interface DseStockItem {
   marketCapCrore: number;
 
   // Live Bid/Ask & Market Depth (Level 2 Order Book)
-  bidPrice: number;
-  bidVolume: number;
-  askPrice: number;
-  askVolume: number;
+  bidPrice?: number;
+  bidVolume?: number;
+  askPrice?: number;
+  askVolume?: number;
   marketDepth?: Array<{ buyOrders: number; buyVolume: number; bidPrice: number; askPrice: number; sellVolume: number; sellOrders: number }>;
 
   // Intraday Movement History
@@ -138,7 +138,7 @@ export interface DseStockItem {
   totalAiScore: number;    // 0 to 100
   recommendation: 'STRONG BUY' | 'BUY' | 'ACCUMULATE' | 'HOLD' | 'WATCH' | 'REDUCE' | 'SELL / AVOID';
   aiInvestmentThesis: string;
-  riskFactors: string;
+  riskFactors?: string;
 }
 
 // 1. Live Market Indices Snapshot

@@ -179,9 +179,10 @@ export function getDseShareholding(symbol: string): DseShareholdingStructure {
  */
 export function getDseRegulatoryStatus(symbol: string, currentLtp: number): DseRegulatoryStatus {
   const isZCategory = symbol === 'BEXIMCO_FAIL'; // test or Z
-  const category = isZCategory ? 'Z' : 'A';
-  const marginLoanEligibility = category === 'A' || category === 'B';
-  const marginHaircutPercent = category === 'A' ? 50 : category === 'B' ? 40 : 0;
+  const category: 'A' | 'B' | 'N' | 'Z' = isZCategory ? 'Z' : 'A';
+  const cat = category as string;
+  const marginLoanEligibility = cat === 'A' || cat === 'B';
+  const marginHaircutPercent = cat === 'A' ? 50 : cat === 'B' ? 40 : 0;
 
   // Circuit breaker daily limit is typically 10% on DSE
   const circuitBreakerPercent = 10;

@@ -134,15 +134,43 @@ export const UniversalEntryModal: React.FC<UniversalEntryModalProps> = ({
       const qty = parseFloat(subInfo) || 1;
       const bPrice = parsedAmount || 0;
       const cPrice = parseFloat(extraField) || bPrice;
+      const invested = qty * bPrice;
+      const val = qty * cPrice;
+      const gain = val - invested;
+      const gainPct = invested > 0 ? (gain / invested) * 100 : 0;
       payload = {
+        id: `STK-${Date.now()}-${Math.floor(100 + Math.random() * 900)}`,
         symbol: title.trim().toUpperCase(),
-        companyName: category.trim() || title.trim(),
+        companyName: category.trim() || title.trim().toUpperCase(),
         exchange: 'DSE',
         quantity: qty,
         buyPrice: bPrice,
         currentPrice: cPrice,
-        sector: 'Equities',
+        totalInvested: invested,
+        currentValue: val,
+        gainLoss: gain,
+        gainLossPercent: gainPct,
+        sector: category.trim() || 'Equities',
       };
+    }
+
+    if (selectedType === 'bank') {
+      const newAcc = {
+        id: `ACC-${Date.now()}-${Math.floor(100 + Math.random() * 900)}`,
+        bankName: title.trim(),
+        accountType: category.trim() || 'Savings Account',
+        accountNumber: subInfo.trim() || `****${Math.floor(1000 + Math.random() * 9000)}`,
+        currentBalance: parsedAmount,
+        routingNumber: extraField.trim() || undefined,
+        color: '#0284C7',
+      };
+      try {
+        if (typeof window !== 'undefined' && window.localStorage) {
+          const raw = window.localStorage.getItem('mh_user_bank_accounts');
+          const existing = raw ? JSON.parse(raw) : [];
+          window.localStorage.setItem('mh_user_bank_accounts', JSON.stringify([...existing, newAcc]));
+        }
+      } catch (e) {}
     }
 
     onSave(selectedType, payload);
@@ -212,7 +240,7 @@ export const UniversalEntryModal: React.FC<UniversalEntryModalProps> = ({
           {/* Dynamic Form Content */}
           <ScrollView
             showsVerticalScrollIndicator={true}
-            style={[styles.formScroll, { overflowY: 'auto' as any }]}
+            style={styles.formScroll}
             contentContainerStyle={{ paddingBottom: 40, flexGrow: 1 }}
           >
             {selectedType === 'income' && (
@@ -555,6 +583,36 @@ export const UniversalEntryModal: React.FC<UniversalEntryModalProps> = ({
 
             {selectedType === 'stock' && (
               <>
+                <Text style={styles.label}>POPULAR DSE STOCKS (CLICK TO AUTO-FILL)</Text>
+                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 12 }}>
+                  {['GP', 'BATBC', 'BEXIMCO', 'SQURPHARMA', 'ROBI', 'RENATA', 'BRACBANK', 'LHBL', 'ISLAMIBANK'].map((s) => (
+                    <TouchableOpacity
+                      key={s}
+                      onPress={() => {
+                        setTitle(s);
+                        if (s === 'GP') setCategory('Grameenphone Ltd. (Telecom)');
+                        else if (s === 'BATBC') setCategory('British American Tobacco BD (FMCG)');
+                        else if (s === 'SQURPHARMA') setCategory('Square Pharmaceuticals (Pharma)');
+                        else if (s === 'ROBI') setCategory('Robi Axiata Ltd. (Telecom)');
+                        else if (s === 'BRACBANK') setCategory('BRAC Bank PLC (Banking)');
+                        else setCategory(`${s} (DSE Equities)`);
+                      }}
+                      style={{
+                        paddingHorizontal: 10,
+                        paddingVertical: 5,
+                        borderRadius: 6,
+                        backgroundColor: title === s ? '#16A34A' : '#F1F5F9',
+                        borderWidth: 1,
+                        borderColor: title === s ? '#15803D' : '#E2E8F0',
+                      }}
+                    >
+                      <Text style={{ fontSize: 11, fontWeight: '800', color: title === s ? '#FFFFFF' : '#334155' }}>
+                        {s}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+
                 <View style={styles.twoCol}>
                   <View style={styles.col}>
                     <Text style={styles.label}>STOCK TICKER / SYMBOL *</Text>
@@ -568,25 +626,16 @@ export const UniversalEntryModal: React.FC<UniversalEntryModalProps> = ({
                     />
                   </View>
                   <View style={styles.col}>
-                    <Text style={styles.label}>EXCHANGE</Text>
+                    <Text style={styles.label}>COMPANY NAME / SECTOR</Text>
                     <TextInput
                       style={styles.input}
-                      placeholder="DSE, CSE, or GLOBAL"
+                      placeholder="e.g. Grameenphone (Telecom)"
                       placeholderTextColor={Colors.textMuted}
-                      value={extraField}
-                      onChangeText={setExtraField}
+                      value={category}
+                      onChangeText={setCategory}
                     />
                   </View>
                 </View>
-
-                <Text style={styles.label}>COMPANY NAME / SECTOR</Text>
-                <TextInput
-                  style={styles.input}
-                  placeholder="e.g. Grameenphone Ltd. (Telecommunication)"
-                  placeholderTextColor={Colors.textMuted}
-                  value={category}
-                  onChangeText={setCategory}
-                />
 
                 <View style={styles.twoCol}>
                   <View style={styles.col}>
@@ -612,6 +661,88 @@ export const UniversalEntryModal: React.FC<UniversalEntryModalProps> = ({
                     />
                   </View>
                 </View>
+
+                <View style={styles.twoCol}>
+                  <View style={styles.col}>
+                    <Text style={styles.label}>CURRENT MARKET PRICE (CMP) (৳) *</Text>
+                    <TextInput
+                      style={styles.input}
+                      placeholder="e.g. 312.00 (leave blank to use buy price)"
+                      placeholderTextColor={Colors.textMuted}
+                      keyboardType="numeric"
+                      value={extraField}
+                      onChangeText={setExtraField}
+                    />
+                  </View>
+                  <View style={styles.col}>
+                    <Text style={styles.label}>EXCHANGE</Text>
+                    <TextInput
+                      style={[styles.input, { backgroundColor: '#F8FAFC' }]}
+                      editable={false}
+                      value="Dhaka Stock Exchange (DSE)"
+                    />
+                  </View>
+                </View>
+
+                {/* Real-time Live P&L Preview Card */}
+                {(() => {
+                  const q = parseFloat(subInfo) || 0;
+                  const bp = parseFloat(amount.replace(/,/g, '')) || 0;
+                  const cp = parseFloat(extraField.replace(/,/g, '')) || bp;
+                  const inv = q * bp;
+                  const val = q * cp;
+                  const pnl = val - inv;
+                  const pnlPct = inv > 0 ? (pnl / inv) * 100 : 0;
+                  const isGain = pnl >= 0;
+
+                  if (q <= 0 || bp <= 0) return null;
+
+                  return (
+                    <View
+                      style={{
+                        backgroundColor: isGain ? '#F0FDF4' : '#FEF2F2',
+                        borderRadius: 10,
+                        padding: 12,
+                        marginTop: 8,
+                        marginBottom: 16,
+                        borderWidth: 1,
+                        borderColor: isGain ? '#BBF7D0' : '#FECACA',
+                      }}
+                    >
+                      <Text
+                        style={{
+                          fontSize: 11,
+                          fontWeight: '800',
+                          color: isGain ? '#15803D' : '#B91C1C',
+                          marginBottom: 6,
+                          letterSpacing: 0.5,
+                        }}
+                      >
+                        ⚡ REAL-TIME VALUATION & P/L CALCULATION PREVIEW
+                      </Text>
+                      <View style={{ flexDirection: 'row', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
+                        <View>
+                          <Text style={{ fontSize: 10, color: '#64748B', fontWeight: '700' }}>TOTAL INVESTED</Text>
+                          <Text style={{ fontSize: 14, fontWeight: '900', color: '#0F172A' }}>
+                            ৳ {inv.toLocaleString('en-IN')}
+                          </Text>
+                        </View>
+                        <View>
+                          <Text style={{ fontSize: 10, color: '#64748B', fontWeight: '700' }}>MARKET VALUATION</Text>
+                          <Text style={{ fontSize: 14, fontWeight: '900', color: '#0F172A' }}>
+                            ৳ {val.toLocaleString('en-IN')}
+                          </Text>
+                        </View>
+                        <View>
+                          <Text style={{ fontSize: 10, color: '#64748B', fontWeight: '700' }}>NET PROFIT / LOSS</Text>
+                          <Text style={{ fontSize: 14, fontWeight: '900', color: isGain ? '#16A34A' : '#DC2626' }}>
+                            {isGain ? '+' : '−'}৳ {Math.abs(pnl).toLocaleString('en-IN')} ({pnlPct.toFixed(2)}%)
+                          </Text>
+                        </View>
+                      </View>
+                    </View>
+                  );
+                })()}
               </>
             )}
 
@@ -637,8 +768,8 @@ const styles = StyleSheet.create({
   modalCard: {
     width: '96%',
     maxWidth: 640,
-    height: '90vh',
-    maxHeight: '92vh',
+    height: '90%',
+    maxHeight: '92%',
     backgroundColor: '#FFFFFF',
     borderRadius: Radius.xl,
     borderWidth: 2,
@@ -722,9 +853,6 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '700',
     color: '#334155',
-  },
-  formScroll: {
-    marginTop: Spacing.xs,
   },
   label: {
     fontSize: 11,

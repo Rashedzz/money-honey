@@ -9,7 +9,7 @@ import React, { useState, useMemo } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Dimensions } from 'react-native';
 import Svg, { Rect, Line, Polyline, Polygon, Circle, Text as SvgText, G } from 'react-native-svg';
 import { Colors, Spacing, Radius } from '../../theme';
-import { HistoricalTimeframe } from '../../finance/bdStockIntelligence';
+import { HistoricalTimeframe } from '../../finance/dseHistoricalDatabase';
 
 export interface CandleDataPoint {
   date: string;

@@ -23,6 +23,14 @@ const formatBDT = (amount: number) => {
   return Math.round(amount || 0).toLocaleString('en-IN');
 };
 
+const formatLakhs = (amount: number) => {
+  const lakhs = amount / 100000;
+  if (Math.abs(lakhs) >= 100) {
+    return `${(lakhs / 100).toFixed(2)} Cr`;
+  }
+  return `${lakhs.toFixed(2)} Lakhs`;
+};
+
 export const NetWorthMeter: React.FC<NetWorthMeterProps> = ({
   netWorth,
   totalAssets,
@@ -79,18 +87,25 @@ export const NetWorthMeter: React.FC<NetWorthMeterProps> = ({
         </View>
       </View>
 
-      {/* 2. Flagship Net Worth Figure */}
+      {/* 2. Flagship Net Worth Figure with Dual Display (Exact BDT + Lakhs) */}
       <View style={styles.heroFigureBox}>
         <Text style={styles.heroSubLabel}>TOTAL CONSOLIDATED NET WORTH</Text>
-        <Text style={[styles.heroAmount, { color: isPositive ? '#0F172A' : '#EF4444' }]}>
-          {isPositive ? '' : '−'}৳ {formatBDT(Math.abs(netWorth))}
-        </Text>
+        <View style={styles.heroAmountRow}>
+          <Text style={[styles.heroAmount, { color: isPositive ? '#0F172A' : '#EF4444' }]}>
+            {isPositive ? '' : '−'}৳ {formatBDT(Math.abs(netWorth))}
+          </Text>
+          <View style={styles.heroLakhsBadge}>
+            <Text style={styles.heroLakhsBadgeText}>
+              ({isPositive ? '' : '−'}৳ {formatLakhs(Math.abs(netWorth))})
+            </Text>
+          </View>
+        </View>
         <Text style={styles.heroCaption}>
           Net wealth aggregated across liquid bank reserves, DSE/CSE equities, sovereign paper instruments & real assets.
         </Text>
       </View>
 
-      {/* 3. Four Core Institutional Financial Pillars */}
+      {/* 3. Four Core Institutional Financial Pillars with Responsive Layout */}
       <View style={styles.pillarsGrid}>
         {/* Pillar 1: Gross Assets */}
         <View style={styles.pillarCard}>
@@ -98,8 +113,10 @@ export const NetWorthMeter: React.FC<NetWorthMeterProps> = ({
             <Ionicons name="layers-outline" size={16} color="#0284C7" />
             <Text style={styles.pillarLabel}>GROSS ASSETS</Text>
           </View>
-          <Text style={styles.pillarValue}>৳ {formatBDT(totalAssets)}</Text>
-          <Text style={[styles.pillarSub, { color: '#059669' }]}>▲ Capital Base</Text>
+          <Text style={styles.pillarValue} numberOfLines={1}>৳ {formatBDT(totalAssets)}</Text>
+          <Text style={[styles.pillarSub, { color: '#059669' }]} numberOfLines={1}>
+            ▲ {formatLakhs(totalAssets)}
+          </Text>
         </View>
 
         {/* Pillar 2: Liabilities */}
@@ -108,11 +125,11 @@ export const NetWorthMeter: React.FC<NetWorthMeterProps> = ({
             <Ionicons name="card-outline" size={16} color="#DC2626" />
             <Text style={styles.pillarLabel}>LIABILITIES & DEBTS</Text>
           </View>
-          <Text style={[styles.pillarValue, { color: totalLiabilities > 0 ? '#DC2626' : '#0F172A' }]}>
+          <Text style={[styles.pillarValue, { color: totalLiabilities > 0 ? '#DC2626' : '#0F172A' }]} numberOfLines={1}>
             ৳ {formatBDT(totalLiabilities)}
           </Text>
-          <Text style={[styles.pillarSub, { color: totalLiabilities > 0 ? '#DC2626' : '#64748B' }]}>
-            {totalLiabilities > 0 ? '▼ Bank Principal' : 'Debt Free'}
+          <Text style={[styles.pillarSub, { color: totalLiabilities > 0 ? '#DC2626' : '#64748B' }]} numberOfLines={1}>
+            {totalLiabilities > 0 ? `▼ ${formatLakhs(totalLiabilities)}` : 'Debt Free'}
           </Text>
         </View>
 
@@ -122,10 +139,10 @@ export const NetWorthMeter: React.FC<NetWorthMeterProps> = ({
             <Ionicons name="swap-vertical-outline" size={16} color="#059669" />
             <Text style={styles.pillarLabel}>MONTHLY CASH FLOW</Text>
           </View>
-          <Text style={[styles.pillarValue, { color: netMonthlyCashFlow >= 0 ? '#059669' : '#DC2626' }]}>
+          <Text style={[styles.pillarValue, { color: netMonthlyCashFlow >= 0 ? '#059669' : '#DC2626' }]} numberOfLines={1}>
             {netMonthlyCashFlow >= 0 ? '+' : '−'}৳ {formatBDT(Math.abs(netMonthlyCashFlow))}
           </Text>
-          <Text style={[styles.pillarSub, { color: netMonthlyCashFlow >= 0 ? '#059669' : '#DC2626' }]}>
+          <Text style={[styles.pillarSub, { color: netMonthlyCashFlow >= 0 ? '#059669' : '#DC2626' }]} numberOfLines={1}>
             {netMonthlyCashFlow >= 0 ? '▲ Net Surplus' : '▼ Deficit'}
           </Text>
         </View>
@@ -136,8 +153,8 @@ export const NetWorthMeter: React.FC<NetWorthMeterProps> = ({
             <Ionicons name="timer-outline" size={16} color="#7C3AED" />
             <Text style={styles.pillarLabel}>LIQUID RUNWAY</Text>
           </View>
-          <Text style={styles.pillarValue}>{emergencyRunwayMonths} Mo</Text>
-          <Text style={[styles.pillarSub, { color: '#6366F1' }]}>Burn Capacity</Text>
+          <Text style={styles.pillarValue} numberOfLines={1}>{emergencyRunwayMonths} Mo</Text>
+          <Text style={[styles.pillarSub, { color: '#6366F1' }]} numberOfLines={1}>Burn Capacity</Text>
         </View>
       </View>
 
@@ -255,15 +272,35 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
     marginBottom: 4,
   },
+  heroAmountRow: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
   heroAmount: {
-    fontSize: 36,
+    fontSize: 30,
     fontWeight: '900',
     letterSpacing: -1,
+  },
+  heroLakhsBadge: {
+    backgroundColor: '#F0FDF4',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#DCFCE7',
+    alignSelf: 'center',
+  },
+  heroLakhsBadgeText: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: '#16A34A',
   },
   heroCaption: {
     fontSize: 13,
     color: '#64748B',
-    marginTop: 4,
+    marginTop: 6,
     lineHeight: 19,
   },
   pillarsGrid: {
@@ -275,7 +312,7 @@ const styles = StyleSheet.create({
   },
   pillarCard: {
     flex: 1,
-    minWidth: 140,
+    minWidth: 135,
     backgroundColor: '#F8FAFC',
     borderRadius: Radius.md,
     padding: 12,
@@ -295,7 +332,7 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
   },
   pillarValue: {
-    fontSize: 17,
+    fontSize: 16,
     fontWeight: '900',
     color: '#0F172A',
     letterSpacing: -0.3,
@@ -355,7 +392,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    minWidth: 160,
+    minWidth: 140,
+    flex: 1,
   },
   legendDot: {
     width: 8,

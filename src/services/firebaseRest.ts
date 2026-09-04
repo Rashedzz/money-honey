@@ -25,18 +25,20 @@ export type FirebaseDataType =
   | 'incomes'
   | 'expenses'
   | 'policies'
-  | 'birthdays';
+  | 'birthdays'
+  | 'schedules';
 
 const STORAGE_MAP: Record<FirebaseDataType, string> = {
   bank_accounts: 'mh_user_bank_accounts',
   loans: 'mh_user_loans',
   paper_assets: 'mh_user_paper_assets',
   physical_assets: 'mh_user_assets',
-  stocks: 'mh_portfolio_stocks',
+  stocks: 'money_honey_user_stocks',
   incomes: 'mh_user_incomes',
   expenses: 'mh_user_expenses',
   policies: 'mh_user_policies',
   birthdays: 'mh_user_birthdays',
+  schedules: 'mh_user_schedules',
 };
 
 export class FirebaseCloudSync {

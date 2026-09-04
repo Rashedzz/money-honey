@@ -137,7 +137,7 @@ export const AddAssetModal: React.FC<AddAssetModalProps> = ({
           </View>
 
           <ScrollView
-            style={[styles.formScroll, { flex: 1, overflowY: 'auto' as any }]}
+            style={[styles.formScroll, { flex: 1 }]}
             contentContainerStyle={{ paddingBottom: 40 }}
             showsVerticalScrollIndicator={true}
           >
@@ -285,8 +285,8 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: Radius.xl,
     borderTopRightRadius: Radius.xl,
     padding: Spacing.lg,
-    height: '88vh',
-    maxHeight: '90vh',
+    height: '88%',
+    maxHeight: '90%',
     display: 'flex',
     flexDirection: 'column',
     overflow: 'hidden',

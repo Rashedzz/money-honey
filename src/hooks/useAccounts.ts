@@ -20,8 +20,8 @@ export function useAccounts() {
     const accountsCollection = database.collections.get('accounts');
     const observable = accountsCollection.query(Q.where('is_active', true)).observe();
     
-    const subscription = observable.subscribe((data) => {
-      const formatted = data.map(record => ({
+    const subscription = observable.subscribe((data: any[]) => {
+      const formatted = data.map((record: any) => ({
         id: record.id,
         name: (record as any).name,
         type: (record as any).type,
@@ -29,7 +29,7 @@ export function useAccounts() {
         is_active: (record as any).is_active,
       }));
       setAccounts(formatted);
-      setTotalBalance(formatted.reduce((acc, curr) => acc + curr.balance, 0));
+      setTotalBalance(formatted.reduce((acc: number, curr: any) => acc + curr.balance, 0));
       setIsLoading(false);
     });
 
@@ -38,7 +38,7 @@ export function useAccounts() {
 
   const addAccount = async (data: Partial<IAccount>): Promise<void> => {
     await database.write(async () => {
-      const account = await database.collections.get('accounts').create(record => {
+      const account = await database.collections.get('accounts').create((record: any) => {
         (record as any).name = data.name;
         (record as any).type = data.type || 'savings';
         (record as any).balance = data.balance || 0;
@@ -46,7 +46,7 @@ export function useAccounts() {
       });
 
       if (data.balance && data.balance > 0) {
-        await database.collections.get('transactions').create(record => {
+        await database.collections.get('transactions').create((record: any) => {
           (record as any).account_id = account.id;
           (record as any).amount = data.balance;
           (record as any).type = 'income';
@@ -60,7 +60,7 @@ export function useAccounts() {
   const updateAccountBalance = async (accountId: string, newBalance: number, description: string): Promise<void> => {
     await database.write(async () => {
       const account = await database.collections.get('accounts').find(accountId);
-      await account.update(record => {
+      await account.update((record: any) => {
         (record as any).balance = newBalance;
       });
       // Optionally add a transaction for the adjustment here
@@ -70,7 +70,7 @@ export function useAccounts() {
   const deleteAccount = async (accountId: string): Promise<void> => {
     await database.write(async () => {
       const account = await database.collections.get('accounts').find(accountId);
-      await account.update(record => {
+      await account.update((record: any) => {
         (record as any).is_active = false;
       });
     });

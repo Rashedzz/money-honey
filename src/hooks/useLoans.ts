@@ -29,14 +29,14 @@ export function useLoans() {
     const loansCollection = database.collections.get('loans');
     const observable = loansCollection.query(Q.where('is_active', true)).observe();
 
-    const sub = observable.subscribe((data) => {
-      setLoans(data.map(d => ({
+    const sub = observable.subscribe((data: any[]) => {
+      setLoans(data.map((d: any) => ({
         id: d.id,
-        title: (d as any).title,
-        bank_name: (d as any).bank_name,
-        principal: (d as any).principal,
-        interest_rate: (d as any).interest_rate,
-        is_active: (d as any).is_active
+        title: d.title,
+        bank_name: d.bank_name,
+        principal: d.principal,
+        interest_rate: d.interest_rate,
+        is_active: d.is_active
       })));
       setIsLoading(false);
     });
@@ -46,12 +46,12 @@ export function useLoans() {
 
   const addLoan = async (data: any): Promise<void> => {
     await database.write(async () => {
-      const loan = await database.collections.get('loans').create(record => {
-        (record as any).title = data.title;
-        (record as any).bank_name = data.bank_name;
-        (record as any).principal = data.principal;
-        (record as any).interest_rate = data.interest_rate;
-        (record as any).is_active = true;
+      const loan = await database.collections.get('loans').create((record: any) => {
+        record.title = data.title;
+        record.bank_name = data.bank_name;
+        record.principal = data.principal;
+        record.interest_rate = data.interest_rate;
+        record.is_active = true;
       });
       
       // Stub: Generate amortization schedule into loan_payments table
@@ -62,9 +62,9 @@ export function useLoans() {
   const markEMIPaid = async (loanPaymentId: string, actualPaymentDate: Date): Promise<void> => {
     await database.write(async () => {
       const payment = await database.collections.get('loan_payments').find(loanPaymentId);
-      await payment.update(record => {
-        (record as any).is_paid = true;
-        (record as any).payment_date = actualPaymentDate.getTime();
+      await payment.update((record: any) => {
+        record.is_paid = true;
+        record.payment_date = actualPaymentDate.getTime();
       });
     });
   };
@@ -77,12 +77,12 @@ export function useLoans() {
       Q.where('due_date', Q.lte(futureDate))
     ).fetch();
 
-    return payments.map(p => ({
+    return payments.map((p: any) => ({
       id: p.id,
-      loan_id: (p as any).loan_id,
-      due_date: (p as any).due_date,
-      amount: (p as any).amount,
-      is_paid: (p as any).is_paid
+      loan_id: p.loan_id,
+      due_date: p.due_date,
+      amount: p.amount,
+      is_paid: p.is_paid
     }));
   };
 
