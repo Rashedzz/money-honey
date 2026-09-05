@@ -497,7 +497,8 @@ export default function AccountsScreen() {
 
             return (
               <GlassCard key={acc.id} style={styles.accCard} padding={18} glowColor={acc.color}>
-                <View style={styles.cardRow}>
+                {/* 1. Card Top: Bank Identity & Action Buttons (Edit & Delete) */}
+                <View style={styles.cardHeader}>
                   <View style={styles.cardLeft}>
                     <View style={styles.bankIcon}>
                       <Ionicons
@@ -506,8 +507,8 @@ export default function AccountsScreen() {
                         color="#0284C7"
                       />
                     </View>
-                    <View>
-                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                    <View style={{ flex: 1 }}>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
                         <Text style={styles.accBankName}>{acc.bankName}</Text>
                         <View style={styles.typeBadge}>
                           <Text style={styles.typeBadgeText}>{acc.accountType}</Text>
@@ -539,21 +540,32 @@ export default function AccountsScreen() {
                     </View>
                   </View>
 
-                  <View style={styles.cardRight}>
+                  {/* Top Right Action Buttons (Edit & Delete) */}
+                  <View style={styles.headerActions}>
+                    <TouchableOpacity style={styles.smallActionBtn} onPress={() => handleOpenEdit(acc)} activeOpacity={0.75}>
+                      <Ionicons name="pencil" size={13} color="#0284C7" />
+                      <Text style={[styles.smallActionText, { color: '#0284C7' }]}>Edit</Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity style={[styles.smallActionBtn, styles.deleteActionBtn]} onPress={() => handleDelete(acc.id)} activeOpacity={0.75}>
+                      <Ionicons name="trash-outline" size={13} color="#EF4444" />
+                      <Text style={[styles.smallActionText, { color: '#EF4444' }]}>Delete</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+
+                {/* 2. Card Bottom: Dedicated Balance Container (Below the bank info) */}
+                <View style={styles.balanceContainer}>
+                  <View style={styles.balanceLabelRow}>
+                    <Ionicons name="wallet-outline" size={15} color="#0284C7" />
                     <Text style={styles.balLabel}>AVAILABLE BALANCE</Text>
+                  </View>
+                  <View style={styles.balanceAmountRow}>
                     <Text style={styles.balAmount}>৳ {acc.currentBalance.toLocaleString('en-IN')}</Text>
-
-                    {/* Edit & Delete Action Buttons */}
-                    <View style={{ flexDirection: 'row', gap: 8, marginTop: 8, justifyContent: 'flex-end' }}>
-                      <TouchableOpacity style={styles.smallActionBtn} onPress={() => handleOpenEdit(acc)}>
-                        <Ionicons name="pencil" size={14} color="#0284C7" />
-                        <Text style={[styles.smallActionText, { color: '#0284C7' }]}>Edit</Text>
-                      </TouchableOpacity>
-
-                      <TouchableOpacity style={styles.smallActionBtn} onPress={() => handleDelete(acc.id)}>
-                        <Ionicons name="trash-outline" size={14} color="#EF4444" />
-                        <Text style={[styles.smallActionText, { color: '#EF4444' }]}>Delete</Text>
-                      </TouchableOpacity>
+                    <View style={styles.lakhsBadge}>
+                      <Text style={styles.lakhsBadgeText}>
+                        (৳ {(acc.currentBalance / 100000).toFixed(2)} Lakhs)
+                      </Text>
                     </View>
                   </View>
                 </View>
@@ -838,28 +850,28 @@ const styles = StyleSheet.create({
   accCard: {
     width: '100%',
   },
-  cardRow: {
+  cardHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
-    flexWrap: 'wrap',
+    alignItems: 'flex-start',
     gap: 12,
   },
   cardLeft: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     gap: 12,
     flex: 1,
-    minWidth: 180,
   },
-  cardRight: {
-    alignItems: 'flex-end',
-    minWidth: 120,
+  headerActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    flexShrink: 0,
   },
   bankIcon: {
-    width: 46,
-    height: 46,
-    borderRadius: 23,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     backgroundColor: '#F0F9FF',
     borderWidth: 1.5,
     borderColor: '#BAE6FD',
@@ -893,29 +905,70 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     color: '#0284C7',
   },
+  balanceContainer: {
+    marginTop: 12,
+    backgroundColor: '#F8FAFC',
+    borderRadius: Radius.md,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  balanceLabelRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  balanceAmountRow: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    gap: 8,
+    flexWrap: 'wrap',
+  },
+  lakhsBadge: {
+    backgroundColor: '#E0F2FE',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#BAE6FD',
+  },
+  lakhsBadgeText: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: '#0284C7',
+  },
   balLabel: {
-    fontSize: 10,
+    fontSize: 11,
     fontWeight: '800',
     color: '#64748B',
     letterSpacing: 0.5,
   },
   balAmount: {
-    fontSize: 18,
+    fontSize: 19,
     fontWeight: '900',
     color: '#0F172A',
-    letterSpacing: -0.3,
-    marginTop: 2,
+    letterSpacing: -0.4,
   },
   smallActionBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
+    paddingHorizontal: 9,
+    paddingVertical: 5,
     borderRadius: 6,
     backgroundColor: '#F8FAFC',
     borderWidth: 1,
     borderColor: '#E2E8F0',
+  },
+  deleteActionBtn: {
+    backgroundColor: '#FEF2F2',
+    borderColor: '#FECACA',
   },
   smallActionText: {
     fontSize: 11,
