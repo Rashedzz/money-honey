@@ -32,6 +32,7 @@ import { NetWorthMeter } from '../../src/components/dashboard/NetWorthMeter';
 import { CountdownCard } from '../../src/components/dashboard/CountdownCard';
 import { EMIReminderCard } from '../../src/components/dashboard/EMIReminderCard';
 import { UniversalEntryModal, EntryType } from '../../src/components/modals/UniversalEntryModal';
+import { DynamicMoneyTree } from '../../src/components/visuals/DynamicMoneyTree';
 
 // Auth System & Stock Market Modules
 import { useAuth } from '../../src/auth/AuthContext';
@@ -393,11 +394,14 @@ export default function MasterDashboardScreen() {
                   <Ionicons name="menu" size={22} color={Colors.textPrimary} />
                 </TouchableOpacity>
               )}
-              <View>
-                <Text style={styles.pageTitle}>{pageTitles[activeTab]}</Text>
-                <Text style={styles.pageSubtitle}>
-                  {isOnline ? '🌐 Online Available • Local-First Architecture' : '🟢 Offline Mode • Local Storage Active'}
-                </Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                {!isDesktop && <DynamicMoneyTree size={36} />}
+                <View>
+                  <Text style={styles.pageTitle}>{pageTitles[activeTab]}</Text>
+                  <Text style={styles.pageSubtitle}>
+                    {isOnline ? '🌐 Online Available • Local-First Architecture' : '🟢 Offline Mode • Local Storage Active'}
+                  </Text>
+                </View>
               </View>
             </View>
 
