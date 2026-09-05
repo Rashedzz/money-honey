@@ -65,20 +65,24 @@ export const PwaInstallModal: React.FC<PwaInstallModalProps> = ({
     }
   };
 
-  const handleDirectInstall = () => {
+  const handleDirectInstall = async () => {
     if (typeof window !== 'undefined' && (window as any).deferredPWAInstallPrompt) {
-      (window as any).deferredPWAInstallPrompt.prompt();
-      (window as any).deferredPWAInstallPrompt.userChoice.then((choiceResult: any) => {
-        if (choiceResult.outcome === 'accepted') {
-          console.log('User accepted PWA installation');
+      try {
+        const prompt = (window as any).deferredPWAInstallPrompt;
+        prompt.prompt();
+        const choice = await prompt.userChoice;
+        if (choice.outcome === 'accepted') {
+          console.log('User installed Money-Honey standalone PWA');
         }
         (window as any).deferredPWAInstallPrompt = null;
         setCanInstallDirectly(false);
-      });
+      } catch (err) {
+        console.warn('PWA direct prompt error:', err);
+      }
     } else {
       Alert.alert(
-        'Install Money-Honey PWA',
-        'In your browser top address bar, click the Install App icon (⊕ or computer icon) or click the browser menu (⋮) → "Install Money-Honey" / "Add to Home Screen".'
+        'Install Standalone App',
+        'To install as a true standalone app:\n\n• Chrome on Android: Tap top menu (⋮) → tap "Install app" (choose "Install app", NOT "Add to Home screen shortcut").\n• Safari on iPhone: Tap Share (⎋) → tap "Add to Home Screen".\n• Chrome/Edge on Laptop: Click the "Install App" icon (⊕) in the browser address bar.'
       );
     }
   };
@@ -195,7 +199,7 @@ export const PwaInstallModal: React.FC<PwaInstallModalProps> = ({
               <View style={styles.stepRow}>
                 <Text style={styles.stepNum}>1</Text>
                 <Text style={styles.stepText}>
-                  <Text style={{ fontWeight: '700', color: Colors.textPrimary }}>Android (Chrome):</Text> Tap the 3 dots (⋮) menu at top right, then tap <Text style={{ color: Colors.primary, fontWeight: '700' }}>"Install app"</Text> or "Add to Home screen".
+                  <Text style={{ fontWeight: '700', color: Colors.textPrimary }}>Android (Chrome):</Text> Tap the 3 dots (⋮) menu at top right, then tap <Text style={{ color: Colors.primary, fontWeight: '700' }}>"Install app"</Text> (choose "Install app", NOT "Add to Home screen shortcut"). This installs the real standalone app.
                 </Text>
               </View>
 

@@ -8,27 +8,32 @@ let deferredInstallPrompt: any = null;
 export function initPwaSupport() {
   if (typeof window === 'undefined') return;
 
-  // 1. Ensure <link rel="manifest" href="/manifest.json" /> in <head>
-  if (!document.querySelector('link[rel="manifest"]')) {
-    const link = document.createElement('link');
-    link.rel = 'manifest';
-    link.href = '/manifest.json';
-    document.head.appendChild(link);
+  const isGhPages = window.location.pathname.indexOf('/money-honey') === 0;
+  const basePath = isGhPages ? '/money-honey' : '';
+
+  // 1. Ensure <link rel="manifest" href=".../manifest.json" /> in <head>
+  let manifestLink = document.querySelector('link[rel="manifest"]') as HTMLLinkElement;
+  if (!manifestLink) {
+    manifestLink = document.createElement('link');
+    manifestLink.rel = 'manifest';
+    document.head.appendChild(manifestLink);
   }
+  manifestLink.href = basePath + '/manifest.json';
 
   // 2. Ensure apple-touch-icon
-  if (!document.querySelector('link[rel="apple-touch-icon"]')) {
-    const appleIcon = document.createElement('link');
+  let appleIcon = document.querySelector('link[rel="apple-touch-icon"]') as HTMLLinkElement;
+  if (!appleIcon) {
+    appleIcon = document.createElement('link');
     appleIcon.rel = 'apple-touch-icon';
-    appleIcon.href = '/icons/icon-192.png';
     document.head.appendChild(appleIcon);
   }
+  appleIcon.href = basePath + '/icon-192.png';
 
-  // 3. Register Service Worker
+  // 3. Register Service Worker with exact scope
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
       navigator.serviceWorker
-        .register('/sw.js')
+        .register(basePath + '/sw.js', { scope: basePath + '/' })
         .then((reg) => {
           console.log('Money-Honey PWA Service Worker active:', reg.scope);
         })
@@ -42,20 +47,32 @@ export function initPwaSupport() {
   window.addEventListener('beforeinstallprompt', (e: any) => {
     e.preventDefault();
     deferredInstallPrompt = e;
+    (window as any).deferredPWAInstallPrompt = e;
+    window.dispatchEvent(new Event('pwa-installable'));
     console.log('PWA: Native install prompt ready to trigger');
   });
+
+  window.addEventListener('appinstalled', () => {
+    deferredInstallPrompt = null;
+    (window as any).deferredPWAInstallPrompt = null;
+    console.log('PWA: App successfully installed standalone');
+  });
+
+  (window as any).promptPWAInstall = promptNativeInstall;
 }
 
 export function canPromptNativeInstall(): boolean {
-  return deferredInstallPrompt !== null;
+  return deferredInstallPrompt !== null || (typeof window !== 'undefined' && !!(window as any).deferredPWAInstallPrompt);
 }
 
 export async function promptNativeInstall(): Promise<boolean> {
-  if (!deferredInstallPrompt) return false;
+  const prompt = deferredInstallPrompt || (typeof window !== 'undefined' ? (window as any).deferredPWAInstallPrompt : null);
+  if (!prompt) return false;
   try {
-    deferredInstallPrompt.prompt();
-    const { outcome } = await deferredInstallPrompt.userChoice;
+    prompt.prompt();
+    const { outcome } = await prompt.userChoice;
     deferredInstallPrompt = null;
+    if (typeof window !== 'undefined') (window as any).deferredPWAInstallPrompt = null;
     return outcome === 'accepted';
   } catch (e) {
     console.warn('Native install prompt failed:', e);

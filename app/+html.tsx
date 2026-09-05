@@ -38,6 +38,20 @@ export default function Root({ children }: PropsWithChildren) {
           dangerouslySetInnerHTML={{
             __html: `
               if (typeof window !== 'undefined') {
+                // Redirect /money-honey to /money-honey/ for correct relative base scope
+                if (window.location.pathname === '/money-honey') {
+                  window.location.replace('/money-honey/' + window.location.search + window.location.hash);
+                }
+
+                var isGhPages = window.location.pathname.indexOf('/money-honey') === 0;
+                var basePath = isGhPages ? '/money-honey' : '';
+
+                // Immediately sync manifest & icons to subpath
+                var manifestElem = document.getElementById('pwa-manifest');
+                if (manifestElem && isGhPages) {
+                  manifestElem.setAttribute('href', basePath + '/manifest.json');
+                }
+
                 // 1. Capture PWA deferred install prompt for Chrome/Edge/Mobile
                 window.deferredPWAInstallPrompt = null;
                 window.addEventListener('beforeinstallprompt', function(e) {
@@ -49,20 +63,13 @@ export default function Root({ children }: PropsWithChildren) {
 
                 window.addEventListener('appinstalled', function() {
                   window.deferredPWAInstallPrompt = null;
-                  console.log('Money-Honey: App successfully installed!');
+                  console.log('Money-Honey: App successfully installed standalone!');
                 });
 
-                // 2. Dynamic Service Worker Registration with GitHub Pages subpath awareness
+                // 2. Dynamic Service Worker Registration
                 if ('serviceWorker' in navigator) {
                   window.addEventListener('load', function() {
-                    var isGhPages = window.location.pathname.indexOf('/money-honey') === 0;
-                    var basePath = isGhPages ? '/money-honey' : '';
                     var swUrl = basePath + '/sw.js';
-                    var manifestElem = document.getElementById('pwa-manifest');
-                    if (manifestElem && isGhPages) {
-                      manifestElem.setAttribute('href', basePath + '/manifest.json');
-                    }
-
                     navigator.serviceWorker.register(swUrl, { scope: basePath + '/' })
                       .then(function(reg) {
                         console.log('Money-Honey PWA Service Worker active:', reg.scope);

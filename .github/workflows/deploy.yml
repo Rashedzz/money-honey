@@ -13,7 +13,7 @@ permissions:
 
 concurrency:
   group: "pages"
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   deploy-pwa:
@@ -44,6 +44,7 @@ jobs:
           touch dist/.nojekyll
           if [ -f dist/index.html ]; then cp dist/index.html dist/404.html; fi
           cp -r public/* dist/
+          node -e "const fs=require('fs'); if (fs.existsSync('dist/manifest.json')) { const m=JSON.parse(fs.readFileSync('dist/manifest.json')); m.start_url='/money-honey/'; m.scope='/money-honey/'; m.id='/money-honey/'; fs.writeFileSync('dist/manifest.json', JSON.stringify(m,null,2)); }"
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3

@@ -6,9 +6,14 @@
   "scope": "./",
   "id": "money-honey-pwa",
   "display": "standalone",
+  "display_override": ["window-controls-overlay", "standalone", "minimal-ui"],
+  "prefer_related_applications": false,
   "background_color": "#E0F2FE",
   "theme_color": "#0284C7",
   "orientation": "portrait",
+  "launch_handler": {
+    "client_mode": "auto"
+  },
   "icons": [
     {
       "src": "./icon-192.png",
@@ -33,6 +38,23 @@
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Live Stock Market",
+      "url": "./?tab=stocks",
+      "description": "View DSE Stock Market Portfolio & Live Intel"
+    },
+    {
+      "name": "Bank & Accounts",
+      "url": "./?tab=accounts",
+      "description": "View Bank Accounts & Balances"
+    },
+    {
+      "name": "Schedule Planner",
+      "url": "./?tab=schedules",
+      "description": "Recurring Incomes & Expenses"
     }
   ],
   "categories": ["finance", "productivity", "business"],
