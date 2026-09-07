@@ -62,6 +62,35 @@ export interface TransferRecord {
   notes?: string;
 }
 
+export interface AccountTransactionRecord {
+  id: string;
+  date: string; // YYYY-MM-DD
+  title: string;
+  category: string;
+  type: 'credit' | 'debit';
+  amount: number;
+  sourceOrDest?: string;
+  notes?: string;
+}
+
+export interface CashFlowDataPoint {
+  label: string;
+  credit: number;
+  debit: number;
+  net: number;
+}
+
+export interface AccountPeriodicStats {
+  periodLabel: string;
+  totalCredits: number;
+  totalDebits: number;
+  netFlow: number;
+  creditCount: number;
+  debitCount: number;
+  chartData: CashFlowDataPoint[];
+  transactions: AccountTransactionRecord[];
+}
+
 export const BANK_STORAGE_KEY = 'mh_user_bank_accounts';
 export const EXPENSES_STORAGE_KEY = 'mh_user_expenses';
 export const INCOMES_STORAGE_KEY = 'mh_user_incomes';
@@ -615,5 +644,262 @@ export class TransactionManager {
       );
       this.saveAccounts(updatedAccounts, userId);
     }
+  }
+
+  /**
+   * Retrieves all chronological debit and credit transactions for a specific account (Bank or Cash in Hand)
+   */
+  public static getAccountTransactions(accountId: string): AccountTransactionRecord[] {
+    const expenses = this.getStoredExpenses();
+    const incomes = this.getStoredIncomes();
+    const transfers = this.getStoredTransfers();
+
+    const records: AccountTransactionRecord[] = [];
+
+    // 1. Incomes credited to this account
+    incomes.forEach((inc) => {
+      if (inc.accountId === accountId) {
+        records.push({
+          id: inc.id,
+          date: inc.date || new Date().toISOString().split('T')[0],
+          title: inc.title,
+          category: inc.category || 'Salary / Income',
+          type: 'credit',
+          amount: inc.amount,
+          sourceOrDest: inc.destinationAccount || 'Income Deposit',
+          notes: inc.notes,
+        });
+      }
+    });
+
+    // 2. Expenses debited from this account
+    expenses.forEach((exp) => {
+      if (exp.accountId === accountId) {
+        records.push({
+          id: exp.id,
+          date: exp.date || new Date().toISOString().split('T')[0],
+          title: exp.title,
+          category: exp.category || 'Expense',
+          type: 'debit',
+          amount: exp.amount,
+          sourceOrDest: exp.paymentMethod || 'Expense Outflow',
+          notes: exp.notes,
+        });
+      }
+    });
+
+    // 3. Transfers / Withdrawals
+    transfers.forEach((trf) => {
+      if (trf.toAccountId === accountId) {
+        // Inward transfer or Cash withdrawal credited into Cash in Hand
+        records.push({
+          id: `${trf.id}-in`,
+          date: trf.date || new Date().toISOString().split('T')[0],
+          title: trf.type === 'withdrawal' ? 'Cash Withdrawal Deposit' : `Transfer from ${trf.fromAccountName}`,
+          category: trf.type === 'withdrawal' ? 'ATM / Cash Deposit' : 'Inter-Bank Transfer',
+          type: 'credit',
+          amount: trf.amount,
+          sourceOrDest: trf.fromAccountName,
+          notes: trf.notes,
+        });
+      }
+      if (trf.fromAccountId === accountId) {
+        // Outward transfer or Cash withdrawal debited from this Bank
+        records.push({
+          id: `${trf.id}-out`,
+          date: trf.date || new Date().toISOString().split('T')[0],
+          title: trf.type === 'withdrawal' ? 'Cash Withdrawal to Wallet' : `Transfer to ${trf.toAccountName}`,
+          category: trf.type === 'withdrawal' ? 'ATM Withdrawal' : 'Inter-Bank Transfer',
+          type: 'debit',
+          amount: trf.amount + (trf.fee || 0),
+          sourceOrDest: trf.toAccountName,
+          notes: trf.fee ? `${trf.notes || ''} (Includes fee ৳${trf.fee})` : trf.notes,
+        });
+      }
+    });
+
+    // Sort descending by date, then id
+    return records.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  }
+
+  /**
+   * Aggregates monthly statistics & graph points for a specific account
+   */
+  public static getAccountMonthlyStats(
+    accountId: string,
+    year: number,
+    month: number // 1-12
+  ): AccountPeriodicStats {
+    const all = this.getAccountTransactions(accountId);
+    const monthStr = month < 10 ? `0${month}` : `${month}`;
+    const prefix = `${year}-${monthStr}`;
+
+    const monthTx = all.filter((t) => t.date && t.date.startsWith(prefix));
+
+    let totalCredits = 0;
+    let totalDebits = 0;
+    let creditCount = 0;
+    let debitCount = 0;
+
+    const daysInMonth = new Date(year, month, 0).getDate();
+    const dayMap: Record<number, { credit: number; debit: number }> = {};
+    for (let d = 1; d <= daysInMonth; d++) {
+      dayMap[d] = { credit: 0, debit: 0 };
+    }
+
+    monthTx.forEach((tx) => {
+      if (tx.type === 'credit') {
+        totalCredits += tx.amount;
+        creditCount++;
+      } else {
+        totalDebits += tx.amount;
+        debitCount++;
+      }
+
+      const day = parseInt(tx.date.split('-')[2] || '1', 10);
+      if (dayMap[day]) {
+        if (tx.type === 'credit') dayMap[day].credit += tx.amount;
+        else dayMap[day].debit += tx.amount;
+      }
+    });
+
+    // Group days into 5 intervals for crisp, readable graph
+    const chartData: CashFlowDataPoint[] = [];
+    const step = Math.ceil(daysInMonth / 5);
+    for (let d = 1; d <= daysInMonth; d += step) {
+      const endDay = Math.min(d + step - 1, daysInMonth);
+      let cSum = 0;
+      let dSum = 0;
+      for (let i = d; i <= endDay; i++) {
+        cSum += dayMap[i]?.credit || 0;
+        dSum += dayMap[i]?.debit || 0;
+      }
+      chartData.push({
+        label: `${d}-${endDay}`,
+        credit: cSum,
+        debit: dSum,
+        net: cSum - dSum,
+      });
+    }
+
+    const monthNames = [
+      'January', 'February', 'March', 'April', 'May', 'June',
+      'July', 'August', 'September', 'October', 'November', 'December'
+    ];
+
+    return {
+      periodLabel: `${monthNames[month - 1]} ${year}`,
+      totalCredits,
+      totalDebits,
+      netFlow: totalCredits - totalDebits,
+      creditCount,
+      debitCount,
+      chartData,
+      transactions: monthTx,
+    };
+  }
+
+  /**
+   * Aggregates yearly statistics & 12-month graph points for a specific account
+   */
+  public static getAccountYearlyStats(
+    accountId: string,
+    year: number
+  ): AccountPeriodicStats {
+    const all = this.getAccountTransactions(accountId);
+    const prefix = `${year}-`;
+
+    const yearTx = all.filter((t) => t.date && t.date.startsWith(prefix));
+
+    let totalCredits = 0;
+    let totalDebits = 0;
+    let creditCount = 0;
+    let debitCount = 0;
+
+    const shortMonths = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const monthlyMap: { credit: number; debit: number }[] = shortMonths.map(() => ({ credit: 0, debit: 0 }));
+
+    yearTx.forEach((tx) => {
+      if (tx.type === 'credit') {
+        totalCredits += tx.amount;
+        creditCount++;
+      } else {
+        totalDebits += tx.amount;
+        debitCount++;
+      }
+
+      const m = parseInt(tx.date.split('-')[1] || '1', 10) - 1;
+      if (monthlyMap[m]) {
+        if (tx.type === 'credit') monthlyMap[m].credit += tx.amount;
+        else monthlyMap[m].debit += tx.amount;
+      }
+    });
+
+    const chartData: CashFlowDataPoint[] = shortMonths.map((mName, idx) => ({
+      label: mName,
+      credit: monthlyMap[idx].credit,
+      debit: monthlyMap[idx].debit,
+      net: monthlyMap[idx].credit - monthlyMap[idx].debit,
+    }));
+
+    return {
+      periodLabel: `Year ${year}`,
+      totalCredits,
+      totalDebits,
+      netFlow: totalCredits - totalDebits,
+      creditCount,
+      debitCount,
+      chartData,
+      transactions: yearTx,
+    };
+  }
+
+  /**
+   * Aggregates all-time statistics for a specific account
+   */
+  public static getAccountAllTimeStats(accountId: string): AccountPeriodicStats {
+    const all = this.getAccountTransactions(accountId);
+
+    let totalCredits = 0;
+    let totalDebits = 0;
+    let creditCount = 0;
+    let debitCount = 0;
+
+    all.forEach((tx) => {
+      if (tx.type === 'credit') {
+        totalCredits += tx.amount;
+        creditCount++;
+      } else {
+        totalDebits += tx.amount;
+        debitCount++;
+      }
+    });
+
+    const yearMap: Record<string, { credit: number; debit: number }> = {};
+    all.forEach((tx) => {
+      const y = tx.date ? tx.date.split('-')[0] : '2026';
+      if (!yearMap[y]) yearMap[y] = { credit: 0, debit: 0 };
+      if (tx.type === 'credit') yearMap[y].credit += tx.amount;
+      else yearMap[y].debit += tx.amount;
+    });
+
+    const years = Object.keys(yearMap).sort();
+    const chartData: CashFlowDataPoint[] = (years.length > 0 ? years : ['2026']).map((y) => ({
+      label: y,
+      credit: yearMap[y]?.credit || 0,
+      debit: yearMap[y]?.debit || 0,
+      net: (yearMap[y]?.credit || 0) - (yearMap[y]?.debit || 0),
+    }));
+
+    return {
+      periodLabel: 'All-Time Total Activity',
+      totalCredits,
+      totalDebits,
+      netFlow: totalCredits - totalDebits,
+      creditCount,
+      debitCount,
+      chartData,
+      transactions: all,
+    };
   }
 }

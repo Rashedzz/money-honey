@@ -23,6 +23,7 @@ import {
   subscribeToBalanceUpdates,
 } from '../../src/services/transactionManager';
 import { UniversalEntryModal, EntryType } from '../../src/components/modals/UniversalEntryModal';
+import { AccountStatementView } from '../../src/components/accounts/AccountStatementView';
 
 export type { BankAccountItem };
 
@@ -41,6 +42,7 @@ export default function AccountsScreen() {
   );
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingAccount, setEditingAccount] = useState<BankAccountItem | null>(null);
+  const [expandedStatementAccountId, setExpandedStatementAccountId] = useState<string | null>(null);
 
   // Quick Action Modals
   const [entryModalVisible, setEntryModalVisible] = useState(false);
@@ -66,6 +68,10 @@ export default function AccountsScreen() {
 
   useEffect(() => {
     setAccounts(getStoredBankAccounts());
+    const unsub = subscribeToBalanceUpdates(() => {
+      setAccounts(getStoredBankAccounts());
+    });
+
     // Restore draft if user minimized app while filling
     const draft = FormDraftManager.loadDraft('account_form', {
       bankName: '',
@@ -91,6 +97,8 @@ export default function AccountsScreen() {
       setBankAppId(draft.bankAppId || '');
       if (draft.isOpen) setShowAddForm(true);
     }
+
+    return () => unsub();
   }, []);
 
   // Auto-save draft on any change when creating
@@ -643,6 +651,55 @@ export default function AccountsScreen() {
                     </TouchableOpacity>
                   )}
                 </View>
+
+                {/* 4. Cash Flow Graph, Debit & Credit Statement Toggle Button */}
+                <TouchableOpacity
+                  style={[
+                    styles.statementToggleBtn,
+                    expandedStatementAccountId === acc.id && styles.statementToggleBtnActive,
+                  ]}
+                  onPress={() =>
+                    setExpandedStatementAccountId(
+                      expandedStatementAccountId === acc.id ? null : acc.id
+                    )
+                  }
+                  activeOpacity={0.85}
+                >
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flex: 1 }}>
+                    <Ionicons
+                      name={expandedStatementAccountId === acc.id ? 'bar-chart' : 'analytics-outline'}
+                      size={15}
+                      color={expandedStatementAccountId === acc.id ? '#FFFFFF' : '#0284C7'}
+                    />
+                    <Text
+                      style={[
+                        styles.statementToggleText,
+                        expandedStatementAccountId === acc.id && styles.statementToggleTextActive,
+                      ]}
+                    >
+                      {expandedStatementAccountId === acc.id
+                        ? 'Hide Cash Flow Graph & Statement'
+                        : '📊 Cash Flow Graph, Debits, Credits & Statement'}
+                    </Text>
+                  </View>
+                  <Ionicons
+                    name={expandedStatementAccountId === acc.id ? 'chevron-up' : 'chevron-down'}
+                    size={16}
+                    color={expandedStatementAccountId === acc.id ? '#FFFFFF' : '#0284C7'}
+                  />
+                </TouchableOpacity>
+
+                {/* 5. Expandable Embedded Statement & Analytics */}
+                {expandedStatementAccountId === acc.id && (
+                  <AccountStatementView
+                    accountId={acc.id}
+                    accountName={acc.bankName}
+                    accountType={acc.accountType}
+                    currentBalance={acc.currentBalance}
+                    color={acc.color}
+                    onClose={() => setExpandedStatementAccountId(null)}
+                  />
+                )}
               </GlassCard>
             );
           })}
@@ -1218,5 +1275,29 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     borderRadius: Radius.md,
     alignItems: 'center',
+  },
+  statementToggleBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#F0F9FF',
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderRadius: Radius.md,
+    marginTop: 12,
+    borderWidth: 1,
+    borderColor: '#BAE6FD',
+  },
+  statementToggleBtnActive: {
+    backgroundColor: '#0284C7',
+    borderColor: '#0284C7',
+  },
+  statementToggleText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#0284C7',
+  },
+  statementToggleTextActive: {
+    color: '#FFFFFF',
   },
 });
