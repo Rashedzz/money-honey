@@ -600,6 +600,16 @@ export default function MasterDashboardScreen() {
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={[styles.actionPill, { borderColor: '#38BDF8', backgroundColor: '#F0F9FF' }]}
+                  onPress={() => setQrModalVisible(true)}
+                  activeOpacity={0.8}
+                >
+                  <Ionicons name="phone-portrait-outline" size={15} color="#0284C7" />
+                  <Text style={[styles.actionPillText, { color: '#0284C7', fontWeight: '800' }]}>
+                    📱 Mobile App (QR & PWA)
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.actionPill, { borderColor: '#38BDF8', backgroundColor: '#F0F9FF' }]}
                   onPress={() => setActiveTab('reports')}
                   activeOpacity={0.8}
                 >
@@ -976,23 +986,27 @@ const styles = StyleSheet.create({
   appShell: {
     flex: 1,
     flexDirection: 'row',
+    overflow: 'hidden',
   },
   mainContent: {
     flex: 1,
     display: 'flex',
     flexDirection: 'column',
     backgroundColor: '#F8FAFC',
+    overflow: 'hidden',
   },
   topUtilityBar: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: Spacing.lg,
-    paddingVertical: 12,
+    paddingVertical: 10,
     backgroundColor: '#FFFFFF',
     borderBottomWidth: 1,
     borderBottomColor: '#E2E8F0',
     zIndex: 10,
+    flexWrap: 'wrap',
+    gap: 10,
   },
   headerTitleRow: {
     flexDirection: 'row',
@@ -1019,7 +1033,8 @@ const styles = StyleSheet.create({
   topActions: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
+    flexWrap: 'wrap',
+    gap: 8,
   },
   authHeaderBtn: {
     flexDirection: 'row',
@@ -1041,17 +1056,21 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    paddingHorizontal: 12,
+    paddingHorizontal: 14,
     paddingVertical: 7,
     borderRadius: Radius.full,
-    backgroundColor: '#F0F9FF',
+    backgroundColor: '#0284C7',
     borderWidth: 1,
-    borderColor: '#BAE6FD',
+    borderColor: '#0284C7',
+    shadowColor: '#0284C7',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
   },
   pwaHeaderBtnText: {
     fontSize: 12,
     fontWeight: '800',
-    color: '#0284C7',
+    color: '#FFFFFF',
   },
   firebaseHeaderBtn: {
     flexDirection: 'row',

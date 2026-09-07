@@ -341,45 +341,43 @@ export const QuickenRegisterScreen: React.FC<QuickenRegisterScreenProps> = ({
         </View>
       </View>
 
-      {/* Account Selector Horizontal Strip */}
-      <View style={styles.accountStripContainer}>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.accountStrip}>
-          <TouchableOpacity
-            style={[styles.accountTab, selectedAccountId === 'all' && styles.accountTabActive]}
-            onPress={() => setSelectedAccountId('all')}
-            activeOpacity={0.8}
-          >
-            <Text style={[styles.accountTabText, selectedAccountId === 'all' && styles.accountTabTextActive]}>
-              All Accounts
-            </Text>
-            <View style={styles.accountBadgeCount}>
-              <Text style={styles.accountBadgeCountText}>{allRows.length}</Text>
-            </View>
-          </TouchableOpacity>
+      {/* Account Selector Wrapped Tabs (Zero Horizontal Scroll) */}
+      <View style={styles.accountStrip}>
+        <TouchableOpacity
+          style={[styles.accountTab, selectedAccountId === 'all' && styles.accountTabActive]}
+          onPress={() => setSelectedAccountId('all')}
+          activeOpacity={0.8}
+        >
+          <Text style={[styles.accountTabText, selectedAccountId === 'all' && styles.accountTabTextActive]}>
+            All Accounts
+          </Text>
+          <View style={styles.accountBadgeCount}>
+            <Text style={styles.accountBadgeCountText}>{allRows.length}</Text>
+          </View>
+        </TouchableOpacity>
 
-          {accounts.map((acc) => {
-            const isSelected = selectedAccountId === acc.id;
-            return (
-              <TouchableOpacity
-                key={acc.id}
-                style={[
-                  styles.accountTab,
-                  isSelected && styles.accountTabActive,
-                  { borderLeftColor: acc.color || '#0284C7', borderLeftWidth: 3 },
-                ]}
-                onPress={() => setSelectedAccountId(acc.id)}
-                activeOpacity={0.8}
-              >
-                <Text style={[styles.accountTabText, isSelected && styles.accountTabTextActive]}>
-                  {acc.bankName}
-                </Text>
-                <Text style={[styles.accountTabBal, isSelected && { color: '#0284C7' }]}>
-                  ৳ {acc.currentBalance.toLocaleString('en-IN')}
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
-        </ScrollView>
+        {accounts.map((acc) => {
+          const isSelected = selectedAccountId === acc.id;
+          return (
+            <TouchableOpacity
+              key={acc.id}
+              style={[
+                styles.accountTab,
+                isSelected && styles.accountTabActive,
+                { borderLeftColor: acc.color || '#0284C7', borderLeftWidth: 3 },
+              ]}
+              onPress={() => setSelectedAccountId(acc.id)}
+              activeOpacity={0.8}
+            >
+              <Text style={[styles.accountTabText, isSelected && styles.accountTabTextActive]}>
+                {acc.bankName}
+              </Text>
+              <Text style={[styles.accountTabBal, isSelected && { color: '#0284C7' }]}>
+                ৳ {acc.currentBalance.toLocaleString('en-IN')}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
       </View>
 
       {/* Filter and Search Ribbon */}
@@ -680,15 +678,14 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     color: '#FFFFFF',
   },
-  accountStripContainer: {
-    borderBottomWidth: 1,
-    borderBottomColor: '#E2E8F0',
-    paddingBottom: 4,
-  },
   accountStrip: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: 8,
     paddingVertical: 2,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E2E8F0',
+    paddingBottom: 8,
   },
   accountTab: {
     flexDirection: 'row',

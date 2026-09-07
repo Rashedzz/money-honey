@@ -243,6 +243,43 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
     setTimeout(() => setNotifTestStatus(''), 4000);
   };
 
+  const [copiedAppUrl, setCopiedAppUrl] = useState(false);
+  const appLiveUrl = 'https://rashedzz.github.io/money-honey/';
+  const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=240x240&data=${encodeURIComponent(
+    appLiveUrl
+  )}&bgcolor=0F172A&color=38BDF8&margin=1`;
+
+  const handleCopyAppUrl = () => {
+    if (typeof navigator !== 'undefined' && navigator.clipboard) {
+      navigator.clipboard.writeText(appLiveUrl);
+    }
+    setCopiedAppUrl(true);
+    setTimeout(() => setCopiedAppUrl(false), 2500);
+  };
+
+  const handleDownloadApk = () => {
+    const apkReleaseUrl = 'https://github.com/Rashedzz/money-honey/releases';
+    if (typeof window !== 'undefined') {
+      window.open(apkReleaseUrl, '_blank');
+    }
+  };
+
+  const handleInstallPwa = async () => {
+    if (typeof window !== 'undefined' && (window as any).deferredPWAInstallPrompt) {
+      try {
+        const prompt = (window as any).deferredPWAInstallPrompt;
+        prompt.prompt();
+        await prompt.userChoice;
+        (window as any).deferredPWAInstallPrompt = null;
+      } catch (e) {}
+    } else {
+      Alert.alert(
+        'Install Standalone App',
+        '• Android (Chrome): Tap menu (⋮) → "Install app".\n• iPhone (Safari): Tap Share (⎋) → "Add to Home Screen".\n• Laptop (Chrome/Edge): Click the Install icon in the URL address bar.'
+      );
+    }
+  };
+
   const handleManualBackup = async () => {
     const res = await triggerManualCloudBackup();
     setBackupMsg(res.message);
@@ -262,6 +299,87 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+      {/* 0. Dedicated Mobile App & PWA Installation Hub */}
+      <GlassCard style={styles.card} padding={20} glowColor="#0284C7">
+        <View style={styles.pwaHubHeader}>
+          <View style={styles.pwaHubIconBadge}>
+            <Ionicons name="phone-portrait-outline" size={22} color="#0284C7" />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.pwaTitle}>MOBILE APP & STANDALONE PWA INSTALLATION</Text>
+            <Text style={styles.pwaSubtitle}>
+              Run Money-Honey as an independent app on Android, iPhone, or Desktop
+            </Text>
+          </View>
+        </View>
+
+        <View style={styles.pwaHubContentRow}>
+          {/* QR Code Container */}
+          <View style={styles.pwaQrBox}>
+            <Image
+              source={{ uri: qrCodeUrl }}
+              style={styles.pwaQrImage}
+              resizeMode="contain"
+            />
+            <Text style={styles.pwaQrCaption}>Scan with phone camera</Text>
+          </View>
+
+          {/* Action Buttons & Quick Guide */}
+          <View style={styles.pwaActionCol}>
+            <View style={styles.pwaButtonRow}>
+              <TouchableOpacity
+                style={[styles.pwaActionBtn, { backgroundColor: '#0284C7', borderColor: '#0284C7' }]}
+                onPress={handleInstallPwa}
+                activeOpacity={0.85}
+              >
+                <Ionicons name="download-outline" size={16} color="#FFFFFF" />
+                <Text style={[styles.pwaActionBtnText, { color: '#FFFFFF' }]}>
+                  Install App on Device
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.pwaActionBtn}
+                onPress={handleDownloadApk}
+                activeOpacity={0.85}
+              >
+                <Ionicons name="logo-android" size={16} color="#10B981" />
+                <Text style={styles.pwaActionBtnText}>Android APK Release</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.pwaActionBtn}
+                onPress={handleCopyAppUrl}
+                activeOpacity={0.85}
+              >
+                <Ionicons
+                  name={copiedAppUrl ? 'checkmark-circle' : 'copy-outline'}
+                  size={16}
+                  color={copiedAppUrl ? '#10B981' : '#64748B'}
+                />
+                <Text style={styles.pwaActionBtnText}>
+                  {copiedAppUrl ? 'Copied URL!' : 'Copy Web App Link'}
+                </Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* Step-by-Step Instructions */}
+            <View style={styles.pwaInstructionBox}>
+              <Text style={styles.instructionTitle}>Quick Setup Instructions:</Text>
+              <Text style={styles.instructionItem}>
+                📱 <Text style={{ fontWeight: '800' }}>Android Chrome:</Text> Tap (⋮) in browser → tap "Install app".
+              </Text>
+              <Text style={styles.instructionItem}>
+                🍎 <Text style={{ fontWeight: '800' }}>Apple iPhone (Safari):</Text> Tap Share (⎋) → tap "Add to Home Screen".
+              </Text>
+              <Text style={styles.instructionItem}>
+                💻 <Text style={{ fontWeight: '800' }}>Desktop PC (Chrome/Edge):</Text> Click the (⊕) Install button inside the URL address bar.
+              </Text>
+            </View>
+          </View>
+        </View>
+      </GlassCard>
+
       {/* 1. Profile & Avatar Card */}
       <GlassCard style={styles.card} padding={20} glowColor={Colors.primary}>
         {/* Hidden Web File Input */}
@@ -1123,5 +1241,105 @@ const styles = StyleSheet.create({
   },
   archItem: {
     gap: 4,
+  },
+  pwaHubHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginBottom: Spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F1F5F9',
+    paddingBottom: Spacing.sm,
+  },
+  pwaTitle: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: '#0F172A',
+    letterSpacing: 0.3,
+  },
+  pwaSubtitle: {
+    fontSize: 12,
+    color: '#64748B',
+    marginTop: 2,
+  },
+  pwaHubIconBadge: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    backgroundColor: '#F0F9FF',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#BAE6FD',
+  },
+  pwaHubContentRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    flexWrap: 'wrap',
+    gap: 20,
+  },
+  pwaQrBox: {
+    alignItems: 'center',
+    backgroundColor: '#0F172A',
+    padding: 12,
+    borderRadius: Radius.md,
+    borderWidth: 1,
+    borderColor: '#334155',
+  },
+  pwaQrImage: {
+    width: 140,
+    height: 140,
+    borderRadius: 8,
+  },
+  pwaQrCaption: {
+    fontSize: 11,
+    color: '#94A3B8',
+    fontWeight: '600',
+    marginTop: 6,
+  },
+  pwaActionCol: {
+    flex: 1,
+    minWidth: 260,
+    gap: 12,
+  },
+  pwaButtonRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  pwaActionBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: Radius.full,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  pwaActionBtnText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#0F172A',
+  },
+  pwaInstructionBox: {
+    backgroundColor: '#F8FAFC',
+    borderRadius: Radius.md,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    gap: 6,
+  },
+  instructionTitle: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: '#0F172A',
+    marginBottom: 2,
+  },
+  instructionItem: {
+    fontSize: 12,
+    color: '#334155',
+    lineHeight: 18,
   },
 });

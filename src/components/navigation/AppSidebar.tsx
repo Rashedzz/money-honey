@@ -6,9 +6,10 @@ import {
   TouchableOpacity,
   ScrollView,
   Image,
+  Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { Colors, Typography, Spacing, Radius } from '../../theme';
+import { Colors, Spacing, Radius } from '../../theme';
 import { DynamicMoneyTree } from '../visuals/DynamicMoneyTree';
 import { BankAccountItem } from '../../services/transactionManager';
 
@@ -63,6 +64,7 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
   paperAssetsValuation = 0,
   physicalAssetsValuation = 0,
   onQuickEntryPress,
+  onOpenQrModal,
   onOpenAuthModal,
   isCollapsed,
   onToggleCollapse,
@@ -85,30 +87,31 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
     icon: keyof typeof Ionicons.glyphMap;
     badge?: string;
   }> = [
-    { id: 'dashboard', label: 'Home Dashboard', icon: 'grid-outline' },
-    { id: 'register', label: 'Quicken Register', icon: 'receipt-outline', badge: 'Active' },
+    { id: 'dashboard', label: 'Dashboard', icon: 'grid-outline' },
+    { id: 'register', label: 'Quicken Register', icon: 'receipt-outline', badge: 'Live' },
     { id: 'expenses', label: 'Spending & Budgets', icon: 'pie-chart-outline' },
-    { id: 'reports', label: 'Financial Statements', icon: 'document-text-outline', badge: 'IFRS / Intuit' },
-    { id: 'categories', label: 'Category & Budgets', icon: 'pricetags-outline', badge: 'Setup' },
+    { id: 'reports', label: 'Financial Statements', icon: 'document-text-outline', badge: 'IFRS' },
+    { id: 'categories', label: 'Category & Budgets', icon: 'pricetags-outline' },
+    { id: 'stocks', label: 'Stock Equities', icon: 'trending-up-outline', badge: 'DSE' },
     { id: 'schedules', label: 'Bills & Schedules', icon: 'calendar-outline' },
-    { id: 'settings', label: 'Settings & Vault', icon: 'settings-outline' },
+    { id: 'settings', label: 'Settings & Security', icon: 'settings-outline' },
   ];
 
   return (
     <View style={[styles.sidebar, isCollapsed && styles.sidebarCollapsed]}>
       {/* 1. Brand Header */}
       <View style={[styles.brandHeader, isCollapsed && styles.brandHeaderCollapsed]}>
-        {!isCollapsed && (
+        {!isCollapsed ? (
           <View style={styles.brandRow}>
-            <DynamicMoneyTree size={40} />
+            <DynamicMoneyTree size={36} />
             <View style={styles.brandTextCol}>
-              <Text style={styles.brandTitle}>Money-Honey</Text>
-              <Text style={styles.brandTag}>Quicken Executive Suite</Text>
+              <Text style={styles.brandTitle} numberOfLines={1}>Money-Honey</Text>
+              <Text style={styles.brandTag} numberOfLines={1}>Quicken Deluxe Suite</Text>
             </View>
           </View>
+        ) : (
+          <DynamicMoneyTree size={32} />
         )}
-
-        {isCollapsed && <DynamicMoneyTree size={34} />}
 
         <TouchableOpacity
           style={styles.collapseBtn}
@@ -117,246 +120,57 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
         >
           <Ionicons
             name={isCollapsed ? 'chevron-forward' : 'chevron-back'}
-            size={16}
+            size={14}
             color="#94A3B8"
           />
         </TouchableOpacity>
       </View>
 
-      {/* 2. Quicken Net Worth Mini Pill Header (Desktop uncollapsed) */}
+      {/* 2. Quicken Net Worth Mini Card (Zero Horizontal Overflow) */}
       {!isCollapsed && (
         <View style={styles.netWorthWidget}>
           <View style={styles.netWorthHeader}>
-            <Text style={styles.netWorthLabel}>NET WORTH</Text>
+            <Text style={styles.netWorthLabel}>CONSOLIDATED NET WORTH</Text>
             <View style={styles.liveIndicator}>
               <View style={styles.liveDot} />
               <Text style={styles.liveText}>LIVE</Text>
             </View>
           </View>
-          <Text style={styles.netWorthAmount}>৳ {netWorth.toLocaleString('en-IN')}</Text>
+          <Text style={styles.netWorthAmount} numberOfLines={1}>
+            ৳ {netWorth.toLocaleString('en-IN')}
+          </Text>
           <View style={styles.netWorthBreakdown}>
-            <Text style={styles.assetsText}>Assets: ৳{totalAssets.toLocaleString('en-IN')}</Text>
-            <Text style={styles.debtText}>Debt: ৳{totalDebt.toLocaleString('en-IN')}</Text>
+            <Text style={styles.assetsText} numberOfLines={1}>
+              Assets: ৳{(totalAssets / 100000).toFixed(1)}L
+            </Text>
+            <Text style={styles.debtText} numberOfLines={1}>
+              Debt: ৳{(totalDebt / 100000).toFixed(1)}L
+            </Text>
           </View>
         </View>
       )}
 
-      {/* 3. New Transaction Action Button */}
+      {/* 3. New Transaction Quick Action */}
       <View style={styles.quickEntryWrapper}>
         <TouchableOpacity
           style={[styles.quickEntryBtn, isCollapsed && styles.quickEntryBtnCollapsed]}
           onPress={onQuickEntryPress}
           activeOpacity={0.85}
         >
-          <Ionicons name="add-circle" size={18} color="#0284C7" />
+          <Ionicons name="add-circle" size={17} color="#FFFFFF" />
           {!isCollapsed && <Text style={styles.quickEntryText}>+ New Transaction</Text>}
         </TouchableOpacity>
       </View>
 
-      {/* 4. Quicken Account Bar & Workspaces Scroll */}
+      {/* 4. Scrollable Navigation (No horizontal scroll, strictly vertical) */}
       <ScrollView
-        showsVerticalScrollIndicator={true}
+        showsVerticalScrollIndicator={false}
         style={styles.menuList}
-        contentContainerStyle={{ paddingBottom: 24, flexGrow: 1 }}
+        contentContainerStyle={styles.menuListContent}
       >
-        {/* SECTION: BANKING & CASH */}
-        {!isCollapsed ? (
-          <View style={styles.accountSection}>
-            <TouchableOpacity
-              style={styles.sectionHeader}
-              onPress={() => setBankingExpanded(!bankingExpanded)}
-              activeOpacity={0.7}
-            >
-              <View style={styles.sectionHeaderLeft}>
-                <Ionicons
-                  name={bankingExpanded ? 'chevron-down' : 'chevron-forward'}
-                  size={14}
-                  color="#94A3B8"
-                />
-                <Text style={styles.sectionTitle}>BANKING & CASH</Text>
-              </View>
-              <Text style={styles.sectionSubtotal}>
-                ৳ {totalBanking.toLocaleString('en-IN')}
-              </Text>
-            </TouchableOpacity>
-
-            {bankingExpanded && (
-              <View style={styles.accountList}>
-                {bankAccounts.map((acc) => {
-                  return (
-                    <TouchableOpacity
-                      key={acc.id}
-                      style={[
-                        styles.accountRow,
-                        hoveredItem === acc.id && styles.accountRowHovered,
-                      ]}
-                      onPress={() => {
-                        if (onSelectAccountForRegister) {
-                          onSelectAccountForRegister(acc.id);
-                        } else {
-                          onSelectTab('register');
-                        }
-                      }}
-                      activeOpacity={0.7}
-                      // @ts-ignore
-                      onMouseEnter={() => setHoveredItem(acc.id)}
-                      onMouseLeave={() => setHoveredItem(null)}
-                    >
-                      <View style={styles.accountRowLeft}>
-                        <View style={[styles.accColorBar, { backgroundColor: acc.color || '#0284C7' }]} />
-                        <Text style={styles.accName} numberOfLines={1}>
-                          {acc.bankName}
-                        </Text>
-                      </View>
-                      <Text style={styles.accBalance}>
-                        ৳ {acc.currentBalance.toLocaleString('en-IN')}
-                      </Text>
-                    </TouchableOpacity>
-                  );
-                })}
-              </View>
-            )}
-          </View>
-        ) : (
-          <TouchableOpacity
-            style={[styles.collapsedGroupIcon, activeTab === 'accounts' && styles.collapsedGroupIconActive]}
-            onPress={() => onSelectTab('accounts')}
-          >
-            <Ionicons name="wallet-outline" size={20} color="#FFFFFF" />
-          </TouchableOpacity>
-        )}
-
-        {/* SECTION: INVESTING */}
-        {!isCollapsed ? (
-          <View style={styles.accountSection}>
-            <TouchableOpacity
-              style={styles.sectionHeader}
-              onPress={() => setInvestingExpanded(!investingExpanded)}
-              activeOpacity={0.7}
-            >
-              <View style={styles.sectionHeaderLeft}>
-                <Ionicons
-                  name={investingExpanded ? 'chevron-down' : 'chevron-forward'}
-                  size={14}
-                  color="#94A3B8"
-                />
-                <Text style={styles.sectionTitle}>INVESTING</Text>
-              </View>
-              <Text style={styles.sectionSubtotal}>
-                ৳ {totalInvesting.toLocaleString('en-IN')}
-              </Text>
-            </TouchableOpacity>
-
-            {investingExpanded && (
-              <View style={styles.accountList}>
-                <TouchableOpacity
-                  style={[styles.accountRow, activeTab === 'stocks' && styles.accountRowActive]}
-                  onPress={() => onSelectTab('stocks')}
-                  activeOpacity={0.7}
-                >
-                  <View style={styles.accountRowLeft}>
-                    <View style={[styles.accColorBar, { backgroundColor: '#10B981' }]} />
-                    <Text style={styles.accName}>DSE/CSE Equities</Text>
-                  </View>
-                  <Text style={styles.accBalance}>
-                    ৳ {stocksValuation.toLocaleString('en-IN')}
-                  </Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  style={[styles.accountRow, activeTab === 'paper_assets' && styles.accountRowActive]}
-                  onPress={() => onSelectTab('paper_assets')}
-                  activeOpacity={0.7}
-                >
-                  <View style={styles.accountRowLeft}>
-                    <View style={[styles.accColorBar, { backgroundColor: '#8B5CF6' }]} />
-                    <Text style={styles.accName}>Sanchaypatra & FDR</Text>
-                  </View>
-                  <Text style={styles.accBalance}>
-                    ৳ {paperAssetsValuation.toLocaleString('en-IN')}
-                  </Text>
-                </TouchableOpacity>
-              </View>
-            )}
-          </View>
-        ) : (
-          <TouchableOpacity
-            style={[styles.collapsedGroupIcon, activeTab === 'stocks' && styles.collapsedGroupIconActive]}
-            onPress={() => onSelectTab('stocks')}
-          >
-            <Ionicons name="trending-up-outline" size={20} color="#FFFFFF" />
-          </TouchableOpacity>
-        )}
-
-        {/* SECTION: PROPERTY & DEBT */}
-        {!isCollapsed ? (
-          <View style={styles.accountSection}>
-            <TouchableOpacity
-              style={styles.sectionHeader}
-              onPress={() => setPropertyExpanded(!propertyExpanded)}
-              activeOpacity={0.7}
-            >
-              <View style={styles.sectionHeaderLeft}>
-                <Ionicons
-                  name={propertyExpanded ? 'chevron-down' : 'chevron-forward'}
-                  size={14}
-                  color="#94A3B8"
-                />
-                <Text style={styles.sectionTitle}>PROPERTY & DEBT</Text>
-              </View>
-              <Text style={styles.sectionSubtotal}>
-                ৳ {totalProperty.toLocaleString('en-IN')}
-              </Text>
-            </TouchableOpacity>
-
-            {propertyExpanded && (
-              <View style={styles.accountList}>
-                <TouchableOpacity
-                  style={[styles.accountRow, activeTab === 'physical_assets' && styles.accountRowActive]}
-                  onPress={() => onSelectTab('physical_assets')}
-                  activeOpacity={0.7}
-                >
-                  <View style={styles.accountRowLeft}>
-                    <View style={[styles.accColorBar, { backgroundColor: '#D97706' }]} />
-                    <Text style={styles.accName}>Physical Assets</Text>
-                  </View>
-                  <Text style={styles.accBalance}>
-                    ৳ {physicalAssetsValuation.toLocaleString('en-IN')}
-                  </Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  style={[styles.accountRow, activeTab === 'loans' && styles.accountRowActive]}
-                  onPress={() => onSelectTab('loans')}
-                  activeOpacity={0.7}
-                >
-                  <View style={styles.accountRowLeft}>
-                    <View style={[styles.accColorBar, { backgroundColor: '#EF4444' }]} />
-                    <Text style={styles.accName}>Loans & Liabilities</Text>
-                  </View>
-                  <Text style={[styles.accBalance, { color: '#EF4444' }]}>
-                    -৳ {totalDebt.toLocaleString('en-IN')}
-                  </Text>
-                </TouchableOpacity>
-              </View>
-            )}
-          </View>
-        ) : (
-          <TouchableOpacity
-            style={[styles.collapsedGroupIcon, activeTab === 'loans' && styles.collapsedGroupIconActive]}
-            onPress={() => onSelectTab('loans')}
-          >
-            <Ionicons name="card-outline" size={20} color="#FFFFFF" />
-          </TouchableOpacity>
-        )}
-
-        {/* SECTION: QUICKEN WORKSPACES */}
-        <View style={[styles.accountSection, { marginTop: 12 }]}>
-          {!isCollapsed && (
-            <View style={styles.sectionHeaderStatic}>
-              <Text style={styles.sectionTitle}>QUICKEN WORKSPACES</Text>
-            </View>
-          )}
+        {/* WORKSPACES */}
+        <View style={styles.navGroup}>
+          {!isCollapsed && <Text style={styles.groupHeaderTitle}>WORKSPACES</Text>}
 
           {workspaceMenuItems.map((item) => {
             const isActive = activeTab === item.id;
@@ -377,10 +191,12 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
                 onMouseEnter={() => setHoveredItem(item.id)}
                 onMouseLeave={() => setHoveredItem(null)}
               >
+                {isActive && <View style={styles.activeBar} />}
+
                 <Ionicons
                   name={item.icon}
-                  size={19}
-                  color={isActive ? '#0284C7' : isHovered ? '#38BDF8' : '#94A3B8'}
+                  size={18}
+                  color={isActive ? '#38BDF8' : isHovered ? '#0284C7' : '#94A3B8'}
                 />
 
                 {!isCollapsed && (
@@ -391,43 +207,203 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
                         isActive && styles.navLabelActive,
                         isHovered && styles.navLabelHovered,
                       ]}
+                      numberOfLines={1}
                     >
                       {item.label}
                     </Text>
                     {item.badge && (
                       <View style={[styles.badge, isActive && styles.badgeActive]}>
-                        <Text style={[styles.badgeText, isActive && { color: '#0284C7' }]}>
+                        <Text style={[styles.badgeText, isActive && { color: '#38BDF8' }]}>
                           {item.badge}
                         </Text>
                       </View>
                     )}
                   </View>
                 )}
-
-                {isActive && <View style={styles.activeIndicatorBar} />}
               </TouchableOpacity>
             );
           })}
         </View>
-      </ScrollView>
 
-      {/* 5. Bottom Section: Storage State & User Pill (PWA Download cleanly removed to top header) */}
-      <View style={styles.footerSection}>
+        {/* ACCOUNTS ACCORDION */}
         {!isCollapsed && (
-          <View style={styles.storageStatusRow}>
-            <View
-              style={[
-                styles.statusDot,
-                { backgroundColor: isOnline ? '#10B981' : '#F59E0B' },
-              ]}
-            />
-            <Text style={styles.storageStatusText}>
-              {isOnline ? 'Online Synced' : 'Local Storage Active'}
-            </Text>
+          <View style={[styles.navGroup, { marginTop: 12 }]}>
+            <Text style={styles.groupHeaderTitle}>ACCOUNTS & BALANCES</Text>
+
+            {/* BANKING */}
+            <TouchableOpacity
+              style={styles.accordionHeader}
+              onPress={() => setBankingExpanded(!bankingExpanded)}
+              activeOpacity={0.7}
+            >
+              <View style={styles.accordionHeaderLeft}>
+                <Ionicons
+                  name={bankingExpanded ? 'chevron-down' : 'chevron-forward'}
+                  size={12}
+                  color="#94A3B8"
+                />
+                <Text style={styles.accordionTitle}>BANKING & CASH</Text>
+              </View>
+              <Text style={styles.accordionSubtotal} numberOfLines={1}>
+                ৳ {totalBanking.toLocaleString('en-IN')}
+              </Text>
+            </TouchableOpacity>
+
+            {bankingExpanded && (
+              <View style={styles.accountSubList}>
+                {bankAccounts.map((acc) => (
+                  <TouchableOpacity
+                    key={acc.id}
+                    style={[styles.accountItemRow, hoveredItem === acc.id && styles.accountItemRowHovered]}
+                    onPress={() => {
+                      if (onSelectAccountForRegister) {
+                        onSelectAccountForRegister(acc.id);
+                      } else {
+                        onSelectTab('register');
+                      }
+                    }}
+                    activeOpacity={0.7}
+                    // @ts-ignore
+                    onMouseEnter={() => setHoveredItem(acc.id)}
+                    onMouseLeave={() => setHoveredItem(null)}
+                  >
+                    <View style={styles.accountItemLeft}>
+                      <View style={[styles.accountColorDot, { backgroundColor: acc.color || '#0284C7' }]} />
+                      <Text style={styles.accountItemName} numberOfLines={1}>
+                        {acc.bankName}
+                      </Text>
+                    </View>
+                    <Text style={styles.accountItemBal} numberOfLines={1}>
+                      ৳ {acc.currentBalance.toLocaleString('en-IN')}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            )}
+
+            {/* INVESTING */}
+            <TouchableOpacity
+              style={styles.accordionHeader}
+              onPress={() => setInvestingExpanded(!investingExpanded)}
+              activeOpacity={0.7}
+            >
+              <View style={styles.accordionHeaderLeft}>
+                <Ionicons
+                  name={investingExpanded ? 'chevron-down' : 'chevron-forward'}
+                  size={12}
+                  color="#94A3B8"
+                />
+                <Text style={styles.accordionTitle}>INVESTING</Text>
+              </View>
+              <Text style={styles.accordionSubtotal} numberOfLines={1}>
+                ৳ {totalInvesting.toLocaleString('en-IN')}
+              </Text>
+            </TouchableOpacity>
+
+            {investingExpanded && (
+              <View style={styles.accountSubList}>
+                <TouchableOpacity
+                  style={[styles.accountItemRow, activeTab === 'stocks' && styles.accountItemRowActive]}
+                  onPress={() => onSelectTab('stocks')}
+                  activeOpacity={0.7}
+                >
+                  <View style={styles.accountItemLeft}>
+                    <View style={[styles.accountColorDot, { backgroundColor: '#10B981' }]} />
+                    <Text style={styles.accountItemName} numberOfLines={1}>DSE Equities</Text>
+                  </View>
+                  <Text style={styles.accountItemBal} numberOfLines={1}>
+                    ৳ {stocksValuation.toLocaleString('en-IN')}
+                  </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[styles.accountItemRow, activeTab === 'paper_assets' && styles.accountItemRowActive]}
+                  onPress={() => onSelectTab('paper_assets')}
+                  activeOpacity={0.7}
+                >
+                  <View style={styles.accountItemLeft}>
+                    <View style={[styles.accountColorDot, { backgroundColor: '#8B5CF6' }]} />
+                    <Text style={styles.accountItemName} numberOfLines={1}>Sanchaypatra & FDR</Text>
+                  </View>
+                  <Text style={styles.accountItemBal} numberOfLines={1}>
+                    ৳ {paperAssetsValuation.toLocaleString('en-IN')}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            )}
+
+            {/* PROPERTY & DEBT */}
+            <TouchableOpacity
+              style={styles.accordionHeader}
+              onPress={() => setPropertyExpanded(!propertyExpanded)}
+              activeOpacity={0.7}
+            >
+              <View style={styles.accordionHeaderLeft}>
+                <Ionicons
+                  name={propertyExpanded ? 'chevron-down' : 'chevron-forward'}
+                  size={12}
+                  color="#94A3B8"
+                />
+                <Text style={styles.accordionTitle}>PROPERTY & DEBT</Text>
+              </View>
+              <Text style={styles.accordionSubtotal} numberOfLines={1}>
+                ৳ {totalProperty.toLocaleString('en-IN')}
+              </Text>
+            </TouchableOpacity>
+
+            {propertyExpanded && (
+              <View style={styles.accountSubList}>
+                <TouchableOpacity
+                  style={[styles.accountItemRow, activeTab === 'physical_assets' && styles.accountItemRowActive]}
+                  onPress={() => onSelectTab('physical_assets')}
+                  activeOpacity={0.7}
+                >
+                  <View style={styles.accountItemLeft}>
+                    <View style={[styles.accountColorDot, { backgroundColor: '#D97706' }]} />
+                    <Text style={styles.accountItemName} numberOfLines={1}>Physical Assets</Text>
+                  </View>
+                  <Text style={styles.accountItemBal} numberOfLines={1}>
+                    ৳ {physicalAssetsValuation.toLocaleString('en-IN')}
+                  </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[styles.accountItemRow, activeTab === 'loans' && styles.accountItemRowActive]}
+                  onPress={() => onSelectTab('loans')}
+                  activeOpacity={0.7}
+                >
+                  <View style={styles.accountItemLeft}>
+                    <View style={[styles.accountColorDot, { backgroundColor: '#EF4444' }]} />
+                    <Text style={styles.accountItemName} numberOfLines={1}>Debts & Loans</Text>
+                  </View>
+                  <Text style={[styles.accountItemBal, { color: '#EF4444' }]} numberOfLines={1}>
+                    -৳ {totalDebt.toLocaleString('en-IN')}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            )}
           </View>
         )}
+      </ScrollView>
 
-        {/* User Profile Trigger */}
+      {/* 5. Footer: Dedicated Mobile App Utility Button + User Profile */}
+      <View style={styles.footerSection}>
+        {/* Eye-Catching Mobile App & PWA Trigger in Sidebar Utility */}
+        {!isCollapsed && onOpenQrModal && (
+          <TouchableOpacity
+            style={styles.mobileAppUtilityBtn}
+            onPress={onOpenQrModal}
+            activeOpacity={0.85}
+          >
+            <Ionicons name="phone-portrait-outline" size={15} color="#38BDF8" />
+            <Text style={styles.mobileAppUtilityText} numberOfLines={1}>
+              Install Mobile App (PWA)
+            </Text>
+            <Ionicons name="chevron-forward" size={12} color="#64748B" />
+          </TouchableOpacity>
+        )}
+
+        {/* User Profile Bar */}
         <TouchableOpacity
           style={[styles.userPill, isCollapsed && styles.userPillCollapsed]}
           onPress={onOpenAuthModal}
@@ -446,10 +422,15 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
                 <Text style={styles.userName} numberOfLines={1}>
                   {userProfile.name}
                 </Text>
-                <Ionicons name="shield-checkmark" size={12} color="#10B981" />
+                <View
+                  style={[
+                    styles.statusDot,
+                    { backgroundColor: isOnline ? '#10B981' : '#F59E0B' },
+                  ]}
+                />
               </View>
-              <Text style={styles.userRole}>
-                @{userProfile.id || 'rashed01'} • Switch
+              <Text style={styles.userRole} numberOfLines={1}>
+                @{userProfile.id || 'rashed01'} • {isOnline ? 'Online' : 'Local'}
               </Text>
             </View>
           )}
@@ -461,34 +442,39 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
 
 const styles = StyleSheet.create({
   sidebar: {
-    width: 280,
-    backgroundColor: '#0F172A', // Deep Quicken Slate / Navy
-    borderRightWidth: 1.5,
-    borderRightColor: '#1E293B',
+    width: 260,
+    minWidth: 260,
+    maxWidth: 260,
+    backgroundColor: '#0B132B', // Deep Quicken Obsidian Navy
+    borderRightWidth: 1,
+    borderRightColor: 'rgba(255, 255, 255, 0.08)',
     display: 'flex',
     flexDirection: 'column',
     height: '100%',
     paddingVertical: Spacing.md,
     zIndex: 40,
+    overflow: 'hidden',
   },
   sidebarCollapsed: {
-    width: 72,
+    width: 68,
+    minWidth: 68,
+    maxWidth: 68,
   },
   brandHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: Spacing.md,
-    paddingBottom: Spacing.sm,
+    paddingHorizontal: 14,
+    paddingBottom: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#1E293B',
-    marginBottom: Spacing.xs,
+    borderBottomColor: 'rgba(255, 255, 255, 0.08)',
+    marginBottom: 8,
   },
   brandHeaderCollapsed: {
     justifyContent: 'center',
     paddingHorizontal: 6,
     flexDirection: 'column',
-    gap: 10,
+    gap: 8,
   },
   brandRow: {
     flexDirection: 'row',
@@ -501,7 +487,7 @@ const styles = StyleSheet.create({
   },
   brandTitle: {
     fontSize: 16,
-    fontWeight: '900',
+    fontWeight: '800',
     color: '#FFFFFF',
     letterSpacing: -0.3,
   },
@@ -509,27 +495,27 @@ const styles = StyleSheet.create({
     fontSize: 10,
     color: '#38BDF8',
     fontWeight: '700',
-    textTransform: 'uppercase',
     letterSpacing: 0.5,
+    marginTop: 1,
   },
   collapseBtn: {
-    width: 28,
-    height: 28,
+    width: 26,
+    height: 26,
     borderRadius: 6,
-    backgroundColor: '#1E293B',
+    backgroundColor: '#111D38',
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#334155',
+    borderColor: 'rgba(255, 255, 255, 0.1)',
   },
   netWorthWidget: {
-    marginHorizontal: Spacing.md,
-    marginVertical: Spacing.xs,
-    backgroundColor: '#1E293B',
+    marginHorizontal: 12,
+    marginVertical: 4,
+    backgroundColor: '#111D38',
     borderRadius: Radius.md,
     padding: 10,
     borderWidth: 1,
-    borderColor: '#334155',
+    borderColor: 'rgba(255, 255, 255, 0.08)',
   },
   netWorthHeader: {
     flexDirection: 'row',
@@ -537,7 +523,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   netWorthLabel: {
-    fontSize: 10,
+    fontSize: 9,
     fontWeight: '800',
     color: '#94A3B8',
     letterSpacing: 0.8,
@@ -554,7 +540,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#10B981',
   },
   liveText: {
-    fontSize: 9,
+    fontSize: 8,
     fontWeight: '800',
     color: '#10B981',
   },
@@ -581,19 +567,21 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   quickEntryWrapper: {
-    paddingHorizontal: Spacing.md,
-    marginVertical: Spacing.xs,
+    paddingHorizontal: 12,
+    marginVertical: 6,
   },
   quickEntryBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 8,
-    backgroundColor: '#1E293B',
-    borderWidth: 1.5,
-    borderColor: '#0284C7',
+    gap: 6,
+    backgroundColor: '#0284C7',
     paddingVertical: 9,
     borderRadius: Radius.md,
+    shadowColor: '#0284C7',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
   },
   quickEntryBtnCollapsed: {
     paddingHorizontal: 0,
@@ -602,104 +590,32 @@ const styles = StyleSheet.create({
   quickEntryText: {
     fontSize: 13,
     fontWeight: '800',
-    color: '#38BDF8',
+    color: '#FFFFFF',
   },
   menuList: {
     flex: 1,
-    paddingHorizontal: Spacing.sm,
-    marginTop: 4,
+    paddingHorizontal: 10,
+    overflow: 'hidden',
   },
-  accountSection: {
-    marginBottom: 8,
+  menuListContent: {
+    paddingBottom: 20,
   },
-  sectionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 8,
-    paddingVertical: 6,
-    backgroundColor: '#1E293B',
-    borderRadius: 6,
-    marginBottom: 2,
+  navGroup: {
+    marginBottom: 4,
   },
-  sectionHeaderStatic: {
-    paddingHorizontal: 8,
-    paddingVertical: 6,
-    marginBottom: 2,
-  },
-  sectionHeaderLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  sectionTitle: {
-    fontSize: 10,
+  groupHeaderTitle: {
+    fontSize: 9,
     fontWeight: '800',
-    color: '#94A3B8',
-    letterSpacing: 0.6,
-  },
-  sectionSubtotal: {
-    fontSize: 10,
-    fontWeight: '800',
-    color: '#E2E8F0',
-  },
-  accountList: {
-    paddingLeft: 4,
-    gap: 1,
-  },
-  accountRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: 6,
+    color: '#64748B',
+    letterSpacing: 0.8,
     paddingHorizontal: 8,
-    borderRadius: 6,
-  },
-  accountRowHovered: {
-    backgroundColor: '#1E293B',
-  },
-  accountRowActive: {
-    backgroundColor: 'rgba(2, 132, 199, 0.2)',
-  },
-  accountRowLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    flex: 1,
-  },
-  accColorBar: {
-    width: 3,
-    height: 14,
-    borderRadius: 1.5,
-  },
-  accName: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#E2E8F0',
-    flex: 1,
-  },
-  accBalance: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#F8FAFC',
-  },
-  collapsedGroupIcon: {
-    width: 48,
-    height: 40,
-    borderRadius: Radius.md,
-    alignItems: 'center',
-    justifyContent: 'center',
-    alignSelf: 'center',
-    marginVertical: 4,
-  },
-  collapsedGroupIconActive: {
-    backgroundColor: '#0284C7',
+    marginBottom: 4,
   },
   navItem: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
-    paddingVertical: 8,
+    paddingVertical: 7,
     paddingHorizontal: 10,
     borderRadius: Radius.md,
     marginVertical: 1,
@@ -710,10 +626,19 @@ const styles = StyleSheet.create({
     paddingHorizontal: 0,
   },
   navItemActive: {
-    backgroundColor: '#1E293B',
+    backgroundColor: 'rgba(2, 132, 199, 0.16)',
   },
   navItemHovered: {
-    backgroundColor: 'rgba(30, 41, 59, 0.7)',
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+  },
+  activeBar: {
+    position: 'absolute',
+    left: 0,
+    top: 6,
+    bottom: 6,
+    width: 3,
+    backgroundColor: '#38BDF8',
+    borderRadius: 1.5,
   },
   labelRow: {
     flex: 1,
@@ -722,7 +647,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   navLabel: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '600',
     color: '#94A3B8',
   },
@@ -734,80 +659,140 @@ const styles = StyleSheet.create({
     color: '#38BDF8',
   },
   badge: {
-    backgroundColor: '#1E293B',
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
     paddingHorizontal: 6,
-    paddingVertical: 2,
+    paddingVertical: 1,
     borderRadius: 4,
-    borderWidth: 1,
-    borderColor: '#334155',
   },
   badgeActive: {
-    borderColor: '#0284C7',
-    backgroundColor: 'rgba(2, 132, 199, 0.2)',
+    backgroundColor: 'rgba(2, 132, 199, 0.3)',
   },
   badgeText: {
     fontSize: 9,
     fontWeight: '800',
     color: '#94A3B8',
   },
-  activeIndicatorBar: {
-    position: 'absolute',
-    left: 0,
-    top: 6,
-    bottom: 6,
-    width: 3,
-    backgroundColor: '#0284C7',
-    borderRadius: 1.5,
+  accordionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 8,
+    paddingVertical: 5,
+    backgroundColor: '#111D38',
+    borderRadius: 5,
+    marginTop: 4,
+    marginBottom: 2,
   },
-  footerSection: {
-    paddingHorizontal: Spacing.md,
-    paddingTop: Spacing.sm,
-    borderTopWidth: 1,
-    borderTopColor: '#1E293B',
-    gap: 8,
+  accordionHeaderLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
   },
-  storageStatusRow: {
+  accordionTitle: {
+    fontSize: 9,
+    fontWeight: '800',
+    color: '#94A3B8',
+    letterSpacing: 0.6,
+  },
+  accordionSubtotal: {
+    fontSize: 9,
+    fontWeight: '800',
+    color: '#E2E8F0',
+  },
+  accountSubList: {
+    paddingLeft: 4,
+    gap: 1,
+  },
+  accountItemRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 5,
+    paddingHorizontal: 8,
+    borderRadius: 5,
+  },
+  accountItemRowHovered: {
+    backgroundColor: 'rgba(255, 255, 255, 0.04)',
+  },
+  accountItemRowActive: {
+    backgroundColor: 'rgba(2, 132, 199, 0.15)',
+  },
+  accountItemLeft: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    paddingHorizontal: 4,
+    flex: 1,
+    minWidth: 0,
   },
-  statusDot: {
-    width: 7,
-    height: 7,
-    borderRadius: 3.5,
+  accountColorDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
   },
-  storageStatusText: {
+  accountItemName: {
     fontSize: 11,
     fontWeight: '600',
-    color: '#64748B',
+    color: '#CBD5E1',
+    flex: 1,
+  },
+  accountItemBal: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#F1F5F9',
+    flexShrink: 0,
+    marginLeft: 6,
+  },
+  footerSection: {
+    paddingHorizontal: 12,
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255, 255, 255, 0.08)',
+    gap: 6,
+  },
+  mobileAppUtilityBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#111D38',
+    paddingVertical: 7,
+    paddingHorizontal: 10,
+    borderRadius: Radius.md,
+    borderWidth: 1,
+    borderColor: 'rgba(56, 189, 248, 0.3)',
+  },
+  mobileAppUtilityText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#38BDF8',
+    flex: 1,
+    marginLeft: 6,
   },
   userPill: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
-    backgroundColor: '#1E293B',
-    padding: 8,
+    gap: 8,
+    backgroundColor: '#111D38',
+    padding: 7,
     borderRadius: Radius.md,
     borderWidth: 1,
-    borderColor: '#334155',
+    borderColor: 'rgba(255, 255, 255, 0.08)',
   },
   userPillCollapsed: {
     justifyContent: 'center',
     padding: 6,
   },
   avatar: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: '#334155',
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: '#1E293B',
     justifyContent: 'center',
     alignItems: 'center',
   },
   avatarImg: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
   },
   userMeta: {
     flex: 1,
@@ -815,12 +800,18 @@ const styles = StyleSheet.create({
   userNameRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    justifyContent: 'space-between',
   },
   userName: {
     fontSize: 12,
     fontWeight: '800',
     color: '#FFFFFF',
+    flex: 1,
+  },
+  statusDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
   },
   userRole: {
     fontSize: 10,

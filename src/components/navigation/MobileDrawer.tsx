@@ -137,8 +137,8 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({
 
             {/* Navigation Menu Items */}
             <ScrollView
-              style={[styles.menuScroll, { overflow: 'scroll' } as any]}
-              showsVerticalScrollIndicator={true}
+              style={[styles.menuScroll, { overflow: 'hidden' }]}
+              showsVerticalScrollIndicator={false}
               contentContainerStyle={{ paddingBottom: 20 }}
             >
               {menuItems.map((item) => {
@@ -179,6 +179,24 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({
                   </TouchableOpacity>
                 );
               })}
+
+              {/* Install Mobile App Utility Link */}
+              {onOpenQrModal && (
+                <TouchableOpacity
+                  style={styles.mobileAppUtilityBtn}
+                  onPress={() => {
+                    onClose();
+                    onOpenQrModal();
+                  }}
+                  activeOpacity={0.85}
+                >
+                  <Ionicons name="phone-portrait-outline" size={18} color="#38BDF8" />
+                  <Text style={styles.mobileAppUtilityText}>
+                    Install Mobile App / PWA
+                  </Text>
+                  <Ionicons name="chevron-forward" size={14} color="#64748B" />
+                </TouchableOpacity>
+              )}
             </ScrollView>
           </View>
         </SafeAreaView>
@@ -340,5 +358,24 @@ const styles = StyleSheet.create({
   },
   badgeTextInactive: {
     color: '#94A3B8',
+  },
+  mobileAppUtilityBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#1E293B',
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    borderRadius: Radius.md,
+    marginTop: Spacing.md,
+    borderWidth: 1,
+    borderColor: 'rgba(56, 189, 248, 0.3)',
+  },
+  mobileAppUtilityText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#38BDF8',
+    flex: 1,
+    marginLeft: 10,
   },
 });
