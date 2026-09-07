@@ -49,6 +49,10 @@ import { ScheduleScreen } from '../../src/components/screens/ScheduleScreen';
 import AccountsScreen, { getStoredBankAccounts, BankAccountItem } from './accounts';
 import LoansScreen from './loans';
 import { useAutoCloudSync } from '../../src/hooks/useAutoCloudSync';
+import {
+  TransactionManager,
+  subscribeToBalanceUpdates,
+} from '../../src/services/transactionManager';
 
 // Math Engines
 import { AssetItem, evaluateAssets } from '../../src/finance/assetEvaluation';
@@ -111,12 +115,24 @@ export default function MasterDashboardScreen() {
   const [birthdays, setBirthdaysState] = useState<BirthdayEvent[]>(() => getStoredData('mh_user_birthdays', []));
   const [schedules, setSchedulesState] = useState<ScheduleEvent[]>(() => getStoredData('mh_user_schedules', []));
 
-  // Sync bank accounts when tab changes to dashboard
+  // Sync bank accounts and cash flows when tab changes or transactions happen
   useEffect(() => {
     if (activeTab === 'dashboard') {
       setBankAccounts(getStoredBankAccounts());
+      setExpensesState(TransactionManager.getStoredExpenses());
+      setIncomesState(TransactionManager.getStoredIncomes());
     }
   }, [activeTab]);
+
+  useEffect(() => {
+    const handleBalanceChanged = () => {
+      setBankAccounts(TransactionManager.getAccountsWithCash());
+      setExpensesState(TransactionManager.getStoredExpenses());
+      setIncomesState(TransactionManager.getStoredIncomes());
+    };
+    const unsub = subscribeToBalanceUpdates(handleBalanceChanged);
+    return () => unsub();
+  }, []);
 
   const setAssets = (updater: any) => {
     setAssetsState((prev) => {
@@ -287,17 +303,18 @@ export default function MasterDashboardScreen() {
       addStock(data);
       FirebaseSyncService.pushCategory(currentUid, 'stocks', [data, ...stocks]);
     } else if (type === 'income') {
-      setIncomes((prev: any) => {
-        const next = [data, ...prev];
-        FirebaseSyncService.pushCategory(currentUid, 'incomes', next);
-        return next;
-      });
+      const storedIncomes = TransactionManager.getStoredIncomes();
+      setIncomesState(storedIncomes);
+      setBankAccounts(TransactionManager.getAccountsWithCash());
+      FirebaseSyncService.pushCategory(currentUid, 'incomes', storedIncomes);
     } else if (type === 'expense') {
-      setExpenses((prev: any) => {
-        const next = [data, ...prev];
-        FirebaseSyncService.pushCategory(currentUid, 'expenses', next);
-        return next;
-      });
+      const storedExpenses = TransactionManager.getStoredExpenses();
+      setExpensesState(storedExpenses);
+      setBankAccounts(TransactionManager.getAccountsWithCash());
+      FirebaseSyncService.pushCategory(currentUid, 'expenses', storedExpenses);
+    } else if (type === 'withdrawal' || type === 'transfer') {
+      setBankAccounts(TransactionManager.getAccountsWithCash());
+      setExpensesState(TransactionManager.getStoredExpenses());
     } else if (type === 'insurance') {
       setPolicies((prev: any) => {
         const next = [data, ...prev];
@@ -536,29 +553,33 @@ export default function MasterDashboardScreen() {
 
               {/* 2. Executive Quick Action Ribbon */}
               <View style={styles.actionRibbon}>
-                <TouchableOpacity style={styles.actionPill} onPress={() => openModal('bank')} activeOpacity={0.8}>
-                  <Ionicons name="wallet-outline" size={15} color="#0284C7" />
-                  <Text style={styles.actionPillText}>+ Bank Account</Text>
+                <TouchableOpacity style={[styles.actionPill, { borderColor: '#BAE6FD', backgroundColor: '#F0F9FF' }]} onPress={() => openModal('withdrawal')} activeOpacity={0.8}>
+                  <Ionicons name="cash-outline" size={15} color="#0284C7" />
+                  <Text style={[styles.actionPillText, { color: '#0284C7' }]}>💸 Cash Withdrawal</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={[styles.actionPill, { borderColor: '#DDD6FE', backgroundColor: '#F5F3FF' }]} onPress={() => openModal('transfer')} activeOpacity={0.8}>
+                  <Ionicons name="swap-horizontal" size={15} color="#8B5CF6" />
+                  <Text style={[styles.actionPillText, { color: '#8B5CF6' }]}>🔁 Bank Transfer</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={[styles.actionPill, { borderColor: '#BBF7D0', backgroundColor: '#F0FDF4' }]} onPress={() => openModal('income')} activeOpacity={0.8}>
+                  <Ionicons name="wallet-outline" size={15} color="#16A34A" />
+                  <Text style={[styles.actionPillText, { color: '#16A34A' }]}>💰 Add Salary / Income</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={[styles.actionPill, { borderColor: '#FECACA', backgroundColor: '#FEF2F2' }]} onPress={() => openModal('expense')} activeOpacity={0.8}>
+                  <Ionicons name="receipt-outline" size={15} color="#EF4444" />
+                  <Text style={[styles.actionPillText, { color: '#EF4444' }]}>🧾 Record Expense</Text>
                 </TouchableOpacity>
                 <TouchableOpacity style={styles.actionPill} onPress={() => openModal('stock')} activeOpacity={0.8}>
                   <Ionicons name="trending-up" size={15} color="#0D9488" />
-                  <Text style={styles.actionPillText}>+ Stock Position</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.actionPill} onPress={() => openModal('loan')} activeOpacity={0.8}>
-                  <Ionicons name="card-outline" size={15} color="#DC2626" />
-                  <Text style={styles.actionPillText}>+ Loan / Debt</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.actionPill} onPress={() => setActiveTab('paper_assets')} activeOpacity={0.8}>
-                  <Ionicons name="document-text-outline" size={15} color="#6366F1" />
-                  <Text style={styles.actionPillText}>+ Sanchaypatra / FDR</Text>
+                  <Text style={styles.actionPillText}>+ Stock</Text>
                 </TouchableOpacity>
                 <TouchableOpacity style={styles.actionPill} onPress={() => openModal('asset')} activeOpacity={0.8}>
                   <Ionicons name="business-outline" size={15} color="#D97706" />
                   <Text style={styles.actionPillText}>+ Physical Asset</Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={styles.actionPill} onPress={() => openModal('expense')} activeOpacity={0.8}>
-                  <Ionicons name="receipt-outline" size={15} color="#475569" />
-                  <Text style={styles.actionPillText}>+ Record Expense</Text>
+                <TouchableOpacity style={styles.actionPill} onPress={() => openModal('bank')} activeOpacity={0.8}>
+                  <Ionicons name="business-outline" size={15} color="#64748B" />
+                  <Text style={styles.actionPillText}>+ Bank Account</Text>
                 </TouchableOpacity>
               </View>
 

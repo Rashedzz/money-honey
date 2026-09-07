@@ -16,47 +16,35 @@ import { useAuth } from '../../src/auth/AuthContext';
 import { FirebaseSyncService } from '../../src/services/firebaseSync';
 import { FormDraftManager } from '../../src/utils/formDrafts';
 import { BiometricService } from '../../src/utils/biometrics';
+import {
+  TransactionManager,
+  BankAccountItem,
+  CASH_IN_HAND_ID,
+  subscribeToBalanceUpdates,
+} from '../../src/services/transactionManager';
+import { UniversalEntryModal, EntryType } from '../../src/components/modals/UniversalEntryModal';
 
-export interface BankAccountItem {
-  id: string;
-  bankName: string;
-  accountName: string;
-  accountNumber: string;
-  routingNumber?: string;
-  accountType: 'Savings' | 'Current' | 'Salary' | 'MFS Wallet' | 'Physical Cash';
-  currentBalance: number;
-  branch?: string;
-  address?: string;
-  bankAppId?: string;
-  bankAppPassword?: string;
-  color: string;
-}
-
-const BANK_STORAGE_KEY = 'mh_user_bank_accounts';
+export type { BankAccountItem };
 
 export const getStoredBankAccounts = (): BankAccountItem[] => {
-  try {
-    if (typeof window !== 'undefined' && window.localStorage) {
-      const raw = window.localStorage.getItem(BANK_STORAGE_KEY);
-      if (raw) return JSON.parse(raw);
-    }
-  } catch (e) {}
-  return [];
+  return TransactionManager.getAccountsWithCash();
 };
 
 export const saveStoredBankAccounts = (list: BankAccountItem[]) => {
-  try {
-    if (typeof window !== 'undefined' && window.localStorage) {
-      window.localStorage.setItem(BANK_STORAGE_KEY, JSON.stringify(list));
-    }
-  } catch (e) {}
+  TransactionManager.saveAccounts(list);
 };
 
 export default function AccountsScreen() {
   const { user } = useAuth();
-  const [accounts, setAccounts] = useState<BankAccountItem[]>([]);
+  const [accounts, setAccounts] = useState<BankAccountItem[]>(() =>
+    TransactionManager.getAccountsWithCash()
+  );
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingAccount, setEditingAccount] = useState<BankAccountItem | null>(null);
+
+  // Quick Action Modals
+  const [entryModalVisible, setEntryModalVisible] = useState(false);
+  const [entryModalType, setEntryModalType] = useState<EntryType>('withdrawal');
 
   // Form State
   const [bankName, setBankName] = useState('');
@@ -320,6 +308,57 @@ export default function AccountsScreen() {
           </TouchableOpacity>
         </View>
       </GlassCard>
+
+      {/* Quick Action Ribbon: Withdrawal, Transfer, Income, Expense */}
+      <View style={styles.actionRibbon}>
+        <TouchableOpacity
+          style={[styles.actionBtn, { backgroundColor: '#0284C7' }]}
+          onPress={() => {
+            setEntryModalType('withdrawal');
+            setEntryModalVisible(true);
+          }}
+          activeOpacity={0.85}
+        >
+          <Ionicons name="cash-outline" size={16} color="#FFFFFF" />
+          <Text style={styles.actionBtnText}>💸 Cash Withdrawal</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.actionBtn, { backgroundColor: '#8B5CF6' }]}
+          onPress={() => {
+            setEntryModalType('transfer');
+            setEntryModalVisible(true);
+          }}
+          activeOpacity={0.85}
+        >
+          <Ionicons name="swap-horizontal" size={16} color="#FFFFFF" />
+          <Text style={styles.actionBtnText}>🔁 Bank Transfer</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.actionBtn, { backgroundColor: '#16A34A' }]}
+          onPress={() => {
+            setEntryModalType('income');
+            setEntryModalVisible(true);
+          }}
+          activeOpacity={0.85}
+        >
+          <Ionicons name="wallet-outline" size={16} color="#FFFFFF" />
+          <Text style={styles.actionBtnText}>💰 Add Salary / Income</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.actionBtn, { backgroundColor: '#EF4444' }]}
+          onPress={() => {
+            setEntryModalType('expense');
+            setEntryModalVisible(true);
+          }}
+          activeOpacity={0.85}
+        >
+          <Ionicons name="receipt-outline" size={16} color="#FFFFFF" />
+          <Text style={styles.actionBtnText}>🧾 Add Expense</Text>
+        </TouchableOpacity>
+      </View>
 
       {/* Add / Edit Bank Account Form */}
       {showAddForm && (
@@ -686,6 +725,16 @@ export default function AccountsScreen() {
           </View>
         </View>
       </Modal>
+
+      {/* Universal Modal for Quick Cash Flow Operations */}
+      <UniversalEntryModal
+        visible={entryModalVisible}
+        initialType={entryModalType}
+        onClose={() => setEntryModalVisible(false)}
+        onSave={() => {
+          setAccounts(TransactionManager.getAccountsWithCash());
+        }}
+      />
     </ScrollView>
   );
 }
@@ -746,6 +795,30 @@ const styles = StyleSheet.create({
   },
   addBtnText: {
     fontSize: 14,
+    fontWeight: '800',
+    color: '#FFFFFF',
+  },
+  actionRibbon: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginVertical: 4,
+  },
+  actionBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: Radius.md,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 2,
+  },
+  actionBtnText: {
+    fontSize: 13,
     fontWeight: '800',
     color: '#FFFFFF',
   },
