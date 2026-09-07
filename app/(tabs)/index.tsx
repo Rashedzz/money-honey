@@ -46,6 +46,7 @@ import { PaperAssetsScreen } from '../../src/components/screens/PaperAssetsScree
 import { ExpensesScreen } from '../../src/components/screens/ExpensesScreen';
 import { SettingsScreen } from '../../src/components/screens/SettingsScreen';
 import { ScheduleScreen } from '../../src/components/screens/ScheduleScreen';
+import { FinancialStatementsScreen } from '../../src/components/screens/FinancialStatementsScreen';
 import AccountsScreen, { getStoredBankAccounts, BankAccountItem } from './accounts';
 import LoansScreen from './loans';
 import { useAutoCloudSync } from '../../src/hooks/useAutoCloudSync';
@@ -368,6 +369,7 @@ export default function MasterDashboardScreen() {
 
   const pageTitles: Record<SidebarTabType, string> = {
     dashboard: 'Executive Wealth Dashboard',
+    reports: 'Financial Statements & Audit Ledgers (IFRS / GAAP)',
     stocks: 'Stock Market Equities (DSE / CSE & Global)',
     accounts: 'Liquid Bank Accounts & Cash Vault',
     loans: 'Institutional Loans & Debt Service',
@@ -496,6 +498,7 @@ export default function MasterDashboardScreen() {
           </View>
 
           {/* Screen Routing */}
+          {activeTab === 'reports' && <FinancialStatementsScreen />}
           {activeTab === 'stocks' && (
             <StockMarketScreen
               stocks={stocks}
@@ -553,6 +556,16 @@ export default function MasterDashboardScreen() {
 
               {/* 2. Executive Quick Action Ribbon */}
               <View style={styles.actionRibbon}>
+                <TouchableOpacity
+                  style={[styles.actionPill, { borderColor: '#38BDF8', backgroundColor: '#F0F9FF' }]}
+                  onPress={() => setActiveTab('reports')}
+                  activeOpacity={0.8}
+                >
+                  <Ionicons name="document-text-outline" size={15} color="#0284C7" />
+                  <Text style={[styles.actionPillText, { color: '#0284C7', fontWeight: '800' }]}>
+                    📊 Financial Statements
+                  </Text>
+                </TouchableOpacity>
                 <TouchableOpacity style={[styles.actionPill, { borderColor: '#BAE6FD', backgroundColor: '#F0F9FF' }]} onPress={() => openModal('withdrawal')} activeOpacity={0.8}>
                   <Ionicons name="cash-outline" size={15} color="#0284C7" />
                   <Text style={[styles.actionPillText, { color: '#0284C7' }]}>💸 Cash Withdrawal</Text>

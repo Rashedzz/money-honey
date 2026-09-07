@@ -49,6 +49,7 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({
     badge?: string;
   }> = [
     { id: 'dashboard', label: 'Dashboard', icon: 'grid-outline' },
+    { id: 'reports', label: 'Financial Statements', icon: 'document-text-outline', badge: 'IFRS / Intuit' },
     { id: 'stocks', label: 'Stock Market', icon: 'trending-up-outline', badge: 'DSE/CSE' },
     { id: 'accounts', label: 'Bank Accounts', icon: 'wallet-outline' },
     { id: 'loans', label: 'Loans & Debts', icon: 'card-outline' },
