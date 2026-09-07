@@ -90,6 +90,24 @@ export const ExpensesScreen: React.FC = () => {
     );
   };
 
+  const handleClearAllExpenses = () => {
+    Alert.alert(
+      'Reset / Clear Expenses',
+      'Are you sure you want to clear all recorded expenses? This will leave your expense log completely clean.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Clear All',
+          style: 'destructive',
+          onPress: () => {
+            TransactionManager.saveExpenses([]);
+            setExpenses([]);
+          },
+        },
+      ]
+    );
+  };
+
   const filtered = expenses.filter((e) => {
     const matchesSearch =
       !searchQuery.trim() ||
@@ -244,6 +262,17 @@ export const ExpensesScreen: React.FC = () => {
               </Text>
             </TouchableOpacity>
           ))}
+
+          {expenses.length > 0 && (
+            <TouchableOpacity
+              style={styles.clearAllBtn}
+              onPress={handleClearAllExpenses}
+              activeOpacity={0.8}
+            >
+              <Ionicons name="trash-outline" size={13} color="#EF4444" />
+              <Text style={styles.clearAllBtnText}>Clear All</Text>
+            </TouchableOpacity>
+          )}
         </View>
       </View>
 
@@ -493,6 +522,23 @@ const styles = StyleSheet.create({
   filterBtnTextActive: {
     color: '#FFFFFF',
     fontWeight: '800',
+  },
+  clearAllBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: Radius.full,
+    backgroundColor: '#FEF2F2',
+    borderWidth: 1.5,
+    borderColor: '#FECACA',
+    marginLeft: 'auto',
+  },
+  clearAllBtnText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#EF4444',
   },
   list: {
     gap: 10,

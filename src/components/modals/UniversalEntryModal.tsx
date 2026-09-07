@@ -309,32 +309,88 @@ export const UniversalEntryModal: React.FC<UniversalEntryModalProps> = ({
             </TouchableOpacity>
           </View>
 
-          {/* Type Filter Pills */}
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.typeScroll}>
-            {tabs.map((tab) => {
-              const isSelected = selectedType === tab.id;
-              return (
-                <TouchableOpacity
-                  key={tab.id}
-                  style={[
-                    styles.typeTab,
-                    isSelected && { backgroundColor: `${tab.color}20`, borderColor: tab.color },
-                  ]}
-                  onPress={() => setSelectedType(tab.id)}
-                  activeOpacity={0.8}
-                >
-                  <Ionicons
-                    name={tab.icon}
-                    size={13}
-                    color={isSelected ? tab.color : Colors.textMuted}
-                  />
-                  <Text style={[styles.typeTabText, isSelected && { color: tab.color }]}>
-                    {tab.label}
-                  </Text>
-                </TouchableOpacity>
-              );
-            })}
-          </ScrollView>
+          {/* Categorized Type Selector Tabs - Structured, no stretching */}
+          <View style={styles.tabCategorySection}>
+            <View style={styles.tabRow}>
+              <Text style={styles.tabGroupHeading}>CASH FLOW & BANKING</Text>
+              <View style={styles.tabPillGroup}>
+                {[
+                  { id: 'income' as EntryType, label: 'Income / Salary', icon: 'wallet', color: '#16A34A' },
+                  { id: 'expense' as EntryType, label: 'Regular Expense', icon: 'receipt', color: '#EF4444' },
+                  { id: 'withdrawal' as EntryType, label: 'Withdraw Cash', icon: 'cash-outline', color: '#0284C7' },
+                  { id: 'transfer' as EntryType, label: 'Bank Transfer', icon: 'swap-horizontal', color: '#8B5CF6' },
+                  { id: 'bank' as EntryType, label: 'Bank Account', icon: 'card-outline', color: '#0284C7' },
+                ].map((tab) => {
+                  const isSelected = selectedType === tab.id;
+                  return (
+                    <TouchableOpacity
+                      key={tab.id}
+                      style={[
+                        styles.modernTabPill,
+                        isSelected && { backgroundColor: tab.color, borderColor: tab.color },
+                      ]}
+                      onPress={() => setSelectedType(tab.id)}
+                      activeOpacity={0.8}
+                    >
+                      <Ionicons
+                        name={tab.icon as any}
+                        size={13}
+                        color={isSelected ? '#FFFFFF' : tab.color}
+                      />
+                      <Text
+                        style={[
+                          styles.modernTabPillText,
+                          isSelected && { color: '#FFFFFF', fontWeight: '800' },
+                        ]}
+                      >
+                        {tab.label}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            </View>
+
+            <View style={styles.tabRow}>
+              <Text style={styles.tabGroupHeading}>ASSETS & PORTFOLIO</Text>
+              <View style={styles.tabPillGroup}>
+                {[
+                  { id: 'stock' as EntryType, label: 'Stock / Equity', icon: 'trending-up', color: '#0D9488' },
+                  { id: 'asset' as EntryType, label: 'Physical Asset', icon: 'business', color: '#D97706' },
+                  { id: 'loan' as EntryType, label: 'Loan / Debt', icon: 'card', color: '#DC2626' },
+                  { id: 'insurance' as EntryType, label: 'Insurance Policy', icon: 'shield-checkmark', color: '#6366F1' },
+                  { id: 'birthday' as EntryType, label: 'Birthday Event', icon: 'gift', color: '#EC4899' },
+                ].map((tab) => {
+                  const isSelected = selectedType === tab.id;
+                  return (
+                    <TouchableOpacity
+                      key={tab.id}
+                      style={[
+                        styles.modernTabPill,
+                        isSelected && { backgroundColor: tab.color, borderColor: tab.color },
+                      ]}
+                      onPress={() => setSelectedType(tab.id)}
+                      activeOpacity={0.8}
+                    >
+                      <Ionicons
+                        name={tab.icon as any}
+                        size={13}
+                        color={isSelected ? '#FFFFFF' : tab.color}
+                      />
+                      <Text
+                        style={[
+                          styles.modernTabPillText,
+                          isSelected && { color: '#FFFFFF', fontWeight: '800' },
+                        ]}
+                      >
+                        {tab.label}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            </View>
+          </View>
 
           {/* Dynamic Form Content */}
           <ScrollView
@@ -1213,24 +1269,23 @@ const styles = StyleSheet.create({
   },
   modalCard: {
     width: '96%',
-    maxWidth: 640,
-    height: '90%',
+    maxWidth: 660,
     maxHeight: '92%',
     backgroundColor: '#FFFFFF',
     borderRadius: Radius.xl,
-    borderWidth: 2,
+    borderWidth: 1.5,
     borderColor: '#BAE6FD',
-    paddingHorizontal: Spacing.lg,
-    paddingTop: Spacing.lg,
-    paddingBottom: Spacing.sm,
+    paddingHorizontal: 20,
+    paddingTop: 18,
+    paddingBottom: 16,
     display: 'flex',
     flexDirection: 'column',
     overflow: 'hidden',
-    shadowColor: '#0369A1',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 16,
-    elevation: 5,
+    shadowColor: '#0284C7',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.18,
+    shadowRadius: 20,
+    elevation: 8,
   },
   formScroll: {
     flex: 1,
@@ -1278,25 +1333,49 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#BAE6FD',
   },
-  typeScroll: {
-    flexDirection: 'row',
-    gap: 8,
-    paddingVertical: Spacing.xs,
+  tabCategorySection: {
     marginBottom: Spacing.sm,
+    gap: 8,
+    backgroundColor: '#F8FAFC',
+    borderRadius: Radius.md,
+    padding: 8,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
   },
-  typeTab: {
+  tabRow: {
+    gap: 4,
+  },
+  tabGroupHeading: {
+    fontSize: 9,
+    fontWeight: '800',
+    color: '#64748B',
+    letterSpacing: 0.8,
+    textTransform: 'uppercase',
+  },
+  tabPillGroup: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
+  },
+  modernTabPill: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
+    gap: 5,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
     borderRadius: Radius.full,
-    backgroundColor: '#F0F9FF',
+    backgroundColor: '#FFFFFF',
     borderWidth: 1.5,
-    borderColor: '#BAE6FD',
+    borderColor: '#CBD5E1',
+    height: 32,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
   },
-  typeTabText: {
-    fontSize: 13,
+  modernTabPillText: {
+    fontSize: 12,
     fontWeight: '700',
     color: '#334155',
   },
@@ -1304,19 +1383,20 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '800',
     color: '#0284C7',
-    marginTop: Spacing.sm,
+    marginTop: 10,
     marginBottom: 4,
     letterSpacing: 0.5,
   },
   input: {
-    backgroundColor: '#F0F9FF',
+    backgroundColor: '#F8FAFC',
     borderWidth: 1.5,
-    borderColor: '#BAE6FD',
+    borderColor: '#CBD5E1',
     borderRadius: Radius.md,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
+    paddingHorizontal: 13,
+    paddingVertical: 10,
     color: '#0F172A',
-    fontSize: 15,
+    fontSize: 14,
+    fontWeight: '600',
   },
   twoCol: {
     flexDirection: 'row',
@@ -1331,10 +1411,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 8,
     backgroundColor: '#0284C7',
-    paddingVertical: 14,
+    paddingVertical: 13,
     borderRadius: Radius.md,
-    marginTop: Spacing.lg,
-    marginBottom: Spacing.sm,
+    marginTop: Spacing.md,
+    marginBottom: Spacing.xs,
     shadowColor: '#0284C7',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,

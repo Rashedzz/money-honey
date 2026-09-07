@@ -172,7 +172,28 @@ export class TransactionManager {
     try {
       if (typeof window !== 'undefined' && window.localStorage) {
         const raw = window.localStorage.getItem(EXPENSES_STORAGE_KEY);
-        if (raw) return JSON.parse(raw);
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (Array.isArray(parsed)) {
+            // Filter out any legacy hardcoded demo expenses
+            const clean = parsed.filter(
+              (e: any) =>
+                !e.id?.startsWith('EXP-0') &&
+                e.title !== 'City Bank Home Loan EMI' &&
+                e.title !== 'Monthly Groceries & Kitchen Supplies' &&
+                e.title !== 'Eastern Bank Vehicle Auto Loan EMI' &&
+                e.title !== 'Gulshan Flat Building Service Charge & Maintenance' &&
+                e.title !== 'Electricity, Gas & High-Speed Internet Bills' &&
+                e.title !== 'Toyota Harrier Oil Change, Fuel & Octane' &&
+                e.title !== 'Purbachal Land Boundary Guarding & Municipality Tax' &&
+                e.title !== 'Family Weekend Dining & Outing'
+            );
+            if (clean.length !== parsed.length) {
+              window.localStorage.setItem(EXPENSES_STORAGE_KEY, JSON.stringify(clean));
+            }
+            return clean;
+          }
+        }
       }
     } catch (e) {}
     return [];
