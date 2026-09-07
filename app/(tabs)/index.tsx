@@ -47,6 +47,7 @@ import { ExpensesScreen } from '../../src/components/screens/ExpensesScreen';
 import { SettingsScreen } from '../../src/components/screens/SettingsScreen';
 import { ScheduleScreen } from '../../src/components/screens/ScheduleScreen';
 import { FinancialStatementsScreen } from '../../src/components/screens/FinancialStatementsScreen';
+import { CategorySetupScreen } from '../../src/components/screens/CategorySetupScreen';
 import AccountsScreen, { getStoredBankAccounts, BankAccountItem } from './accounts';
 import LoansScreen from './loans';
 import { useAutoCloudSync } from '../../src/hooks/useAutoCloudSync';
@@ -370,6 +371,7 @@ export default function MasterDashboardScreen() {
   const pageTitles: Record<SidebarTabType, string> = {
     dashboard: 'Executive Wealth Dashboard',
     reports: 'Financial Statements & Audit Ledgers (IFRS / GAAP)',
+    categories: 'Category & Budget Setup (Intuit Management)',
     stocks: 'Stock Market Equities (DSE / CSE & Global)',
     accounts: 'Liquid Bank Accounts & Cash Vault',
     loans: 'Institutional Loans & Debt Service',
@@ -499,6 +501,7 @@ export default function MasterDashboardScreen() {
 
           {/* Screen Routing */}
           {activeTab === 'reports' && <FinancialStatementsScreen />}
+          {activeTab === 'categories' && <CategorySetupScreen onBackToExpenses={() => setActiveTab('expenses')} />}
           {activeTab === 'stocks' && (
             <StockMarketScreen
               stocks={stocks}
@@ -514,7 +517,9 @@ export default function MasterDashboardScreen() {
           {activeTab === 'physical_assets' && (
             <PhysicalAssetsScreen assets={assets} onAddAsset={(a) => setAssets([a, ...assets])} />
           )}
-          {activeTab === 'expenses' && <ExpensesScreen />}
+          {activeTab === 'expenses' && (
+            <ExpensesScreen onOpenCategorySetup={() => setActiveTab('categories')} />
+          )}
           {activeTab === 'settings' && (
             <SettingsScreen
               birthDate={birthDate}
@@ -564,6 +569,16 @@ export default function MasterDashboardScreen() {
                   <Ionicons name="document-text-outline" size={15} color="#0284C7" />
                   <Text style={[styles.actionPillText, { color: '#0284C7', fontWeight: '800' }]}>
                     📊 Financial Statements
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.actionPill, { borderColor: '#A78BFA', backgroundColor: '#F5F3FF' }]}
+                  onPress={() => setActiveTab('categories')}
+                  activeOpacity={0.8}
+                >
+                  <Ionicons name="pricetags-outline" size={15} color="#8B5CF6" />
+                  <Text style={[styles.actionPillText, { color: '#8B5CF6', fontWeight: '800' }]}>
+                    🏷️ Category & Budgets
                   </Text>
                 </TouchableOpacity>
                 <TouchableOpacity style={[styles.actionPill, { borderColor: '#BAE6FD', backgroundColor: '#F0F9FF' }]} onPress={() => openModal('withdrawal')} activeOpacity={0.8}>
@@ -855,6 +870,7 @@ export default function MasterDashboardScreen() {
         initialType={modalInitialType}
         onClose={() => setEntryModalVisible(false)}
         onSave={handleUniversalSave}
+        onOpenCategorySetup={() => setActiveTab('categories')}
       />
 
       {/* PWA Phone Install Modal */}

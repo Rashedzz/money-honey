@@ -14,6 +14,7 @@ import { DynamicMoneyTree } from '../visuals/DynamicMoneyTree';
 export type SidebarTabType =
   | 'dashboard'
   | 'reports'
+  | 'categories'
   | 'stocks'
   | 'accounts'
   | 'loans'
@@ -61,6 +62,7 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
   }> = [
     { id: 'dashboard', label: 'Dashboard', icon: 'grid-outline' },
     { id: 'reports', label: 'Financial Statements', icon: 'document-text-outline', badge: 'IFRS / Intuit' },
+    { id: 'categories', label: 'Category & Budget Setup', icon: 'pricetags-outline', badge: 'Intuit' },
     { id: 'stocks', label: 'Stock Market', icon: 'trending-up-outline', badge: 'DSE/CSE' },
     { id: 'accounts', label: 'Bank Accounts', icon: 'wallet-outline' },
     { id: 'loans', label: 'Loans & Debts', icon: 'card-outline' },

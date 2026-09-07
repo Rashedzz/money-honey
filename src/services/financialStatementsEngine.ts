@@ -10,6 +10,7 @@ import { StockHolding } from '../finance/stocks';
 import { AssetItem } from '../finance/assetEvaluation';
 import { PaperAssetUnion, SanchaypatraAsset, FDRAsset, DPSAsset } from '../components/screens/PaperAssetsScreen';
 import { LoanItem } from '../../app/(tabs)/loans';
+import { CategoryManager, CategoryBudgetVariance, FinancialCategory } from './categoryManager';
 
 export type FinancialPeriod = 'this_month' | 'last_month' | 'this_quarter' | 'ytd' | 'fiscal_year' | 'all';
 
@@ -145,6 +146,57 @@ export interface ExpenseLedgerReport {
   categoryBreakdown: ExpenseCategoryBreakdown[];
   top5Expenses: ExpenseItem[];
   itemizedExpenses: ExpenseItem[];
+}
+
+export interface BudgetVarianceReport {
+  periodLabel: string;
+  startDate: string;
+  endDate: string;
+  totalExpenseBudget: number;
+  totalExpenseActual: number;
+  netExpenseVariance: number; // budget - actual (positive = favorable / surplus)
+  expenseVariancePercent: number;
+  expenseVarianceStatus: 'favorable' | 'warning' | 'unfavorable';
+  expenseVariances: CategoryBudgetVariance[];
+  totalIncomeTarget: number;
+  totalIncomeActual: number;
+  netIncomeVariance: number; // actual - target (positive = achieved)
+  incomeVariancePercent: number;
+  incomeVarianceStatus: 'favorable' | 'warning' | 'unfavorable';
+  incomeVariances: CategoryBudgetVariance[];
+}
+
+export interface TaxAssessmentReport {
+  periodLabel: string;
+  startDate: string;
+  endDate: string;
+  grossAssessableIncome: number;
+  allowableDeductions: {
+    insurancePremiums: number;
+    debtInterestServicing: number;
+    propertyHoldingTaxes: number;
+    medicalHealthExpenses: number;
+    donationsAndZakat: number;
+    totalDeductions: number;
+  };
+  netTaxableIncome: number;
+  taxSlabs: Array<{
+    slabName: string;
+    ratePercent: number;
+    taxableAmountInSlab: number;
+    slabTax: number;
+  }>;
+  grossEstimatedTax: number;
+  eligibleInvestmentRebate: {
+    totalEligibleInvestments: number;
+    maxAllowableInvestmentCeiling: number;
+    applicableInvestmentBase: number;
+    rebateRatePercent: number;
+    totalTaxRebate: number;
+  };
+  netPayableTax: number;
+  effectiveTaxRatePercent: number;
+  itemizedDeductibles: ExpenseItem[];
 }
 
 export interface IntuitFinancialIntelligence {
@@ -746,6 +798,273 @@ export class FinancialStatementsEngine {
       monthlyBurnRate,
       cashRunwayMonths,
       savingsRatePercent: savingsRateVal,
+    };
+  }
+
+  /**
+   * 6. BUDGET VS ACTUAL VARIANCE STATEMENT (Intuit / Management Accounting)
+   */
+  public static generateBudgetVarianceReport(period: FinancialPeriod): BudgetVarianceReport {
+    const { startDate, endDate, label } = this.getPeriodDates(period);
+
+    // Multiplier for budget based on period
+    let multiplier = 1;
+    let monthPrefix: string | undefined = undefined;
+    if (period === 'this_month') {
+      monthPrefix = new Date().toISOString().slice(0, 7);
+      multiplier = 1;
+    } else if (period === 'last_month') {
+      const d = new Date();
+      d.setMonth(d.getMonth() - 1);
+      monthPrefix = d.toISOString().slice(0, 7);
+      multiplier = 1;
+    } else if (period === 'this_quarter') {
+      multiplier = 3;
+    } else if (period === 'ytd') {
+      multiplier = new Date().getMonth() + 1;
+    } else if (period === 'fiscal_year') {
+      multiplier = 12;
+    } else {
+      multiplier = 12;
+    }
+
+    const rawExpenseVariances = CategoryManager.getCategoryBudgetVsActual('expense', monthPrefix);
+    const rawIncomeVariances = CategoryManager.getCategoryBudgetVsActual('income', monthPrefix);
+
+    // Scale budget by period multiplier if > 1 month
+    const expenseVariances = rawExpenseVariances.map((v) => {
+      const scaledBudget = v.budget * multiplier;
+      const variance = scaledBudget - v.actual;
+      const percentUsed = scaledBudget > 0 ? Math.round((v.actual / scaledBudget) * 100) : 0;
+      let status: CategoryBudgetVariance['status'] = 'under_budget';
+      if (percentUsed > 100) status = 'over_budget';
+      else if (percentUsed >= 80) status = 'warning';
+      else if (percentUsed >= 50) status = 'on_track';
+      return {
+        ...v,
+        budget: scaledBudget,
+        variance,
+        percentUsed,
+        status,
+      };
+    });
+
+    const incomeVariances = rawIncomeVariances.map((v) => {
+      const scaledBudget = v.budget * multiplier;
+      const variance = v.actual - scaledBudget;
+      const percentUsed = scaledBudget > 0 ? Math.round((v.actual / scaledBudget) * 100) : 0;
+      let status: CategoryBudgetVariance['status'] = 'on_track';
+      if (percentUsed >= 100) status = 'on_track';
+      else if (percentUsed >= 70) status = 'under_budget';
+      else status = 'warning';
+      return {
+        ...v,
+        budget: scaledBudget,
+        variance,
+        percentUsed,
+        status,
+      };
+    });
+
+    const totalExpenseBudget = expenseVariances.reduce((s, v) => s + v.budget, 0);
+    const totalExpenseActual = expenseVariances.reduce((s, v) => s + v.actual, 0);
+    const netExpenseVariance = totalExpenseBudget - totalExpenseActual;
+    const expenseVariancePercent = totalExpenseBudget > 0 ? Math.round((totalExpenseActual / totalExpenseBudget) * 100) : 0;
+    const expenseVarianceStatus = netExpenseVariance >= 0 ? 'favorable' : Math.abs(netExpenseVariance) <= totalExpenseBudget * 0.1 ? 'warning' : 'unfavorable';
+
+    const totalIncomeTarget = incomeVariances.reduce((s, v) => s + v.budget, 0);
+    const totalIncomeActual = incomeVariances.reduce((s, v) => s + v.actual, 0);
+    const netIncomeVariance = totalIncomeActual - totalIncomeTarget;
+    const incomeVariancePercent = totalIncomeTarget > 0 ? Math.round((totalIncomeActual / totalIncomeTarget) * 100) : 0;
+    const incomeVarianceStatus = netIncomeVariance >= 0 ? 'favorable' : Math.abs(netIncomeVariance) <= totalIncomeTarget * 0.15 ? 'warning' : 'unfavorable';
+
+    return {
+      periodLabel: label,
+      startDate,
+      endDate,
+      totalExpenseBudget,
+      totalExpenseActual,
+      netExpenseVariance,
+      expenseVariancePercent,
+      expenseVarianceStatus,
+      expenseVariances,
+      totalIncomeTarget,
+      totalIncomeActual,
+      netIncomeVariance,
+      incomeVariancePercent,
+      incomeVarianceStatus,
+      incomeVariances,
+    };
+  }
+
+  /**
+   * 7. TAX ESTIMATION & DEDUCTIBLE EXPENDITURE SCHEDULE
+   */
+  public static generateTaxAssessmentReport(period: FinancialPeriod): TaxAssessmentReport {
+    const { startDate, endDate, label } = this.getPeriodDates(period);
+    const incStatement = this.generateIncomeStatement(period);
+    const grossAssessableIncome = incStatement.grossTotalRevenue;
+
+    const allExpenses = TransactionManager.getStoredExpenses();
+    const inRange = (d: string) => d >= startDate && d <= endDate;
+    const periodExpenses = allExpenses.filter((e) => inRange(e.date));
+
+    // Discover tax deductible categories
+    const expenseCategories = CategoryManager.getExpenseCategories();
+    const deductibleCatNames = new Set(
+      expenseCategories.filter((c) => c.isTaxDeductible).map((c) => c.name.toLowerCase())
+    );
+
+    let insurancePremiums = 0;
+    let debtInterestServicing = 0;
+    let propertyHoldingTaxes = 0;
+    let medicalHealthExpenses = 0;
+    let donationsAndZakat = 0;
+    const itemizedDeductibles: ExpenseItem[] = [];
+
+    periodExpenses.forEach((exp) => {
+      const c = (exp.category || '').toLowerCase();
+      const t = (exp.title || '').toLowerCase();
+      const n = (exp.notes || '').toLowerCase();
+      const amt = exp.amount || 0;
+
+      const isDeductible =
+        deductibleCatNames.has(c) ||
+        c.includes('insurance') ||
+        c.includes('health') ||
+        c.includes('tax') ||
+        c.includes('zakat') ||
+        c.includes('donation') ||
+        t.includes('insurance') ||
+        t.includes('medical') ||
+        t.includes('zakat') ||
+        t.includes('donation') ||
+        n.includes('tax');
+
+      if (isDeductible) {
+        itemizedDeductibles.push(exp);
+        if (c.includes('insurance') || t.includes('insurance')) {
+          insurancePremiums += amt;
+        } else if (c.includes('emi') || c.includes('debt') || t.includes('interest')) {
+          // Estimate 35% of EMI as deductible interest component
+          debtInterestServicing += Math.round(amt * 0.35);
+        } else if (c.includes('property') || c.includes('holding') || t.includes('tax')) {
+          propertyHoldingTaxes += amt;
+        } else if (c.includes('health') || c.includes('doctor') || t.includes('medicine')) {
+          medicalHealthExpenses += amt;
+        } else if (c.includes('zakat') || c.includes('charity') || c.includes('donation')) {
+          donationsAndZakat += amt;
+        } else {
+          medicalHealthExpenses += amt;
+        }
+      }
+    });
+
+    const totalDeductions =
+      insurancePremiums + debtInterestServicing + propertyHoldingTaxes + medicalHealthExpenses + donationsAndZakat;
+
+    const netTaxableIncome = Math.max(0, grossAssessableIncome - totalDeductions);
+
+    // Multiplier for pro-rating progressive tax slabs based on period
+    let periodRatio = 1.0;
+    if (period === 'this_month' || period === 'last_month') {
+      periodRatio = 1 / 12;
+    } else if (period === 'this_quarter') {
+      periodRatio = 0.25;
+    } else if (period === 'ytd') {
+      periodRatio = (new Date().getMonth() + 1) / 12;
+    }
+
+    // Standard progressive slabs (pro-rated)
+    const annualSlabs = [
+      { name: 'First ৳350,000 (Exempt Bracket)', limit: 350000, rate: 0.0 },
+      { name: 'Next ৳100,000 Bracket', limit: 100000, rate: 0.05 },
+      { name: 'Next ৳300,000 Bracket', limit: 300000, rate: 0.10 },
+      { name: 'Next ৳400,000 Bracket', limit: 400000, rate: 0.15 },
+      { name: 'Next ৳500,000 Bracket', limit: 500000, rate: 0.20 },
+      { name: 'Balance Residual Bracket', limit: Infinity, rate: 0.25 },
+    ];
+
+    let remainingIncome = netTaxableIncome;
+    let grossEstimatedTax = 0;
+    const computedSlabs: TaxAssessmentReport['taxSlabs'] = [];
+
+    for (const slab of annualSlabs) {
+      const slabLimit = slab.limit === Infinity ? Infinity : Math.round(slab.limit * periodRatio);
+      if (remainingIncome <= 0) {
+        computedSlabs.push({
+          slabName: slab.name,
+          ratePercent: Math.round(slab.rate * 100),
+          taxableAmountInSlab: 0,
+          slabTax: 0,
+        });
+        continue;
+      }
+
+      const taxableInSlab = Math.min(remainingIncome, slabLimit);
+      const taxForSlab = Math.round(taxableInSlab * slab.rate);
+      grossEstimatedTax += taxForSlab;
+      remainingIncome -= taxableInSlab;
+
+      computedSlabs.push({
+        slabName: slab.name,
+        ratePercent: Math.round(slab.rate * 100),
+        taxableAmountInSlab: taxableInSlab,
+        slabTax: taxForSlab,
+      });
+    }
+
+    // Investment Tax Rebate Assessment
+    const paperAssets = this.getStoredList<PaperAssetUnion>('mh_user_paper_assets', []);
+    const stocks = this.getStoredList<StockHolding>('money_honey_user_stocks', []);
+    let paperCapital = 0;
+    paperAssets.forEach((p) => {
+      if (p.type === 'Sanchaypatra' || p.type === 'FDR') {
+        paperCapital += (p.amount || 0);
+      } else if (p.type === 'DPS') {
+        paperCapital += ((p as DPSAsset).totalDepositedSoFar || (p as DPSAsset).monthlyEmi * 12 || 0);
+      }
+    });
+    let stockCapital = 0;
+    stocks.forEach((st) => {
+      stockCapital += (st.quantity || 0) * (st.buyPrice || 0);
+    });
+    const totalEligibleInvestments = paperCapital + stockCapital + insurancePremiums;
+
+    const maxAllowableInvestmentCeiling = Math.round(netTaxableIncome * 0.20);
+    const applicableInvestmentBase = Math.min(totalEligibleInvestments, maxAllowableInvestmentCeiling);
+    const rebateRatePercent = 15;
+    const totalTaxRebate = Math.round(applicableInvestmentBase * 0.15);
+
+    const netPayableTax = Math.max(0, grossEstimatedTax - totalTaxRebate);
+    const effectiveTaxRatePercent = grossAssessableIncome > 0 ? Math.round((netPayableTax / grossAssessableIncome) * 1000) / 10 : 0;
+
+    return {
+      periodLabel: label,
+      startDate,
+      endDate,
+      grossAssessableIncome,
+      allowableDeductions: {
+        insurancePremiums,
+        debtInterestServicing,
+        propertyHoldingTaxes,
+        medicalHealthExpenses,
+        donationsAndZakat,
+        totalDeductions,
+      },
+      netTaxableIncome,
+      taxSlabs: computedSlabs,
+      grossEstimatedTax,
+      eligibleInvestmentRebate: {
+        totalEligibleInvestments,
+        maxAllowableInvestmentCeiling,
+        applicableInvestmentBase,
+        rebateRatePercent,
+        totalTaxRebate,
+      },
+      netPayableTax,
+      effectiveTaxRatePercent,
+      itemizedDeductibles,
     };
   }
 }

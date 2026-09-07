@@ -17,6 +17,7 @@ import {
   BankAccountItem,
   CASH_IN_HAND_ID,
 } from '../../services/transactionManager';
+import { CategoryManager, FinancialCategory } from '../../services/categoryManager';
 
 export type EntryType =
   | 'bank'
@@ -35,6 +36,7 @@ interface UniversalEntryModalProps {
   initialType?: EntryType;
   onClose: () => void;
   onSave: (type: EntryType, data: any) => void;
+  onOpenCategorySetup?: () => void;
 }
 
 export const UniversalEntryModal: React.FC<UniversalEntryModalProps> = ({
@@ -42,6 +44,7 @@ export const UniversalEntryModal: React.FC<UniversalEntryModalProps> = ({
   initialType = 'income',
   onClose,
   onSave,
+  onOpenCategorySetup,
 }) => {
   const [selectedType, setSelectedType] = useState<EntryType>(initialType);
 
@@ -61,10 +64,27 @@ export const UniversalEntryModal: React.FC<UniversalEntryModalProps> = ({
   const [toAccountId, setToAccountId] = useState<string>('');
   const [txDate, setTxDate] = useState<string>(new Date().toISOString().split('T')[0]);
 
+  // Dynamic Categories from CategoryManager
+  const [expenseCategories, setExpenseCategories] = useState<FinancialCategory[]>([]);
+  const [incomeCategories, setIncomeCategories] = useState<FinancialCategory[]>([]);
+
   // Sync initialType
   useEffect(() => {
     if (initialType) setSelectedType(initialType);
   }, [initialType]);
+
+  // Load categories and subscribe to updates
+  useEffect(() => {
+    const loadCategories = () => {
+      setExpenseCategories(CategoryManager.getExpenseCategories());
+      setIncomeCategories(CategoryManager.getIncomeCategories());
+    };
+    if (visible) {
+      loadCategories();
+    }
+    const unsub = CategoryManager.subscribeToCategoryUpdates(loadCategories);
+    return () => unsub();
+  }, [visible]);
 
   // Load accounts when modal opens & set smart defaults
   useEffect(() => {
@@ -433,19 +453,35 @@ export const UniversalEntryModal: React.FC<UniversalEntryModalProps> = ({
                   </View>
                 </View>
 
-                {/* Quick Income Category Chips */}
+                {/* Dynamic Income Category Chips */}
                 <View style={styles.sectorChips}>
-                  {['💼 Salary', '🏢 Rental Yield', '📈 Stock Dividend', '📜 Govt Profit', '💻 Freelance', '🎁 Bonus'].map((cat) => (
+                  {incomeCategories.map((cat) => {
+                    const isSelected = category === cat.name;
+                    return (
+                      <TouchableOpacity
+                        key={cat.id}
+                        style={[styles.sectorChip, isSelected && styles.sectorChipSelected]}
+                        onPress={() => setCategory(cat.name)}
+                      >
+                        <Text style={[styles.sectorChipText, isSelected && styles.sectorChipTextSelected]}>
+                          {cat.icon} {cat.name}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                  {onOpenCategorySetup && (
                     <TouchableOpacity
-                      key={cat}
-                      style={[styles.sectorChip, category === cat.replace(/^[^\s]+\s/, '') && styles.sectorChipSelected]}
-                      onPress={() => setCategory(cat.replace(/^[^\s]+\s/, ''))}
+                      style={[styles.sectorChip, { borderColor: '#10B981', borderStyle: 'dashed' }]}
+                      onPress={() => {
+                        onClose();
+                        onOpenCategorySetup();
+                      }}
                     >
-                      <Text style={[styles.sectorChipText, category === cat.replace(/^[^\s]+\s/, '') && styles.sectorChipTextSelected]}>
-                        {cat}
+                      <Text style={[styles.sectorChipText, { color: '#10B981', fontWeight: '800' }]}>
+                        ⚙️ Setup Categories
                       </Text>
                     </TouchableOpacity>
-                  ))}
+                  )}
                 </View>
 
                 {/* Deposit Destination Account Picker */}
@@ -539,19 +575,35 @@ export const UniversalEntryModal: React.FC<UniversalEntryModalProps> = ({
                   </View>
                 </View>
 
-                {/* Quick Sector Chips */}
+                {/* Dynamic Expense Category Chips */}
                 <View style={styles.sectorChips}>
-                  {['🏠 Household & Living', '🏢 Asset Expense', '💳 Debt Service EMI', '🛍️ Personal / Discretionary'].map((sec) => (
+                  {expenseCategories.map((cat) => {
+                    const isSelected = category === cat.name;
+                    return (
+                      <TouchableOpacity
+                        key={cat.id}
+                        style={[styles.sectorChip, isSelected && styles.sectorChipSelected]}
+                        onPress={() => setCategory(cat.name)}
+                      >
+                        <Text style={[styles.sectorChipText, isSelected && styles.sectorChipTextSelected]}>
+                          {cat.icon} {cat.name}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                  {onOpenCategorySetup && (
                     <TouchableOpacity
-                      key={sec}
-                      style={[styles.sectorChip, category === sec.replace(/^[^\s]+\s/, '') && styles.sectorChipSelected]}
-                      onPress={() => setCategory(sec.replace(/^[^\s]+\s/, ''))}
+                      style={[styles.sectorChip, { borderColor: '#EF4444', borderStyle: 'dashed' }]}
+                      onPress={() => {
+                        onClose();
+                        onOpenCategorySetup();
+                      }}
                     >
-                      <Text style={[styles.sectorChipText, category === sec.replace(/^[^\s]+\s/, '') && styles.sectorChipTextSelected]}>
-                        {sec}
+                      <Text style={[styles.sectorChipText, { color: '#EF4444', fontWeight: '800' }]}>
+                        ⚙️ Manage Categories & Budgets
                       </Text>
                     </TouchableOpacity>
-                  ))}
+                  )}
                 </View>
 
                 {/* Deduct Balance Account Picker */}

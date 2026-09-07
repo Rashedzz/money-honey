@@ -25,11 +25,20 @@ import {
   IncomeStatementReport,
   ExpenseLedgerReport,
   IntuitFinancialIntelligence,
+  BudgetVarianceReport,
+  TaxAssessmentReport,
 } from '../../services/financialStatementsEngine';
 import { ReportExportService } from '../../services/reportExportService';
 import { subscribeToBalanceUpdates } from '../../services/transactionManager';
 
-type ReportTab = 'balance_sheet' | 'cash_flow' | 'income_statement' | 'expense_ledger' | 'intuit_ratios';
+type ReportTab =
+  | 'balance_sheet'
+  | 'cash_flow'
+  | 'income_statement'
+  | 'expense_ledger'
+  | 'budget_variance'
+  | 'tax_assessment'
+  | 'intuit_ratios';
 
 export const FinancialStatementsScreen: React.FC = () => {
   const [activeTab, setActiveTab] = useState<ReportTab>('balance_sheet');
@@ -66,6 +75,16 @@ export const FinancialStatementsScreen: React.FC = () => {
     return FinancialStatementsEngine.generateExpenseLedger(selectedPeriod);
   }, [selectedPeriod, refreshKey]);
 
+  const budgetVariance: BudgetVarianceReport = useMemo(() => {
+    const _ = refreshKey;
+    return FinancialStatementsEngine.generateBudgetVarianceReport(selectedPeriod);
+  }, [selectedPeriod, refreshKey]);
+
+  const taxAssessment: TaxAssessmentReport = useMemo(() => {
+    const _ = refreshKey;
+    return FinancialStatementsEngine.generateTaxAssessmentReport(selectedPeriod);
+  }, [selectedPeriod, refreshKey]);
+
   const intuitRatios: IntuitFinancialIntelligence = useMemo(() => {
     return FinancialStatementsEngine.calculateIntuitFinancialRatios(balanceSheet, incomeStatement);
   }, [balanceSheet, incomeStatement]);
@@ -82,13 +101,15 @@ export const FinancialStatementsScreen: React.FC = () => {
   // Export handlers
   const handlePrintOrPdf = () => {
     const html = ReportExportService.generateFullReportHtml({
-      reportType: activeTab === 'intuit_ratios' ? 'master_dossier' : activeTab,
+      reportType: (activeTab === 'intuit_ratios' ? 'master_dossier' : activeTab) as any,
       periodLabel: cashFlow.periodLabel,
       balanceSheet,
       cashFlow,
       incomeStatement,
       expenseLedger,
       intuitRatios,
+      budgetVariance,
+      taxAssessment,
       ownerName: 'Rashed Zaman',
     });
     ReportExportService.printFinancialReport(html);
@@ -103,6 +124,8 @@ export const FinancialStatementsScreen: React.FC = () => {
       incomeStatement,
       expenseLedger,
       intuitRatios,
+      budgetVariance,
+      taxAssessment,
       ownerName: 'Rashed Zaman',
     });
     const filename = `Financial_Report_${selectedPeriod}_${new Date().toISOString().split('T')[0]}.html`;
@@ -120,6 +143,8 @@ export const FinancialStatementsScreen: React.FC = () => {
 • Gross Revenue: ${fmt(incomeStatement.grossTotalRevenue)}
 • Total Expenses: ${fmt(expenseLedger.totalExpenses)}
 • Net Operating Surplus: ${fmt(incomeStatement.netOperatingIncome)}
+• Budget Variance: ${fmt(budgetVariance.netExpenseVariance)} (${budgetVariance.expenseVarianceStatus.toUpperCase()})
+• Net Est. Tax: ${fmt(taxAssessment.netPayableTax)}
 • Current Ratio: ${intuitRatios.ratios[0]?.formatted}
 • Cash Runway: ${intuitRatios.cashRunwayMonths} Months
 ---------------------------------------
@@ -234,6 +259,8 @@ Money-Honey Private Wealth Management (IFRS / GAAP Audited)`;
             { id: 'cash_flow', label: 'Cash Flow Statement', icon: 'water-outline' },
             { id: 'income_statement', label: 'Income Ledger (P&L)', icon: 'trending-up-outline' },
             { id: 'expense_ledger', label: 'Expense Ledger', icon: 'receipt-outline' },
+            { id: 'budget_variance', label: 'Budget vs Actual', icon: 'pie-chart-outline' },
+            { id: 'tax_assessment', label: 'Tax Assessment & Deductions', icon: 'document-attach-outline' },
             { id: 'intuit_ratios', label: 'Intuit Financial Ratios', icon: 'analytics-outline' },
           ].map((tab) => {
             const isActive = activeTab === tab.id;
@@ -709,7 +736,307 @@ Money-Honey Private Wealth Management (IFRS / GAAP Audited)`;
         </View>
       )}
 
-      {/* VIEW E: INTUIT FINANCIAL RATIOS & BENCHMARKS */}
+      {/* VIEW E: BUDGET VS ACTUAL VARIANCE STATEMENT */}
+      {activeTab === 'budget_variance' && (
+        <View style={styles.statementCard}>
+          <View style={styles.sheetHeader}>
+            <View>
+              <Text style={styles.sheetTitle}>BUDGET VS ACTUAL VARIANCE STATEMENT</Text>
+              <Text style={styles.sheetSubtitle}>
+                Executive Management Accounting & Variance Analysis • Period: {budgetVariance.periodLabel}
+              </Text>
+            </View>
+            <View
+              style={[
+                styles.auditStatusTag,
+                {
+                  backgroundColor:
+                    budgetVariance.expenseVarianceStatus === 'favorable'
+                      ? 'rgba(22, 163, 74, 0.15)'
+                      : budgetVariance.expenseVarianceStatus === 'warning'
+                      ? 'rgba(245, 158, 11, 0.15)'
+                      : 'rgba(239, 68, 68, 0.15)',
+                },
+              ]}
+            >
+              <Ionicons
+                name={
+                  budgetVariance.expenseVarianceStatus === 'favorable'
+                    ? 'checkmark-circle'
+                    : 'alert-circle'
+                }
+                size={14}
+                color={
+                  budgetVariance.expenseVarianceStatus === 'favorable'
+                    ? '#16A34A'
+                    : budgetVariance.expenseVarianceStatus === 'warning'
+                    ? '#F59E0B'
+                    : '#EF4444'
+                }
+              />
+              <Text
+                style={[
+                  styles.auditStatusTagText,
+                  {
+                    color:
+                      budgetVariance.expenseVarianceStatus === 'favorable'
+                        ? '#16A34A'
+                        : budgetVariance.expenseVarianceStatus === 'warning'
+                        ? '#F59E0B'
+                        : '#EF4444',
+                  },
+                ]}
+              >
+                VARIANCE: {budgetVariance.expenseVarianceStatus.toUpperCase()} ({budgetVariance.expenseVariancePercent}% CONSUMED)
+              </Text>
+            </View>
+          </View>
+
+          {/* Variance KPI Strip */}
+          <View style={styles.scoreStrip}>
+            <View style={styles.scoreCard}>
+              <Text style={styles.scoreLabel}>TOTAL EXPENSE BUDGET</Text>
+              <Text style={[styles.scoreVal, { color: '#38BDF8' }]}>{fmt(budgetVariance.totalExpenseBudget)}</Text>
+              <Text style={styles.scoreSub}>Planned Outflow Limit</Text>
+            </View>
+            <View style={styles.scoreCard}>
+              <Text style={styles.scoreLabel}>ACTUAL EXPENDITURE</Text>
+              <Text style={[styles.scoreVal, { color: '#EF4444' }]}>{fmt(budgetVariance.totalExpenseActual)}</Text>
+              <Text style={styles.scoreSub}>{budgetVariance.expenseVariancePercent}% of Budget Consumed</Text>
+            </View>
+            <View style={styles.scoreCard}>
+              <Text style={styles.scoreLabel}>NET EXPENSE VARIANCE</Text>
+              <Text
+                style={[
+                  styles.scoreVal,
+                  { color: budgetVariance.netExpenseVariance >= 0 ? '#10B981' : '#EF4444' },
+                ]}
+              >
+                {budgetVariance.netExpenseVariance >= 0 ? '+' : ''}{fmt(budgetVariance.netExpenseVariance)}
+              </Text>
+              <Text style={styles.scoreSub}>
+                {budgetVariance.netExpenseVariance >= 0 ? 'Favorable Surplus Preserved' : 'Unfavorable Over-Budget Burn'}
+              </Text>
+            </View>
+            <View style={styles.scoreCard}>
+              <Text style={styles.scoreLabel}>INCOME TARGET ACHIEVED</Text>
+              <Text style={[styles.scoreVal, { color: '#10B981' }]}>{budgetVariance.incomeVariancePercent}%</Text>
+              <Text style={styles.scoreSub}>
+                {fmt(budgetVariance.totalIncomeActual)} / {fmt(budgetVariance.totalIncomeTarget)}
+              </Text>
+            </View>
+          </View>
+
+          {/* Category Visual Spend Bars */}
+          <View style={styles.statementSection}>
+            <Text style={styles.sectionHeader}>CATEGORY SPEND CONSUMPTION GAUGE</Text>
+            {budgetVariance.expenseVariances.map((v) => {
+              const barColor =
+                v.percentUsed > 100 ? '#EF4444' : v.percentUsed >= 80 ? '#F59E0B' : '#10B981';
+              return (
+                <View key={v.category.id} style={styles.catProgressItem}>
+                  <View style={styles.catProgressTop}>
+                    <Text style={styles.catName}>
+                      {v.category.icon} {v.category.name}
+                    </Text>
+                    <Text style={[styles.catAmount, { color: barColor }]}>
+                      {fmt(v.actual)} / {fmt(v.budget)} ({v.percentUsed}%)
+                    </Text>
+                  </View>
+                  <View style={styles.progressBarTrack}>
+                    <View
+                      style={[
+                        styles.progressBarFill,
+                        { width: `${Math.min(100, v.percentUsed)}%`, backgroundColor: barColor },
+                      ]}
+                    />
+                  </View>
+                </View>
+              );
+            })}
+          </View>
+
+          {/* Itemized Variance Table */}
+          <View style={styles.statementSection}>
+            <Text style={styles.sectionHeader}>DETAILED BUDGET VS ACTUAL LEDGER</Text>
+            {budgetVariance.expenseVariances.map((v) => (
+              <View key={`tbl-${v.category.id}`} style={styles.tableRow}>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.rowLabel}>
+                    {v.category.icon} {v.category.name}
+                  </Text>
+                  <Text style={[styles.rowSubLabel, { color: '#64748B' }]}>
+                    Budget: {fmt(v.budget)} • Actual: {fmt(v.actual)} • {v.transactionCount} entries
+                  </Text>
+                </View>
+                <View style={{ alignItems: 'flex-end' }}>
+                  <Text
+                    style={[
+                      styles.rowValue,
+                      { color: v.variance >= 0 ? '#10B981' : '#EF4444', fontWeight: '800' },
+                    ]}
+                  >
+                    {v.variance >= 0 ? '+' : ''}{fmt(v.variance)}
+                  </Text>
+                  <Text
+                    style={{
+                      fontSize: 10,
+                      fontWeight: '800',
+                      color:
+                        v.status === 'over_budget'
+                          ? '#EF4444'
+                          : v.status === 'warning'
+                          ? '#F59E0B'
+                          : '#10B981',
+                      textTransform: 'uppercase',
+                    }}
+                  >
+                    {v.status.replace('_', ' ')} ({v.percentUsed}%)
+                  </Text>
+                </View>
+              </View>
+            ))}
+            <View style={[styles.tableRow, styles.grandTotalRow]}>
+              <Text style={styles.grandTotalLabel}>TOTAL BUDGET VARIANCE CONSOLIDATION</Text>
+              <Text
+                style={[
+                  styles.grandTotalValue,
+                  { color: budgetVariance.netExpenseVariance >= 0 ? '#10B981' : '#EF4444' },
+                ]}
+              >
+                {budgetVariance.netExpenseVariance >= 0 ? '+' : ''}{fmt(budgetVariance.netExpenseVariance)}
+              </Text>
+            </View>
+          </View>
+        </View>
+      )}
+
+      {/* VIEW F: TAX ESTIMATION & STATUTORY DEDUCTIONS */}
+      {activeTab === 'tax_assessment' && (
+        <View style={styles.statementCard}>
+          <View style={styles.sheetHeader}>
+            <View>
+              <Text style={styles.sheetTitle}>STATUTORY TAX ASSESSMENT & ALLOWABLE DEDUCTIONS</Text>
+              <Text style={styles.sheetSubtitle}>
+                Pro-rated Progressive Income Tax Calculation & Eligible Investment Rebates • Period: {taxAssessment.periodLabel}
+              </Text>
+            </View>
+            <View style={[styles.auditStatusTag, { backgroundColor: 'rgba(139, 92, 246, 0.15)' }]}>
+              <Text style={[styles.auditStatusTagText, { color: '#8B5CF6' }]}>
+                EFFECTIVE RATE: {taxAssessment.effectiveTaxRatePercent}%
+              </Text>
+            </View>
+          </View>
+
+          {/* Tax KPI Strip */}
+          <View style={styles.scoreStrip}>
+            <View style={styles.scoreCard}>
+              <Text style={styles.scoreLabel}>GROSS ASSESSABLE REVENUE</Text>
+              <Text style={[styles.scoreVal, { color: '#38BDF8' }]}>{fmt(taxAssessment.grossAssessableIncome)}</Text>
+              <Text style={styles.scoreSub}>Comprehensive Inflows</Text>
+            </View>
+            <View style={styles.scoreCard}>
+              <Text style={styles.scoreLabel}>TOTAL STATUTORY DEDUCTIONS</Text>
+              <Text style={[styles.scoreVal, { color: '#10B981' }]}>-{fmt(taxAssessment.allowableDeductions.totalDeductions)}</Text>
+              <Text style={styles.scoreSub}>Eligible Reliefs & Exemptions</Text>
+            </View>
+            <View style={styles.scoreCard}>
+              <Text style={styles.scoreLabel}>NET TAXABLE INCOME</Text>
+              <Text style={[styles.scoreVal, { color: '#F59E0B' }]}>{fmt(taxAssessment.netTaxableIncome)}</Text>
+              <Text style={styles.scoreSub}>Chargeable Tax Base</Text>
+            </View>
+            <View style={styles.scoreCard}>
+              <Text style={styles.scoreLabel}>NET ESTIMATED TAX PAYABLE</Text>
+              <Text style={[styles.scoreVal, { color: '#EF4444' }]}>{fmt(taxAssessment.netPayableTax)}</Text>
+              <Text style={styles.scoreSub}>After ৳{taxAssessment.eligibleInvestmentRebate.totalTaxRebate.toLocaleString('en-IN')} Rebate</Text>
+            </View>
+          </View>
+
+          {/* Allowable Deductions Breakdown */}
+          <View style={styles.statementSection}>
+            <Text style={styles.sectionHeader}>A. ITEMIZED STATUTORY DEDUCTIONS & RELIEFS</Text>
+            <View style={styles.tableRow}>
+              <Text style={styles.rowLabel}>🛡️ Life & Health Insurance Premiums</Text>
+              <Text style={[styles.rowValue, { color: '#10B981' }]}>-{fmt(taxAssessment.allowableDeductions.insurancePremiums)}</Text>
+            </View>
+            <View style={styles.tableRow}>
+              <Text style={styles.rowLabel}>💳 Institutional Debt Service (Interest Component)</Text>
+              <Text style={[styles.rowValue, { color: '#10B981' }]}>-{fmt(taxAssessment.allowableDeductions.debtInterestServicing)}</Text>
+            </View>
+            <View style={styles.tableRow}>
+              <Text style={styles.rowLabel}>🏢 Property Holding & Municipal City Corporation Taxes</Text>
+              <Text style={[styles.rowValue, { color: '#10B981' }]}>-{fmt(taxAssessment.allowableDeductions.propertyHoldingTaxes)}</Text>
+            </View>
+            <View style={styles.tableRow}>
+              <Text style={styles.rowLabel}>🏥 Specialist Healthcare, Hospital Care & Prescriptions</Text>
+              <Text style={[styles.rowValue, { color: '#10B981' }]}>-{fmt(taxAssessment.allowableDeductions.medicalHealthExpenses)}</Text>
+            </View>
+            <View style={styles.tableRow}>
+              <Text style={styles.rowLabel}>🎁 Charitable Donations, Zakat & Humanitarian Relief</Text>
+              <Text style={[styles.rowValue, { color: '#10B981' }]}>-{fmt(taxAssessment.allowableDeductions.donationsAndZakat)}</Text>
+            </View>
+            <View style={[styles.tableRow, styles.subtotalRow]}>
+              <Text style={styles.subtotalLabel}>TOTAL ALLOWABLE DEDUCTIONS</Text>
+              <Text style={[styles.subtotalValue, { color: '#10B981' }]}>
+                -{fmt(taxAssessment.allowableDeductions.totalDeductions)}
+              </Text>
+            </View>
+          </View>
+
+          {/* Progressive Slabs Table */}
+          <View style={styles.statementSection}>
+            <Text style={styles.sectionHeader}>B. PROGRESSIVE TAX BRACKET CALCULATION</Text>
+            {taxAssessment.taxSlabs.map((s, idx) => (
+              <View key={`slab-${idx}`} style={styles.tableRow}>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.rowLabel}>{s.slabName}</Text>
+                  <Text style={[styles.rowSubLabel, { color: '#64748B' }]}>
+                    Taxable Base in Slab: {fmt(s.taxableAmountInSlab)} @ {s.ratePercent}%
+                  </Text>
+                </View>
+                <Text style={styles.rowValue}>{fmt(s.slabTax)}</Text>
+              </View>
+            ))}
+            <View style={[styles.tableRow, styles.subtotalRow]}>
+              <Text style={styles.subtotalLabel}>GROSS ESTIMATED TAX</Text>
+              <Text style={[styles.subtotalValue, { color: '#F59E0B' }]}>{fmt(taxAssessment.grossEstimatedTax)}</Text>
+            </View>
+          </View>
+
+          {/* Investment Tax Rebate Credit */}
+          <View style={styles.statementSection}>
+            <Text style={[styles.sectionHeader, { color: '#8B5CF6', borderBottomColor: '#8B5CF6' }]}>
+              C. INVESTMENT TAX REBATE CREDIT (DIRECT TAX OFFSET)
+            </Text>
+            <View style={styles.tableRow}>
+              <Text style={styles.rowLabel}>Total Eligible Portfolio Capital (Govt Sanchaypatra, Stocks, DPS)</Text>
+              <Text style={styles.rowValue}>{fmt(taxAssessment.eligibleInvestmentRebate.totalEligibleInvestments)}</Text>
+            </View>
+            <View style={styles.tableRow}>
+              <Text style={styles.rowLabel}>Maximum Allowable Investment Base (20% of Taxable Income)</Text>
+              <Text style={styles.rowValue}>{fmt(taxAssessment.eligibleInvestmentRebate.maxAllowableInvestmentCeiling)}</Text>
+            </View>
+            <View style={styles.tableRow}>
+              <Text style={styles.rowLabel}>Applicable Investment Base for Rebate</Text>
+              <Text style={[styles.rowValue, { color: '#8B5CF6', fontWeight: '800' }]}>
+                {fmt(taxAssessment.eligibleInvestmentRebate.applicableInvestmentBase)}
+              </Text>
+            </View>
+            <View style={[styles.tableRow, styles.subtotalRow]}>
+              <Text style={styles.subtotalLabel}>Direct Investment Tax Rebate Credit (15%)</Text>
+              <Text style={[styles.subtotalValue, { color: '#10B981' }]}>
+                -{fmt(taxAssessment.eligibleInvestmentRebate.totalTaxRebate)}
+              </Text>
+            </View>
+            <View style={[styles.tableRow, styles.grandTotalRow]}>
+              <Text style={styles.grandTotalLabel}>FINAL NET ESTIMATED TAX PAYABLE</Text>
+              <Text style={[styles.grandTotalValue, { color: '#EF4444' }]}>{fmt(taxAssessment.netPayableTax)}</Text>
+            </View>
+          </View>
+        </View>
+      )}
+
+      {/* VIEW G: INTUIT FINANCIAL RATIOS & BENCHMARKS */}
       {activeTab === 'intuit_ratios' && (
         <View style={styles.statementCard}>
           <View style={styles.sheetHeader}>
@@ -746,7 +1073,7 @@ Money-Honey Private Wealth Management (IFRS / GAAP Audited)`;
           {/* Ratios Table */}
           <View style={styles.statementSection}>
             <Text style={styles.sectionHeader}>CORE EXECUTIVE FINANCIAL RATIOS</Text>
-            {intuitRatios.ratios.map((r, idx) => {
+            {intuitRatios.ratios.map((r: any, idx: number) => {
               const statusColor =
                 r.status === 'optimal' ? '#10B981' : r.status === 'acceptable' ? '#0284C7' : '#EF4444';
               return (
@@ -1018,6 +1345,11 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: '#CBD5E1',
     flex: 1,
+  },
+  rowSubLabel: {
+    fontSize: 11,
+    color: '#94A3B8',
+    marginTop: 2,
   },
   rowValue: {
     fontSize: 13,

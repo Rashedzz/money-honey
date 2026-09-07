@@ -10,6 +10,8 @@ import {
   IncomeStatementReport,
   ExpenseLedgerReport,
   IntuitFinancialIntelligence,
+  BudgetVarianceReport,
+  TaxAssessmentReport,
 } from './financialStatementsEngine';
 
 export class ReportExportService {
@@ -26,13 +28,15 @@ export class ReportExportService {
    * Generates a complete, audited executive HTML document for the financial statements
    */
   public static generateFullReportHtml(params: {
-    reportType: 'balance_sheet' | 'cash_flow' | 'income_statement' | 'expense_ledger' | 'master_dossier';
+    reportType: 'balance_sheet' | 'cash_flow' | 'income_statement' | 'expense_ledger' | 'budget_variance' | 'tax_assessment' | 'master_dossier';
     periodLabel: string;
     balanceSheet: BalanceSheetReport;
     cashFlow: CashFlowReport;
     incomeStatement: IncomeStatementReport;
     expenseLedger: ExpenseLedgerReport;
     intuitRatios: IntuitFinancialIntelligence;
+    budgetVariance?: BudgetVarianceReport;
+    taxAssessment?: TaxAssessmentReport;
     ownerName?: string;
   }): string {
     const {
@@ -43,6 +47,8 @@ export class ReportExportService {
       incomeStatement,
       expenseLedger,
       intuitRatios,
+      budgetVariance,
+      taxAssessment,
       ownerName = 'Rashed Zaman',
     } = params;
 
@@ -59,6 +65,8 @@ export class ReportExportService {
     const showCF = isMaster || reportType === 'cash_flow';
     const showIS = isMaster || reportType === 'income_statement';
     const showEL = isMaster || reportType === 'expense_ledger';
+    const showBV = isMaster || reportType === 'budget_variance';
+    const showTA = isMaster || reportType === 'tax_assessment';
 
     const fmt = this.formatBDT;
 
@@ -432,10 +440,140 @@ export class ReportExportService {
   </table>
   ` : ''}
 
+  <!-- 5. BUDGET VS ACTUAL VARIANCE STATEMENT -->
+  ${showBV && budgetVariance ? `
+  <div class="${isMaster ? 'page-break' : ''}"></div>
+  <div class="section-title">5. Budget vs Actual Variance Statement (Management Accounting)</div>
+  <table class="statement-table">
+    <thead>
+      <tr>
+        <th>Expense Category</th>
+        <th style="text-align: right;">Monthly Budget</th>
+        <th style="text-align: right;">Actual Outflow</th>
+        <th style="text-align: right;">Variance (Surplus)</th>
+        <th style="text-align: center;">% Consumed</th>
+        <th style="text-align: center;">Status</th>
+      </tr>
+    </thead>
+    <tbody>
+      ${budgetVariance.expenseVariances.map((v) => `
+        <tr>
+          <td>${v.category.icon} ${v.category.name}</td>
+          <td class="amount">${fmt(v.budget)}</td>
+          <td class="amount">${fmt(v.actual)}</td>
+          <td class="amount" style="color: ${v.variance >= 0 ? '#15803D' : '#DC2626'};">${fmt(v.variance)}</td>
+          <td style="text-align: center;">${v.percentUsed}%</td>
+          <td style="text-align: center;">
+            <span style="font-size: 9px; font-weight: 800; padding: 2px 6px; border-radius: 4px; background: ${v.status === 'over_budget' ? '#FEE2E2' : v.status === 'warning' ? '#FEF3C7' : '#DCFCE7'}; color: ${v.status === 'over_budget' ? '#DC2626' : v.status === 'warning' ? '#D97706' : '#15803D'}; text-transform: uppercase;">
+              ${v.status.replace('_', ' ')}
+            </span>
+          </td>
+        </tr>
+      `).join('')}
+      <tr class="row-grandtotal">
+        <td>TOTAL EXPENSE BUDGET CONSOLIDATION</td>
+        <td class="amount">${fmt(budgetVariance.totalExpenseBudget)}</td>
+        <td class="amount">${fmt(budgetVariance.totalExpenseActual)}</td>
+        <td class="amount" style="color: ${budgetVariance.netExpenseVariance >= 0 ? '#15803D' : '#DC2626'};">${fmt(budgetVariance.netExpenseVariance)}</td>
+        <td style="text-align: center;">${budgetVariance.expenseVariancePercent}%</td>
+        <td style="text-align: center;"><strong>${budgetVariance.expenseVarianceStatus.toUpperCase()}</strong></td>
+      </tr>
+    </tbody>
+  </table>
+  ` : ''}
+
+  <!-- 6. TAX ASSESSMENT & DEDUCTIONS SCHEDULE -->
+  ${showTA && taxAssessment ? `
+  <div class="${isMaster ? 'page-break' : ''}"></div>
+  <div class="section-title">6. Statutory Tax Assessment & Allowable Deductions Schedule</div>
+  <table class="statement-table">
+    <thead>
+      <tr>
+        <th>Tax Assessment Component</th>
+        <th style="text-align: right;">Statutory Reference</th>
+        <th style="text-align: right;">Amount (BDT)</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr class="row-header"><td colspan="3">A. GROSS REVENUE & EXEMPTIONS</td></tr>
+      <tr>
+        <td style="padding-left: 20px;">Gross Assessable Total Income</td>
+        <td style="text-align: right; color: #475569;">Comprehensive P&L</td>
+        <td class="amount">${fmt(taxAssessment.grossAssessableIncome)}</td>
+      </tr>
+      <tr class="row-header"><td colspan="3">B. ALLOWABLE STATUTORY DEDUCTIONS</td></tr>
+      <tr>
+        <td style="padding-left: 20px;">Life & Health Insurance Premiums</td>
+        <td style="text-align: right; color: #475569;">Eligible Insurance</td>
+        <td class="amount">${fmt(taxAssessment.allowableDeductions.insurancePremiums)}</td>
+      </tr>
+      <tr>
+        <td style="padding-left: 20px;">Institutional Debt Interest Service Component</td>
+        <td style="text-align: right; color: #475569;">Loan Interest</td>
+        <td class="amount">${fmt(taxAssessment.allowableDeductions.debtInterestServicing)}</td>
+      </tr>
+      <tr>
+        <td style="padding-left: 20px;">Property Holding & Municipal Land Taxes</td>
+        <td style="text-align: right; color: #475569;">Real Estate Tax</td>
+        <td class="amount">${fmt(taxAssessment.allowableDeductions.propertyHoldingTaxes)}</td>
+      </tr>
+      <tr>
+        <td style="padding-left: 20px;">Specialist Medical, Healthcare & Prescriptions</td>
+        <td style="text-align: right; color: #475569;">Medical Allowance</td>
+        <td class="amount">${fmt(taxAssessment.allowableDeductions.medicalHealthExpenses)}</td>
+      </tr>
+      <tr>
+        <td style="padding-left: 20px;">Charitable Donations, Zakat & Humanitarian Funds</td>
+        <td style="text-align: right; color: #475569;">Approved Zakat</td>
+        <td class="amount">${fmt(taxAssessment.allowableDeductions.donationsAndZakat)}</td>
+      </tr>
+      <tr class="row-subtotal">
+        <td>Total Allowable Deductions</td>
+        <td></td>
+        <td class="amount">${fmt(taxAssessment.allowableDeductions.totalDeductions)}</td>
+      </tr>
+      <tr class="row-grandtotal">
+        <td>NET TAXABLE INCOME (A - B)</td>
+        <td></td>
+        <td class="amount">${fmt(taxAssessment.netTaxableIncome)}</td>
+      </tr>
+      <tr class="row-header"><td colspan="3">C. PROGRESSIVE TAX SLAB ASSESSMENT</td></tr>
+      ${taxAssessment.taxSlabs.map((s) => `
+        <tr>
+          <td style="padding-left: 20px;">${s.slabName} (@ ${s.ratePercent}%)</td>
+          <td style="text-align: right; color: #475569;">In Slab: ${fmt(s.taxableAmountInSlab)}</td>
+          <td class="amount">${fmt(s.slabTax)}</td>
+        </tr>
+      `).join('')}
+      <tr class="row-subtotal">
+        <td>Gross Estimated Tax on Income</td>
+        <td></td>
+        <td class="amount">${fmt(taxAssessment.grossEstimatedTax)}</td>
+      </tr>
+      <tr class="row-header"><td colspan="3">D. INVESTMENT TAX REBATE CREDIT</td></tr>
+      <tr>
+        <td style="padding-left: 20px;">Total Eligible Portfolio Investments (Sanchaypatra, Stocks, DPS)</td>
+        <td style="text-align: right; color: #475569;">Portfolio Base</td>
+        <td class="amount">${fmt(taxAssessment.eligibleInvestmentRebate.totalEligibleInvestments)}</td>
+      </tr>
+      <tr>
+        <td style="padding-left: 20px;">Investment Tax Rebate Credit (@ ${taxAssessment.eligibleInvestmentRebate.rebateRatePercent}%)</td>
+        <td style="text-align: right; color: #15803D; font-weight: 700;">Direct Tax Credit</td>
+        <td class="amount" style="color: #15803D;">(${fmt(taxAssessment.eligibleInvestmentRebate.totalTaxRebate)})</td>
+      </tr>
+      <tr class="row-grandtotal">
+        <td>NET ESTIMATED STATUTORY TAX PAYABLE</td>
+        <td style="text-align: right; font-weight: 800;">Effective Rate: ${taxAssessment.effectiveTaxRatePercent}%</td>
+        <td class="amount">${fmt(taxAssessment.netPayableTax)}</td>
+      </tr>
+    </tbody>
+  </table>
+  ` : ''}
+
   <!-- INTUIT FINANCIAL HEALTH RATIOS -->
-  <div class="section-title">5. Financial Intelligence & Liquidity Ratios (Intuit Benchmark)</div>
+  <div class="section-title">7. Financial Intelligence & Liquidity Ratios (Intuit Benchmark)</div>
   <div class="ratio-grid">
-    ${intuitRatios.ratios.map((r) => `
+    ${intuitRatios.ratios.map((r: any) => `
       <div class="ratio-card">
         <div class="name">${r.name}</div>
         <div class="val">${r.formatted}</div>
