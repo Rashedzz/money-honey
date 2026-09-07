@@ -384,6 +384,14 @@ export class CategoryManager {
     return this.getCategories('income');
   }
 
+  public static getTotalExpenseBudget(): number {
+    return this.getExpenseCategories().reduce((sum, c) => sum + (c.monthlyBudget || 0), 0);
+  }
+
+  public static getTotalIncomeTarget(): number {
+    return this.getIncomeCategories().reduce((sum, c) => sum + (c.monthlyBudget || 0), 0);
+  }
+
   /**
    * Adds a new category
    */

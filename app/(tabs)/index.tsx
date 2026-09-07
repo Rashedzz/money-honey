@@ -48,6 +48,12 @@ import { SettingsScreen } from '../../src/components/screens/SettingsScreen';
 import { ScheduleScreen } from '../../src/components/screens/ScheduleScreen';
 import { FinancialStatementsScreen } from '../../src/components/screens/FinancialStatementsScreen';
 import { CategorySetupScreen } from '../../src/components/screens/CategorySetupScreen';
+import { QuickenBudgetPacingMeter } from '../../src/components/quicken/QuickenBudgetPacingMeter';
+import { QuickenSpendingWheel } from '../../src/components/quicken/QuickenSpendingWheel';
+import { QuickenIncomeVsExpenseChart } from '../../src/components/quicken/QuickenIncomeVsExpenseChart';
+import { QuickenBillsScheduleStrip } from '../../src/components/quicken/QuickenBillsScheduleStrip';
+import { QuickenRegisterScreen } from '../../src/components/quicken/QuickenRegisterScreen';
+import { CategoryManager } from '../../src/services/categoryManager';
 import AccountsScreen, { getStoredBankAccounts, BankAccountItem } from './accounts';
 import LoansScreen from './loans';
 import { useAutoCloudSync } from '../../src/hooks/useAutoCloudSync';
@@ -93,6 +99,7 @@ export default function MasterDashboardScreen() {
   const { stocks, summary: stockSummary, addStock, updateStockPrice, deleteStock } = useStocks();
 
   const [activeTab, setActiveTab] = useState<SidebarTabType>('dashboard');
+  const [selectedRegisterAccountId, setSelectedRegisterAccountId] = useState<string>('all');
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [birthDate, setBirthDateState] = useState<string>(() =>
@@ -119,8 +126,8 @@ export default function MasterDashboardScreen() {
 
   // Sync bank accounts and cash flows when tab changes or transactions happen
   useEffect(() => {
-    if (activeTab === 'dashboard') {
-      setBankAccounts(getStoredBankAccounts());
+    if (activeTab === 'dashboard' || activeTab === 'register') {
+      setBankAccounts(TransactionManager.getAccountsWithCash());
       setExpensesState(TransactionManager.getStoredExpenses());
       setIncomesState(TransactionManager.getStoredIncomes());
     }
@@ -370,6 +377,7 @@ export default function MasterDashboardScreen() {
 
   const pageTitles: Record<SidebarTabType, string> = {
     dashboard: 'Executive Wealth Dashboard',
+    register: 'Quicken Checkbook Register & Ledger',
     reports: 'Financial Statements & Audit Ledgers (IFRS / GAAP)',
     categories: 'Category & Budget Setup (Intuit Management)',
     stocks: 'Stock Market Equities (DSE / CSE & Global)',
@@ -387,12 +395,23 @@ export default function MasterDashboardScreen() {
       <StatusBar barStyle="light-content" backgroundColor="#000000" />
 
       <View style={styles.appShell}>
-        {/* 1. Left Sidebar: Solid Black, White Text, Green Button, Gold Hover */}
+        {/* 1. Left Sidebar: Quicken Account Bar */}
         {isDesktop && (
           <AppSidebar
             activeTab={activeTab}
             onSelectTab={setActiveTab}
-            onQuickEntryPress={() => openModal('stock')}
+            onSelectAccountForRegister={(accId) => {
+              setSelectedRegisterAccountId(accId);
+              setActiveTab('register');
+            }}
+            bankAccounts={bankAccounts}
+            netWorth={consolidatedNetWorth}
+            totalAssets={totalCashInHand + stockSummary.currentValue + assetSummary.totalAssetValuation + paperAssetsTotal}
+            totalDebt={totalLoans}
+            stocksValuation={stockSummary.currentValue}
+            paperAssetsValuation={paperAssetsTotal}
+            physicalAssetsValuation={assetSummary.totalAssetValuation}
+            onQuickEntryPress={() => openModal('expense')}
             onOpenQrModal={() => setQrModalVisible(true)}
             onOpenAuthModal={openAuthModal}
             isCollapsed={isSidebarCollapsed}
@@ -445,13 +464,14 @@ export default function MasterDashboardScreen() {
                 </Text>
               </TouchableOpacity>
 
+              {/* Relocated Eye-Catching PWA / APK Install Button */}
               <TouchableOpacity
-                style={styles.qrHeaderBtn}
+                style={styles.pwaHeaderBtn}
                 onPress={() => setQrModalVisible(true)}
                 activeOpacity={0.8}
               >
-                <Ionicons name="qr-code-outline" size={15} color={Colors.primary} />
-                <Text style={styles.qrHeaderBtnText}>📱 Phone QR</Text>
+                <Ionicons name="phone-portrait-outline" size={15} color="#0284C7" />
+                <Text style={styles.pwaHeaderBtnText}>📲 Install App / PWA</Text>
               </TouchableOpacity>
 
               <TouchableOpacity
@@ -500,6 +520,13 @@ export default function MasterDashboardScreen() {
           </View>
 
           {/* Screen Routing */}
+          {activeTab === 'register' && (
+            <QuickenRegisterScreen
+              initialAccountId={selectedRegisterAccountId}
+              onOpenNewTransaction={() => openModal('expense')}
+              onOpenCategorySetup={() => setActiveTab('categories')}
+            />
+          )}
           {activeTab === 'reports' && <FinancialStatementsScreen />}
           {activeTab === 'categories' && <CategorySetupScreen onBackToExpenses={() => setActiveTab('expenses')} />}
           {activeTab === 'stocks' && (
@@ -562,6 +589,16 @@ export default function MasterDashboardScreen() {
               {/* 2. Executive Quick Action Ribbon */}
               <View style={styles.actionRibbon}>
                 <TouchableOpacity
+                  style={[styles.actionPill, { borderColor: '#0284C7', backgroundColor: '#F0F9FF' }]}
+                  onPress={() => setActiveTab('register')}
+                  activeOpacity={0.8}
+                >
+                  <Ionicons name="receipt-outline" size={15} color="#0284C7" />
+                  <Text style={[styles.actionPillText, { color: '#0284C7', fontWeight: '800' }]}>
+                    📝 Quicken Register
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
                   style={[styles.actionPill, { borderColor: '#38BDF8', backgroundColor: '#F0F9FF' }]}
                   onPress={() => setActiveTab('reports')}
                   activeOpacity={0.8}
@@ -611,7 +648,40 @@ export default function MasterDashboardScreen() {
                 </TouchableOpacity>
               </View>
 
-              {/* 3. DSE / CSE Stock Market & Listed Equities Card */}
+              {/* 3. Quicken 'What's Left to Spend' Budget Pacing Meter */}
+              <QuickenBudgetPacingMeter
+                totalBudget={CategoryManager.getTotalExpenseBudget()}
+                totalSpent={totalCurrentExpense}
+                onOpenBudgetSetup={() => setActiveTab('categories')}
+              />
+
+              {/* 4. Quicken Upcoming Bills & Projected Checking Cushion */}
+              <QuickenBillsScheduleStrip
+                currentCashBalance={totalCashInHand}
+                loans={loanList}
+                schedules={schedules}
+                onRecordBillPayment={() => openModal('expense')}
+                onOpenScheduleScreen={() => setActiveTab('schedules')}
+              />
+
+              {/* 5. Quicken Visual Charts Row: Spending Wheel Donut & 6-Month Cash Flow Trend */}
+              <View style={isDesktop ? styles.gridRowTwoCol : styles.gridRow}>
+                <View style={styles.gridCol}>
+                  <QuickenSpendingWheel
+                    expenses={expenses}
+                    onOpenCategorySetup={() => setActiveTab('categories')}
+                    onFilterByCategory={() => setActiveTab('expenses')}
+                  />
+                </View>
+                <View style={styles.gridCol}>
+                  <QuickenIncomeVsExpenseChart
+                    currentMonthIncome={totalCurrentIncome}
+                    currentMonthExpense={totalCurrentExpense}
+                  />
+                </View>
+              </View>
+
+              {/* 6. DSE / CSE Stock Market & Listed Equities Card */}
               <View style={styles.fullWidthBox}>
                 <View style={styles.stockCard}>
                   <View style={styles.stockCardContent}>
@@ -967,20 +1037,20 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     color: '#0F172A',
   },
-  qrHeaderBtn: {
+  pwaHeaderBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
     paddingHorizontal: 12,
     paddingVertical: 7,
     borderRadius: Radius.full,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#F0F9FF',
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: '#BAE6FD',
   },
-  qrHeaderBtnText: {
-    fontSize: 13,
-    fontWeight: '700',
+  pwaHeaderBtnText: {
+    fontSize: 12,
+    fontWeight: '800',
     color: '#0284C7',
   },
   firebaseHeaderBtn: {

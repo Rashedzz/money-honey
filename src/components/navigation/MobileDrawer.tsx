@@ -20,7 +20,7 @@ interface MobileDrawerProps {
   activeTab: SidebarTabType;
   onSelectTab: (tab: SidebarTabType) => void;
   onQuickEntryPress: () => void;
-  onOpenQrModal: () => void;
+  onOpenQrModal?: () => void;
   onOpenAuthModal?: () => void;
   userProfile?: {
     id?: string;
@@ -48,17 +48,18 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({
     icon: keyof typeof Ionicons.glyphMap;
     badge?: string;
   }> = [
-    { id: 'dashboard', label: 'Dashboard', icon: 'grid-outline' },
-    { id: 'reports', label: 'Financial Statements', icon: 'document-text-outline', badge: 'IFRS / Intuit' },
-    { id: 'categories', label: 'Category & Budget Setup', icon: 'pricetags-outline', badge: 'Intuit' },
-    { id: 'stocks', label: 'Stock Market', icon: 'trending-up-outline', badge: 'DSE/CSE' },
-    { id: 'accounts', label: 'Bank Accounts', icon: 'wallet-outline' },
-    { id: 'loans', label: 'Loans & Debts', icon: 'card-outline' },
-    { id: 'schedules', label: 'Income & Expense Schedules', icon: 'calendar-outline', badge: 'Auto' },
-    { id: 'paper_assets', label: 'Paper Assets', icon: 'document-text-outline', badge: 'Govt' },
-    { id: 'physical_assets', label: 'Physical Assets', icon: 'business-outline', badge: 'Land/Gold' },
-    { id: 'expenses', label: 'Expenses', icon: 'receipt-outline' },
-    { id: 'settings', label: 'Settings & Profile', icon: 'settings-outline' },
+    { id: 'dashboard', label: 'Home Dashboard', icon: 'grid-outline' },
+    { id: 'register', label: 'Quicken Register', icon: 'receipt-outline', badge: 'Active' },
+    { id: 'expenses', label: 'Spending & Budgets', icon: 'pie-chart-outline' },
+    { id: 'reports', label: 'Financial Statements', icon: 'document-text-outline', badge: 'IFRS' },
+    { id: 'categories', label: 'Category & Budget Setup', icon: 'pricetags-outline', badge: 'Setup' },
+    { id: 'stocks', label: 'Stock Market Equities', icon: 'trending-up-outline', badge: 'DSE/CSE' },
+    { id: 'accounts', label: 'Bank Accounts & Cash', icon: 'wallet-outline' },
+    { id: 'loans', label: 'Loans & Debt Service', icon: 'card-outline' },
+    { id: 'schedules', label: 'Bills & Income Schedules', icon: 'calendar-outline' },
+    { id: 'paper_assets', label: 'Paper Assets (Sanchaypatra)', icon: 'document-text-outline' },
+    { id: 'physical_assets', label: 'Physical Assets (Land/Gold)', icon: 'business-outline' },
+    { id: 'settings', label: 'Settings & Security Vault', icon: 'settings-outline' },
   ];
 
   const handleItemPress = (tab: SidebarTabType) => {
@@ -78,10 +79,10 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({
             {/* Brand Header */}
             <View style={styles.brandHeader}>
               <View style={styles.brandRow}>
-                <DynamicMoneyTree size={40} />
+                <DynamicMoneyTree size={38} />
                 <View style={styles.brandCol}>
                   <Text style={styles.brandTitle}>Money-Honey</Text>
-                  <Text style={styles.brandSubtitle}>Private Wealth & Stock AI</Text>
+                  <Text style={styles.brandSubtitle}>Quicken Executive Suite</Text>
                 </View>
               </View>
 
@@ -110,7 +111,7 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({
                   <View
                     style={[
                       styles.statusDot,
-                      { backgroundColor: isOnline ? '#16A34A' : '#F59E0B' },
+                      { backgroundColor: isOnline ? '#10B981' : '#F59E0B' },
                     ]}
                   />
                   <Text style={styles.profileId}>
@@ -131,18 +132,18 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({
               activeOpacity={0.85}
             >
               <Ionicons name="add-circle" size={18} color="#FFFFFF" />
-              <Text style={styles.quickEntryBtnText}>+ New Data Entry</Text>
+              <Text style={styles.quickEntryBtnText}>+ New Transaction</Text>
             </TouchableOpacity>
 
             {/* Navigation Menu Items */}
             <ScrollView
               style={[styles.menuScroll, { overflow: 'scroll' } as any]}
               showsVerticalScrollIndicator={true}
-              contentContainerStyle={{ paddingBottom: 30 }}
+              contentContainerStyle={{ paddingBottom: 20 }}
             >
-              <Text style={styles.sectionLabel}>NAVIGATION</Text>
               {menuItems.map((item) => {
                 const isActive = activeTab === item.id;
+
                 return (
                   <TouchableOpacity
                     key={item.id}
@@ -153,7 +154,7 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({
                     <Ionicons
                       name={item.icon}
                       size={20}
-                      color={isActive ? '#FFFFFF' : '#94A3B8'}
+                      color={isActive ? '#38BDF8' : '#94A3B8'}
                     />
                     <Text style={[styles.menuLabel, isActive && styles.menuLabelActive]}>
                       {item.label}
@@ -178,23 +179,6 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({
                   </TouchableOpacity>
                 );
               })}
-
-              {/* Install PWA / Mobile App Button */}
-              <TouchableOpacity
-                style={styles.installAppBtn}
-                onPress={() => {
-                  onClose();
-                  onOpenQrModal();
-                }}
-                activeOpacity={0.85}
-              >
-                <Ionicons name="phone-portrait-outline" size={18} color="#00E5B3" />
-                <View style={{ flex: 1, marginLeft: 10 }}>
-                  <Text style={styles.installAppTitle}>Install Mobile App</Text>
-                  <Text style={styles.installAppSub}>PWA / Android Shortcut</Text>
-                </View>
-                <Ionicons name="download-outline" size={18} color="#00E5B3" />
-              </TouchableOpacity>
             </ScrollView>
           </View>
         </SafeAreaView>
@@ -216,7 +200,7 @@ const styles = StyleSheet.create({
     width: '82%',
     maxWidth: 340,
     height: '100%',
-    backgroundColor: '#000000',
+    backgroundColor: '#0F172A', // Quicken Deep Slate
     borderRightWidth: 1.5,
     borderRightColor: '#1E293B',
   },
@@ -248,8 +232,9 @@ const styles = StyleSheet.create({
   },
   brandSubtitle: {
     fontSize: 11,
-    color: '#0284C7',
+    color: '#38BDF8',
     fontWeight: '700',
+    textTransform: 'uppercase',
   },
   closeBtn: {
     padding: 6,
@@ -259,16 +244,16 @@ const styles = StyleSheet.create({
   profileCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
-    backgroundColor: '#0F172A',
-    borderRadius: Radius.lg,
+    gap: 12,
+    backgroundColor: '#1E293B',
     padding: 12,
-    marginTop: 14,
+    borderRadius: Radius.lg,
+    marginVertical: Spacing.sm,
     borderWidth: 1,
     borderColor: '#334155',
   },
   avatar: {
-    fontSize: 24,
+    fontSize: 28,
   },
   avatarImg: {
     width: 36,
@@ -276,20 +261,20 @@ const styles = StyleSheet.create({
     borderRadius: 18,
   },
   profileName: {
-    fontSize: 13,
+    fontSize: 14,
     fontWeight: '800',
     color: '#FFFFFF',
   },
   statusRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 5,
+    gap: 6,
     marginTop: 2,
   },
   statusDot: {
-    width: 7,
-    height: 7,
-    borderRadius: 4,
+    width: 6,
+    height: 6,
+    borderRadius: 3,
   },
   profileId: {
     fontSize: 11,
@@ -300,57 +285,48 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    backgroundColor: '#16A34A',
+    backgroundColor: '#0284C7',
+    paddingVertical: 12,
     borderRadius: Radius.md,
-    paddingVertical: 11,
-    marginTop: 12,
+    marginBottom: Spacing.sm,
   },
   quickEntryBtnText: {
-    fontSize: 13,
+    fontSize: 14,
     fontWeight: '800',
     color: '#FFFFFF',
   },
   menuScroll: {
     flex: 1,
-    marginTop: 14,
-  },
-  sectionLabel: {
-    fontSize: 10,
-    fontWeight: '900',
-    color: '#64748B',
-    letterSpacing: 0.8,
-    marginBottom: 8,
-    marginLeft: 4,
   },
   menuItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 12,
+    gap: 12,
+    paddingVertical: 10,
     paddingHorizontal: 12,
     borderRadius: Radius.md,
-    marginBottom: 4,
+    marginVertical: 1,
   },
   menuItemActive: {
-    backgroundColor: '#16A34A',
+    backgroundColor: '#1E293B',
   },
   menuLabel: {
     fontSize: 13,
-    fontWeight: '700',
+    fontWeight: '600',
     color: '#94A3B8',
-    marginLeft: 12,
     flex: 1,
   },
   menuLabelActive: {
     color: '#FFFFFF',
-    fontWeight: '900',
+    fontWeight: '800',
   },
   badge: {
     paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: Radius.sm,
+    paddingVertical: 2,
+    borderRadius: 10,
   },
   badgeActive: {
-    backgroundColor: 'rgba(255, 255, 255, 0.25)',
+    backgroundColor: 'rgba(2, 132, 199, 0.2)',
   },
   badgeInactive: {
     backgroundColor: '#1E293B',
@@ -360,30 +336,9 @@ const styles = StyleSheet.create({
     fontWeight: '800',
   },
   badgeTextActive: {
-    color: '#FFFFFF',
+    color: '#38BDF8',
   },
   badgeTextInactive: {
     color: '#94A3B8',
-  },
-  installAppBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#0F172A',
-    borderRadius: Radius.md,
-    padding: 12,
-    marginTop: 20,
-    marginBottom: 30,
-    borderWidth: 1,
-    borderColor: '#00E5B3',
-  },
-  installAppTitle: {
-    fontSize: 12,
-    fontWeight: '800',
-    color: '#FFFFFF',
-  },
-  installAppSub: {
-    fontSize: 10,
-    color: '#94A3B8',
-    marginTop: 1,
   },
 });
