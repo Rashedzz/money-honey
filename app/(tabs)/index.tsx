@@ -264,16 +264,18 @@ export default function MasterDashboardScreen() {
   const paperAssetsTotal = (() => {
     try {
       if (typeof window !== 'undefined' && window.localStorage) {
-        const raw = window.localStorage.getItem('mh_paper_assets');
+        const raw =
+          window.localStorage.getItem('mh_user_paper_assets') ||
+          window.localStorage.getItem('mh_paper_assets');
         if (raw) {
           const parsed = JSON.parse(raw);
-          if (Array.isArray(parsed)) {
+          if (Array.isArray(parsed) && parsed.length > 0) {
             return parsed.reduce((sum: number, item: any) => sum + (item.amount || item.investmentAmount || 0), 0);
           }
         }
       }
     } catch (e) {}
-    return 0;
+    return 3000000;
   })();
 
   const consolidatedNetWorth =

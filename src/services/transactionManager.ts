@@ -108,6 +108,19 @@ export const defaultCashInHandAccount: BankAccountItem = {
   color: '#10B981',
 };
 
+export const defaultSonaliBankAccount: BankAccountItem = {
+  id: 'ACC-SONALI-01',
+  bankName: 'Sonali Bank PLC',
+  accountName: 'Sonali Bank Savings Account',
+  accountNumber: 'SONALI-0102030405',
+  routingNumber: '200270154',
+  accountType: 'Savings',
+  currentBalance: 0,
+  branch: 'Principal Branch, Motijheel, Dhaka',
+  address: 'Motijheel C/A, Dhaka-1000',
+  color: '#0284C7',
+};
+
 // Event bus for real-time reactivity across all screens
 const BALANCE_UPDATE_EVENT = 'mh_balance_updated';
 const subscribers = new Set<() => void>();
@@ -168,17 +181,30 @@ export class TransactionManager {
   }
 
   /**
-   * Returns accounts, ensuring Cash in Hand exists as a first-class account
+   * Returns accounts, ensuring Cash in Hand and Sonali Bank exist
    */
   public static getAccountsWithCash(): BankAccountItem[] {
-    const list = this.getRawAccounts();
+    let list = this.getRawAccounts();
+    let changed = false;
+
     const hasCash = list.some(
       (a) => a.id === CASH_IN_HAND_ID || a.accountType === 'Physical Cash'
     );
     if (!hasCash) {
-      const withCash = [defaultCashInHandAccount, ...list];
-      this.saveAccounts(withCash);
-      return withCash;
+      list = [defaultCashInHandAccount, ...list];
+      changed = true;
+    }
+
+    const hasSonali = list.some(
+      (a) => a.bankName?.toLowerCase().includes('sonali') || a.accountNumber === 'SONALI-0102030405'
+    );
+    if (!hasSonali) {
+      list = [...list, defaultSonaliBankAccount];
+      changed = true;
+    }
+
+    if (changed) {
+      this.saveAccounts(list);
     }
     return list;
   }

@@ -80,6 +80,207 @@ export type PaperAssetUnion = SanchaypatraAsset | FDRAsset | DPSAsset;
 
 const STORAGE_KEY = 'mh_user_paper_assets';
 
+export const INITIAL_SANCHAYPATRA_PORTFOLIO: SanchaypatraAsset[] = [
+  {
+    id: 'sp_2025_0134852',
+    type: 'Sanchaypatra',
+    name: '৩-মাস অন্তর মুনাফা ভিত্তিক সঞ্চয়পত্র (একক)',
+    institution: 'Sonali Bank PLC',
+    address: 'Principal Branch, Motijheel, Dhaka',
+    linkedAccountNo: 'SONALI-0102030405',
+    bankName: 'Sonali Bank PLC',
+    certificateNumber: '2025-0134852',
+    amount: 500000,
+    activationDate: '2025-02-12',
+    maturityDate: '2028-02-12',
+    profitRateYearly: 11.04,
+    sourceTaxPercent: 5,
+    payoutInterval: '3 Months',
+    monthlyProfit: Math.round((500000 * 0.1104 * 0.95) / 12),
+    grossProfitPerInterval: (500000 * 0.1104) / 4,
+    netProfitPerInterval: ((500000 * 0.1104) / 4) * 0.95,
+    sourceTaxDeductedPerInterval: ((500000 * 0.1104) / 4) * 0.05,
+    totalTaxDeductedAnnual: 500000 * 0.1104 * 0.05,
+    closingDaysRemaining: 517,
+  },
+  {
+    id: 'sp_2025_0229715',
+    type: 'Sanchaypatra',
+    name: '৩-মাস অন্তর মুনাফা ভিত্তিক সঞ্চয়পত্র (একক)',
+    institution: 'Sonali Bank PLC',
+    address: 'Principal Branch, Motijheel, Dhaka',
+    linkedAccountNo: 'SONALI-0102030405',
+    bankName: 'Sonali Bank PLC',
+    certificateNumber: '2025-0229715',
+    amount: 100000,
+    activationDate: '2025-03-10',
+    maturityDate: '2028-03-10',
+    profitRateYearly: 11.04,
+    sourceTaxPercent: 5,
+    payoutInterval: '3 Months',
+    monthlyProfit: Math.round((100000 * 0.1104 * 0.95) / 12),
+    grossProfitPerInterval: (100000 * 0.1104) / 4,
+    netProfitPerInterval: ((100000 * 0.1104) / 4) * 0.95,
+    sourceTaxDeductedPerInterval: ((100000 * 0.1104) / 4) * 0.05,
+    totalTaxDeductedAnnual: 100000 * 0.1104 * 0.05,
+    closingDaysRemaining: 544,
+  },
+  {
+    id: 'sp_2025_0432271',
+    type: 'Sanchaypatra',
+    name: '৩-মাস অন্তর মুনাফা ভিত্তিক সঞ্চয়পত্র (একক)',
+    institution: 'Sonali Bank PLC',
+    address: 'Principal Branch, Motijheel, Dhaka',
+    linkedAccountNo: 'SONALI-0102030405',
+    bankName: 'Sonali Bank PLC',
+    certificateNumber: '2025-0432271',
+    amount: 300000,
+    activationDate: '2025-05-15',
+    maturityDate: '2028-05-15',
+    profitRateYearly: 11.04,
+    sourceTaxPercent: 5,
+    payoutInterval: '3 Months',
+    monthlyProfit: Math.round((300000 * 0.1104 * 0.95) / 12),
+    grossProfitPerInterval: (300000 * 0.1104) / 4,
+    netProfitPerInterval: ((300000 * 0.1104) / 4) * 0.95,
+    sourceTaxDeductedPerInterval: ((300000 * 0.1104) / 4) * 0.05,
+    totalTaxDeductedAnnual: 300000 * 0.1104 * 0.05,
+    closingDaysRemaining: 610,
+  },
+  {
+    id: 'sp_2025_0804248',
+    type: 'Sanchaypatra',
+    name: '৩-মাস অন্তর মুনাফা ভিত্তিক সঞ্চয়পত্র (একক)',
+    institution: 'Sonali Bank PLC',
+    address: 'Principal Branch, Motijheel, Dhaka',
+    linkedAccountNo: 'SONALI-0102030405',
+    bankName: 'Sonali Bank PLC',
+    certificateNumber: '2025-0804248',
+    amount: 500000,
+    activationDate: '2025-08-20',
+    maturityDate: '2028-08-20',
+    profitRateYearly: 11.04,
+    sourceTaxPercent: 5,
+    payoutInterval: '3 Months',
+    monthlyProfit: Math.round((500000 * 0.1104 * 0.95) / 12),
+    grossProfitPerInterval: (500000 * 0.1104) / 4,
+    netProfitPerInterval: ((500000 * 0.1104) / 4) * 0.95,
+    sourceTaxDeductedPerInterval: ((500000 * 0.1104) / 4) * 0.05,
+    totalTaxDeductedAnnual: 500000 * 0.1104 * 0.05,
+    closingDaysRemaining: 707,
+  },
+  {
+    id: 'sp_2025_1121586',
+    type: 'Sanchaypatra',
+    name: '৩-মাস অন্তর মুনাফা ভিত্তিক সঞ্চয়পত্র (একক)',
+    institution: 'Sonali Bank PLC',
+    address: 'Principal Branch, Motijheel, Dhaka',
+    linkedAccountNo: 'SONALI-0102030405',
+    bankName: 'Sonali Bank PLC',
+    certificateNumber: '2025-1121586',
+    amount: 400000,
+    activationDate: '2025-11-04',
+    maturityDate: '2028-11-04',
+    profitRateYearly: 11.04,
+    sourceTaxPercent: 5,
+    payoutInterval: '3 Months',
+    monthlyProfit: Math.round((400000 * 0.1104 * 0.95) / 12),
+    grossProfitPerInterval: (400000 * 0.1104) / 4,
+    netProfitPerInterval: ((400000 * 0.1104) / 4) * 0.95,
+    sourceTaxDeductedPerInterval: ((400000 * 0.1104) / 4) * 0.05,
+    totalTaxDeductedAnnual: 400000 * 0.1104 * 0.05,
+    closingDaysRemaining: 783,
+  },
+  {
+    id: 'sp_2025_1143799',
+    type: 'Sanchaypatra',
+    name: '৩-মাস অন্তর মুনাফা ভিত্তিক সঞ্চয়পত্র (একক)',
+    institution: 'Sonali Bank PLC',
+    address: 'Principal Branch, Motijheel, Dhaka',
+    linkedAccountNo: 'SONALI-0102030405',
+    bankName: 'Sonali Bank PLC',
+    certificateNumber: '2025-1143799',
+    amount: 100000,
+    activationDate: '2025-11-10',
+    maturityDate: '2028-11-10',
+    profitRateYearly: 11.04,
+    sourceTaxPercent: 5,
+    payoutInterval: '3 Months',
+    monthlyProfit: Math.round((100000 * 0.1104 * 0.95) / 12),
+    grossProfitPerInterval: (100000 * 0.1104) / 4,
+    netProfitPerInterval: ((100000 * 0.1104) / 4) * 0.95,
+    sourceTaxDeductedPerInterval: ((100000 * 0.1104) / 4) * 0.05,
+    totalTaxDeductedAnnual: 100000 * 0.1104 * 0.05,
+    closingDaysRemaining: 789,
+  },
+  {
+    id: 'sp_2026_0326827',
+    type: 'Sanchaypatra',
+    name: '৩-মাস অন্তর মুনাফা ভিত্তিক সঞ্চয়পত্র (একক)',
+    institution: 'Sonali Bank PLC',
+    address: 'Principal Branch, Motijheel, Dhaka',
+    linkedAccountNo: 'SONALI-0102030405',
+    bankName: 'Sonali Bank PLC',
+    certificateNumber: '2026-0326827',
+    amount: 300000,
+    activationDate: '2026-04-16',
+    maturityDate: '2029-04-16',
+    profitRateYearly: 11.04,
+    sourceTaxPercent: 5,
+    payoutInterval: '3 Months',
+    monthlyProfit: Math.round((300000 * 0.1104 * 0.95) / 12),
+    grossProfitPerInterval: (300000 * 0.1104) / 4,
+    netProfitPerInterval: ((300000 * 0.1104) / 4) * 0.95,
+    sourceTaxDeductedPerInterval: ((300000 * 0.1104) / 4) * 0.05,
+    totalTaxDeductedAnnual: 300000 * 0.1104 * 0.05,
+    closingDaysRemaining: 946,
+  },
+  {
+    id: 'sp_2026_0541949',
+    type: 'Sanchaypatra',
+    name: '৩-মাস অন্তর মুনাফা ভিত্তিক সঞ্চয়পত্র (একক)',
+    institution: 'Sonali Bank PLC',
+    address: 'Principal Branch, Motijheel, Dhaka',
+    linkedAccountNo: 'SONALI-0102030405',
+    bankName: 'Sonali Bank PLC',
+    certificateNumber: '2026-0541949',
+    amount: 400000,
+    activationDate: '2026-06-15',
+    maturityDate: '2029-06-15',
+    profitRateYearly: 11.04,
+    sourceTaxPercent: 5,
+    payoutInterval: '3 Months',
+    monthlyProfit: Math.round((400000 * 0.1104 * 0.95) / 12),
+    grossProfitPerInterval: (400000 * 0.1104) / 4,
+    netProfitPerInterval: ((400000 * 0.1104) / 4) * 0.95,
+    sourceTaxDeductedPerInterval: ((400000 * 0.1104) / 4) * 0.05,
+    totalTaxDeductedAnnual: 400000 * 0.1104 * 0.05,
+    closingDaysRemaining: 1006,
+  },
+  {
+    id: 'sp_2026_0698004',
+    type: 'Sanchaypatra',
+    name: '৩-মাস অন্তর মুনাফা ভিত্তিক সঞ্চয়পত্র (একক)',
+    institution: 'Sonali Bank PLC',
+    address: 'Principal Branch, Motijheel, Dhaka',
+    linkedAccountNo: 'SONALI-0102030405',
+    bankName: 'Sonali Bank PLC',
+    certificateNumber: '2026-0698004',
+    amount: 400000,
+    activationDate: '2026-07-14',
+    maturityDate: '2029-07-14',
+    profitRateYearly: 11.04,
+    sourceTaxPercent: 5,
+    payoutInterval: '3 Months',
+    monthlyProfit: Math.round((400000 * 0.1104 * 0.95) / 12),
+    grossProfitPerInterval: (400000 * 0.1104) / 4,
+    netProfitPerInterval: ((400000 * 0.1104) / 4) * 0.95,
+    sourceTaxDeductedPerInterval: ((400000 * 0.1104) / 4) * 0.05,
+    totalTaxDeductedAnnual: 400000 * 0.1104 * 0.05,
+    closingDaysRemaining: 1035,
+  },
+];
+
 export const PaperAssetsScreen: React.FC = () => {
   const [filter, setFilter] = useState<'ALL' | 'SANCHAYPATRA' | 'FDR' | 'DPS'>('ALL');
   const [paperAssets, setPaperAssets] = useState<PaperAssetUnion[]>([]);
@@ -111,12 +312,67 @@ export const PaperAssetsScreen: React.FC = () => {
   // Tax Report View
   const [showTaxReport, setShowTaxReport] = useState(false);
 
-  // Load from local storage and restore draft if user minimized app
+  const calculateDaysLeft = (targetDateStr: string) => {
+    try {
+      const target = new Date(targetDateStr);
+      const now = new Date();
+      const diff = target.getTime() - now.getTime();
+      return Math.max(0, Math.ceil(diff / (1000 * 3600 * 24)));
+    } catch (e) {
+      return 365;
+    }
+  };
+
+  // Load from local storage and ensure all 9 user Sanchaypatra certificates are synchronized
   useEffect(() => {
     try {
       if (typeof window !== 'undefined' && window.localStorage) {
-        const raw = window.localStorage.getItem(STORAGE_KEY);
-        if (raw) setPaperAssets(JSON.parse(raw));
+        const raw = window.localStorage.getItem(STORAGE_KEY) || window.localStorage.getItem('mh_paper_assets');
+        let currentList: PaperAssetUnion[] = raw ? JSON.parse(raw) : [];
+
+        // Check if all 9 user certificates are in currentList
+        INITIAL_SANCHAYPATRA_PORTFOLIO.forEach((initSp) => {
+          const existsIndex = currentList.findIndex(
+            (p) =>
+              p.type === 'Sanchaypatra' &&
+              (p as SanchaypatraAsset).certificateNumber === initSp.certificateNumber
+          );
+          if (existsIndex === -1) {
+            currentList = [initSp, ...currentList];
+          } else {
+            // Keep updated with Sonali Bank PLC link and accurate metadata
+            const existing = currentList[existsIndex] as SanchaypatraAsset;
+            currentList[existsIndex] = {
+              ...existing,
+              name: initSp.name,
+              institution: 'Sonali Bank PLC',
+              bankName: 'Sonali Bank PLC',
+              linkedAccountNo: 'SONALI-0102030405',
+              address: 'Principal Branch, Motijheel, Dhaka',
+              amount: initSp.amount,
+              activationDate: initSp.activationDate,
+              maturityDate: initSp.maturityDate,
+              payoutInterval: '3 Months',
+              profitRateYearly: existing.profitRateYearly || 11.04,
+              sourceTaxPercent: existing.sourceTaxPercent || 5,
+            };
+          }
+        });
+
+        // Recalculate closing days remaining dynamically
+        currentList = currentList.map((p) => {
+          if (p.maturityDate) {
+            return {
+              ...p,
+              closingDaysRemaining: calculateDaysLeft(p.maturityDate),
+            };
+          }
+          return p;
+        });
+
+        setPaperAssets(currentList);
+        window.localStorage.setItem(STORAGE_KEY, JSON.stringify(currentList));
+        window.localStorage.setItem('mh_paper_assets', JSON.stringify(currentList));
       }
     } catch (e) {}
 
@@ -192,6 +448,7 @@ export const PaperAssetsScreen: React.FC = () => {
     try {
       if (typeof window !== 'undefined' && window.localStorage) {
         window.localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+        window.localStorage.setItem('mh_paper_assets', JSON.stringify(updated));
       }
     } catch (e) {}
   };
@@ -204,17 +461,6 @@ export const PaperAssetsScreen: React.FC = () => {
       setPBankName(found.bankName);
       setPAddress(found.address || found.branch || `${found.bankName} Main Branch`);
       if (!pInstitution) setPInstitution(found.bankName);
-    }
-  };
-
-  const calculateDaysLeft = (targetDateStr: string) => {
-    try {
-      const target = new Date(targetDateStr);
-      const now = new Date();
-      const diff = target.getTime() - now.getTime();
-      return Math.max(0, Math.ceil(diff / (1000 * 3600 * 24)));
-    } catch (e) {
-      return 365;
     }
   };
 

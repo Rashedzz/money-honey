@@ -59,6 +59,8 @@ import {
 } from '../../finance/advancedStockFeatures';
 import { useWatchlist } from '../../hooks/useWatchlist';
 import { StockPortfolioDashboard } from '../stock/StockPortfolioDashboard';
+import { useLiveStockFeed } from '../../hooks/useLiveStockFeed';
+import { MarketExchange } from '../../services/liveStockFeedService';
 
 interface StockMarketScreenProps {
   stocks: StockHolding[];
@@ -86,6 +88,16 @@ export const StockMarketScreen: React.FC<StockMarketScreenProps> = ({
 }) => {
   const [activeTab, setActiveTab] = useState<MainTabType>('portfolio_dashboard');
   const watchlist = useWatchlist();
+
+  // Live Stock Market Feed & Session Surveillance
+  const {
+    session,
+    exchange: selectedExchange,
+    setExchange: setSelectedExchange,
+    isRefreshing,
+    lastRefreshedAt,
+    refreshNow,
+  } = useLiveStockFeed('ALL');
 
   // Live AI Assistant State
   const [assistantInput, setAssistantInput] = useState(
@@ -151,7 +163,11 @@ export const StockMarketScreen: React.FC<StockMarketScreenProps> = ({
   const [editPriceInput, setEditPriceInput] = useState('');
 
   // Screener filter logic
-  const filteredStocks = DSE_STOCK_UNIVERSE.filter((s) => {
+  const exchangeUniverse = selectedExchange === 'ALL'
+    ? DSE_STOCK_UNIVERSE
+    : DSE_STOCK_UNIVERSE.filter((s) => s.exchange === selectedExchange);
+
+  const filteredStocks = exchangeUniverse.filter((s) => {
     const matchesSearch =
       s.symbol.toLowerCase().includes(searchQuery.toLowerCase()) ||
       s.companyName.toLowerCase().includes(searchQuery.toLowerCase());
@@ -274,6 +290,58 @@ export const StockMarketScreen: React.FC<StockMarketScreenProps> = ({
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+      {/* 0. Live Market Surveillance & Session Status Banner */}
+      <GlassCard style={styles.marketSessionBanner} padding={14} glowColor={session.badgeColor}>
+        <View style={styles.sessionBannerContent}>
+          <View style={styles.sessionStatusCol}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+              <View style={[styles.pulseDot, { backgroundColor: session.badgeColor }]} />
+              <View
+                style={[
+                  styles.sessionBadge,
+                  {
+                    backgroundColor: session.isOpen
+                      ? 'rgba(22, 163, 74, 0.15)'
+                      : 'rgba(217, 119, 6, 0.15)',
+                    borderColor: session.badgeColor,
+                  },
+                ]}
+              >
+                <Text style={[styles.sessionBadgeText, { color: session.badgeColor }]}>
+                  {session.statusBadge}
+                </Text>
+              </View>
+              <Text style={styles.sessionTitleText}>{session.sessionTitle}</Text>
+            </View>
+            <Text style={styles.sessionDetailText}>
+              BST: {session.currentTimeBST} •{' '}
+              {session.isOpen
+                ? 'Live DSE/CSE streaming active'
+                : `Official Close: ${session.lastCloseDate}`}{' '}
+              • Next Session: {session.nextSessionOpens}
+            </Text>
+          </View>
+
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+            <TouchableOpacity
+              style={[styles.refreshFeedBtn, isRefreshing && styles.refreshFeedBtnDisabled]}
+              onPress={refreshNow}
+              disabled={isRefreshing}
+              activeOpacity={0.8}
+            >
+              <Ionicons
+                name={isRefreshing ? 'sync' : 'refresh-outline'}
+                size={16}
+                color="#FFFFFF"
+              />
+              <Text style={styles.refreshFeedBtnText}>
+                {isRefreshing ? 'Refreshing...' : '🔄 Refresh Market Data'}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </GlassCard>
+
       {/* 1. Live Bangladesh Market Header Bar (DSEX, DS30, DSES & Regime) */}
       <GlassCard style={styles.marketTickerCard} padding={16} glowColor="#0284C7">
         <View style={styles.tickerRow}>
@@ -673,8 +741,38 @@ export const StockMarketScreen: React.FC<StockMarketScreenProps> = ({
               />
             </View>
 
-            {/* Filter Pills */}
+            {/* Exchange Filter Pills */}
             <View style={{ flexDirection: 'row', gap: 8, marginTop: 10, flexWrap: 'wrap' }}>
+              {(
+                [
+                  { id: 'ALL', label: '🌐 All Markets' },
+                  { id: 'DSE', label: '🇧🇩 DSE (Dhaka)' },
+                  { id: 'CSE', label: '🇧🇩 CSE (Chittagong)' },
+                  { id: 'GLOBAL', label: '🇺🇸 Global Equities' },
+                ] as const
+              ).map((ex) => (
+                <TouchableOpacity
+                  key={ex.id}
+                  style={[
+                    styles.exchangeFilterPill,
+                    selectedExchange === ex.id && styles.exchangeFilterPillActive,
+                  ]}
+                  onPress={() => setSelectedExchange(ex.id)}
+                >
+                  <Text
+                    style={[
+                      styles.exchangeFilterText,
+                      selectedExchange === ex.id && styles.exchangeFilterTextActive,
+                    ]}
+                  >
+                    {ex.label}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            {/* Valuation Filter Pills */}
+            <View style={{ flexDirection: 'row', gap: 8, marginTop: 8, flexWrap: 'wrap' }}>
               {(['All', '🏆 Best Dividend Stocks', '🚀 Best Growth Stocks', '🟢 Undervalued (DCF)', 'Low PE'] as const).map((v) => (
                 <TouchableOpacity
                   key={v}
@@ -690,9 +788,14 @@ export const StockMarketScreen: React.FC<StockMarketScreenProps> = ({
           </GlassCard>
 
           {/* Stock List Cards */}
-          <Text style={styles.sectionHeading}>
-            MATCHING DSE EQUITIES ({filteredStocks.length} STOCKS)
-          </Text>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+            <Text style={styles.sectionHeading}>
+              ENLISTED EQUITIES ({filteredStocks.length} STOCKS - {selectedExchange === 'ALL' ? 'ALL EXCHANGES' : selectedExchange})
+            </Text>
+            <Text style={{ fontSize: 11, color: '#64748B', fontWeight: '600' }}>
+              {session.isOpen ? '🟢 Live Session Feed' : '📦 Official Day-End Closing'}
+            </Text>
+          </View>
 
           <View style={{ gap: 10 }}>
             {filteredStocks.map((stock) => (
@@ -727,6 +830,18 @@ export const StockMarketScreen: React.FC<StockMarketScreenProps> = ({
                           <Text style={{ fontSize: 17, fontWeight: '900', color: '#0F172A' }}>
                             {stock.symbol}
                           </Text>
+                          <View
+                            style={[
+                              styles.exchangeBadgeSmall,
+                              stock.exchange === 'GLOBAL'
+                                ? styles.exchangeBadgeGlobal
+                                : stock.exchange === 'CSE'
+                                ? styles.exchangeBadgeCse
+                                : styles.exchangeBadgeDse,
+                            ]}
+                          >
+                            <Text style={styles.exchangeBadgeSmallText}>{stock.exchange}</Text>
+                          </View>
                           <View style={[styles.recBadge, stock.recommendation.includes('BUY') ? styles.recBadgeBuy : styles.recBadgeHold]}>
                             <Text style={styles.recBadgeText}>{stock.recommendation}</Text>
                           </View>
@@ -737,7 +852,10 @@ export const StockMarketScreen: React.FC<StockMarketScreenProps> = ({
 
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 20 }}>
                       <View style={{ alignItems: 'flex-end' }}>
-                        <Text style={{ fontSize: 18, fontWeight: '900', color: '#0F172A' }}>৳{stock.ltp}</Text>
+                        <Text style={{ fontSize: 18, fontWeight: '900', color: '#0F172A' }}>
+                          {stock.currency === 'USD' || stock.exchange === 'GLOBAL' ? '$' : '৳'}
+                          {stock.ltp}
+                        </Text>
                         <Text style={{ fontSize: 12, fontWeight: '700', color: stock.change >= 0 ? '#16A34A' : '#EF4444' }}>
                           {stock.change >= 0 ? '+' : ''}{stock.changePercent}%
                         </Text>
@@ -3516,5 +3634,107 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     fontSize: 14,
     color: '#0F172A',
+  },
+  // Live Market Session Surveillance Styles
+  marketSessionBanner: {
+    width: '100%',
+    marginBottom: Spacing.sm,
+  },
+  sessionBannerContent: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: 12,
+  },
+  sessionStatusCol: {
+    flex: 1,
+    minWidth: 260,
+    gap: 4,
+  },
+  pulseDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+  },
+  sessionBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: Radius.sm,
+    borderWidth: 1,
+  },
+  sessionBadgeText: {
+    fontSize: 11,
+    fontWeight: '900',
+    letterSpacing: 0.5,
+  },
+  sessionTitleText: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: '#0F172A',
+  },
+  sessionDetailText: {
+    fontSize: 12,
+    color: '#64748B',
+    fontWeight: '500',
+  },
+  refreshFeedBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: '#0284C7',
+    paddingHorizontal: 14,
+    paddingVertical: 9,
+    borderRadius: Radius.md,
+  },
+  refreshFeedBtnDisabled: {
+    opacity: 0.6,
+  },
+  refreshFeedBtnText: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: '#FFFFFF',
+  },
+  // Exchange Filter Pills
+  exchangeFilterPill: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: Radius.full,
+    backgroundColor: '#F1F5F9',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  exchangeFilterPillActive: {
+    backgroundColor: '#0284C7',
+    borderColor: '#0284C7',
+  },
+  exchangeFilterText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#64748B',
+  },
+  exchangeFilterTextActive: {
+    color: '#FFFFFF',
+    fontWeight: '800',
+  },
+  // Exchange Badges
+  exchangeBadgeSmall: {
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: Radius.sm,
+  },
+  exchangeBadgeSmallText: {
+    fontSize: 10,
+    fontWeight: '900',
+    color: '#FFFFFF',
+  },
+  exchangeBadgeDse: {
+    backgroundColor: '#0284C7',
+  },
+  exchangeBadgeCse: {
+    backgroundColor: '#0D9488',
+  },
+  exchangeBadgeGlobal: {
+    backgroundColor: '#6366F1',
   },
 });
