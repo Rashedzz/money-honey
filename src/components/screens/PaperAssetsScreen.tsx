@@ -14,6 +14,11 @@ import { Colors, Typography, Spacing, Radius } from '../../theme';
 import { GlassCard } from '../shared/GlassCard';
 import { getStoredBankAccounts, BankAccountItem, saveStoredBankAccounts } from '../../../app/(tabs)/accounts';
 import { FormDraftManager } from '../../utils/formDrafts';
+import {
+  SanchaypatraEarningsService,
+  SanchaypatraCouponScheduleItem,
+  SANCHAYPATRA_MASTER_PORTFOLIO,
+} from '../../services/sanchaypatraEarningsService';
 
 export interface SanchaypatraAsset {
   id: string;
@@ -27,6 +32,8 @@ export interface SanchaypatraAsset {
   amount: number;                 // Investment Capital
   activationDate: string;         // Date of Activation
   maturityDate: string;           // Maturity / Closing Date
+  firstCouponDate?: string;       // 1st Coupon Encashment Date (নগদায়নের তারিখ)
+  nextEncashmentDate?: string;    // Next Coupon Encashment Date
   profitRateYearly: number;       // Profit Rate: Yearly %
   sourceTaxPercent: number;       // Source Tax Deduction %
   payoutInterval: 'Monthly' | '3 Months' | 'At Maturity';
@@ -93,14 +100,16 @@ export const INITIAL_SANCHAYPATRA_PORTFOLIO: SanchaypatraAsset[] = [
     amount: 500000,
     activationDate: '2025-02-12',
     maturityDate: '2028-02-12',
-    profitRateYearly: 11.04,
-    sourceTaxPercent: 5,
+    firstCouponDate: '2025-05-12',
+    nextEncashmentDate: '2025-05-12',
+    profitRateYearly: 12.25,
+    sourceTaxPercent: 10,
     payoutInterval: '3 Months',
-    monthlyProfit: Math.round((500000 * 0.1104 * 0.95) / 12),
-    grossProfitPerInterval: (500000 * 0.1104) / 4,
-    netProfitPerInterval: ((500000 * 0.1104) / 4) * 0.95,
-    sourceTaxDeductedPerInterval: ((500000 * 0.1104) / 4) * 0.05,
-    totalTaxDeductedAnnual: 500000 * 0.1104 * 0.05,
+    monthlyProfit: 4594,
+    grossProfitPerInterval: 15312.50,
+    netProfitPerInterval: 13781.25,
+    sourceTaxDeductedPerInterval: 1531.25,
+    totalTaxDeductedAnnual: 6125.00,
     closingDaysRemaining: 517,
   },
   {
@@ -115,14 +124,16 @@ export const INITIAL_SANCHAYPATRA_PORTFOLIO: SanchaypatraAsset[] = [
     amount: 100000,
     activationDate: '2025-03-10',
     maturityDate: '2028-03-10',
-    profitRateYearly: 11.04,
-    sourceTaxPercent: 5,
+    firstCouponDate: '2025-06-15',
+    nextEncashmentDate: '2025-06-15',
+    profitRateYearly: 12.25,
+    sourceTaxPercent: 10,
     payoutInterval: '3 Months',
-    monthlyProfit: Math.round((100000 * 0.1104 * 0.95) / 12),
-    grossProfitPerInterval: (100000 * 0.1104) / 4,
-    netProfitPerInterval: ((100000 * 0.1104) / 4) * 0.95,
-    sourceTaxDeductedPerInterval: ((100000 * 0.1104) / 4) * 0.05,
-    totalTaxDeductedAnnual: 100000 * 0.1104 * 0.05,
+    monthlyProfit: 919,
+    grossProfitPerInterval: 3062.50,
+    netProfitPerInterval: 2756.25,
+    sourceTaxDeductedPerInterval: 306.25,
+    totalTaxDeductedAnnual: 1225.00,
     closingDaysRemaining: 544,
   },
   {
@@ -137,14 +148,16 @@ export const INITIAL_SANCHAYPATRA_PORTFOLIO: SanchaypatraAsset[] = [
     amount: 300000,
     activationDate: '2025-05-15',
     maturityDate: '2028-05-15',
-    profitRateYearly: 11.04,
-    sourceTaxPercent: 5,
+    firstCouponDate: '2025-08-17',
+    nextEncashmentDate: '2025-08-17',
+    profitRateYearly: 12.275,
+    sourceTaxPercent: 10,
     payoutInterval: '3 Months',
-    monthlyProfit: Math.round((300000 * 0.1104 * 0.95) / 12),
-    grossProfitPerInterval: (300000 * 0.1104) / 4,
-    netProfitPerInterval: ((300000 * 0.1104) / 4) * 0.95,
-    sourceTaxDeductedPerInterval: ((300000 * 0.1104) / 4) * 0.05,
-    totalTaxDeductedAnnual: 300000 * 0.1104 * 0.05,
+    monthlyProfit: 2762,
+    grossProfitPerInterval: 9206.25,
+    netProfitPerInterval: 8285.62,
+    sourceTaxDeductedPerInterval: 920.63,
+    totalTaxDeductedAnnual: 3682.52,
     closingDaysRemaining: 610,
   },
   {
@@ -159,14 +172,16 @@ export const INITIAL_SANCHAYPATRA_PORTFOLIO: SanchaypatraAsset[] = [
     amount: 500000,
     activationDate: '2025-08-20',
     maturityDate: '2028-08-20',
-    profitRateYearly: 11.04,
-    sourceTaxPercent: 5,
+    firstCouponDate: '2025-11-20',
+    nextEncashmentDate: '2025-11-20',
+    profitRateYearly: 11.80,
+    sourceTaxPercent: 10,
     payoutInterval: '3 Months',
-    monthlyProfit: Math.round((500000 * 0.1104 * 0.95) / 12),
-    grossProfitPerInterval: (500000 * 0.1104) / 4,
-    netProfitPerInterval: ((500000 * 0.1104) / 4) * 0.95,
-    sourceTaxDeductedPerInterval: ((500000 * 0.1104) / 4) * 0.05,
-    totalTaxDeductedAnnual: 500000 * 0.1104 * 0.05,
+    monthlyProfit: 4425,
+    grossProfitPerInterval: 14750.00,
+    netProfitPerInterval: 13275.00,
+    sourceTaxDeductedPerInterval: 1475.00,
+    totalTaxDeductedAnnual: 5900.00,
     closingDaysRemaining: 707,
   },
   {
@@ -181,14 +196,16 @@ export const INITIAL_SANCHAYPATRA_PORTFOLIO: SanchaypatraAsset[] = [
     amount: 400000,
     activationDate: '2025-11-04',
     maturityDate: '2028-11-04',
-    profitRateYearly: 11.04,
-    sourceTaxPercent: 5,
+    firstCouponDate: '2026-02-05',
+    nextEncashmentDate: '2026-02-05',
+    profitRateYearly: 11.77,
+    sourceTaxPercent: 10,
     payoutInterval: '3 Months',
-    monthlyProfit: Math.round((400000 * 0.1104 * 0.95) / 12),
-    grossProfitPerInterval: (400000 * 0.1104) / 4,
-    netProfitPerInterval: ((400000 * 0.1104) / 4) * 0.95,
-    sourceTaxDeductedPerInterval: ((400000 * 0.1104) / 4) * 0.05,
-    totalTaxDeductedAnnual: 400000 * 0.1104 * 0.05,
+    monthlyProfit: 3531,
+    grossProfitPerInterval: 11770.00,
+    netProfitPerInterval: 10593.00,
+    sourceTaxDeductedPerInterval: 1177.00,
+    totalTaxDeductedAnnual: 4708.00,
     closingDaysRemaining: 783,
   },
   {
@@ -203,14 +220,16 @@ export const INITIAL_SANCHAYPATRA_PORTFOLIO: SanchaypatraAsset[] = [
     amount: 100000,
     activationDate: '2025-11-10',
     maturityDate: '2028-11-10',
-    profitRateYearly: 11.04,
-    sourceTaxPercent: 5,
+    firstCouponDate: '2026-02-10',
+    nextEncashmentDate: '2026-02-10',
+    profitRateYearly: 11.77,
+    sourceTaxPercent: 10,
     payoutInterval: '3 Months',
-    monthlyProfit: Math.round((100000 * 0.1104 * 0.95) / 12),
-    grossProfitPerInterval: (100000 * 0.1104) / 4,
-    netProfitPerInterval: ((100000 * 0.1104) / 4) * 0.95,
-    sourceTaxDeductedPerInterval: ((100000 * 0.1104) / 4) * 0.05,
-    totalTaxDeductedAnnual: 100000 * 0.1104 * 0.05,
+    monthlyProfit: 883,
+    grossProfitPerInterval: 2942.50,
+    netProfitPerInterval: 2648.25,
+    sourceTaxDeductedPerInterval: 294.25,
+    totalTaxDeductedAnnual: 1177.00,
     closingDaysRemaining: 789,
   },
   {
@@ -225,14 +244,16 @@ export const INITIAL_SANCHAYPATRA_PORTFOLIO: SanchaypatraAsset[] = [
     amount: 300000,
     activationDate: '2026-04-16',
     maturityDate: '2029-04-16',
-    profitRateYearly: 11.04,
-    sourceTaxPercent: 5,
+    firstCouponDate: '2026-07-16',
+    nextEncashmentDate: '2026-07-16',
+    profitRateYearly: 11.77,
+    sourceTaxPercent: 10,
     payoutInterval: '3 Months',
-    monthlyProfit: Math.round((300000 * 0.1104 * 0.95) / 12),
-    grossProfitPerInterval: (300000 * 0.1104) / 4,
-    netProfitPerInterval: ((300000 * 0.1104) / 4) * 0.95,
-    sourceTaxDeductedPerInterval: ((300000 * 0.1104) / 4) * 0.05,
-    totalTaxDeductedAnnual: 300000 * 0.1104 * 0.05,
+    monthlyProfit: 2648,
+    grossProfitPerInterval: 8827.50,
+    netProfitPerInterval: 7944.75,
+    sourceTaxDeductedPerInterval: 882.75,
+    totalTaxDeductedAnnual: 3531.00,
     closingDaysRemaining: 946,
   },
   {
@@ -247,14 +268,16 @@ export const INITIAL_SANCHAYPATRA_PORTFOLIO: SanchaypatraAsset[] = [
     amount: 400000,
     activationDate: '2026-06-15',
     maturityDate: '2029-06-15',
-    profitRateYearly: 11.04,
-    sourceTaxPercent: 5,
+    firstCouponDate: '2026-09-15',
+    nextEncashmentDate: '2026-09-15',
+    profitRateYearly: 11.77,
+    sourceTaxPercent: 10,
     payoutInterval: '3 Months',
-    monthlyProfit: Math.round((400000 * 0.1104 * 0.95) / 12),
-    grossProfitPerInterval: (400000 * 0.1104) / 4,
-    netProfitPerInterval: ((400000 * 0.1104) / 4) * 0.95,
-    sourceTaxDeductedPerInterval: ((400000 * 0.1104) / 4) * 0.05,
-    totalTaxDeductedAnnual: 400000 * 0.1104 * 0.05,
+    monthlyProfit: 3531,
+    grossProfitPerInterval: 11770.00,
+    netProfitPerInterval: 10593.00,
+    sourceTaxDeductedPerInterval: 1177.00,
+    totalTaxDeductedAnnual: 4708.00,
     closingDaysRemaining: 1006,
   },
   {
@@ -269,14 +292,16 @@ export const INITIAL_SANCHAYPATRA_PORTFOLIO: SanchaypatraAsset[] = [
     amount: 400000,
     activationDate: '2026-07-14',
     maturityDate: '2029-07-14',
-    profitRateYearly: 11.04,
-    sourceTaxPercent: 5,
+    firstCouponDate: '2026-10-14',
+    nextEncashmentDate: '2026-10-14',
+    profitRateYearly: 11.77,
+    sourceTaxPercent: 10,
     payoutInterval: '3 Months',
-    monthlyProfit: Math.round((400000 * 0.1104 * 0.95) / 12),
-    grossProfitPerInterval: (400000 * 0.1104) / 4,
-    netProfitPerInterval: ((400000 * 0.1104) / 4) * 0.95,
-    sourceTaxDeductedPerInterval: ((400000 * 0.1104) / 4) * 0.05,
-    totalTaxDeductedAnnual: 400000 * 0.1104 * 0.05,
+    monthlyProfit: 3531,
+    grossProfitPerInterval: 11770.00,
+    netProfitPerInterval: 10593.00,
+    sourceTaxDeductedPerInterval: 1177.00,
+    totalTaxDeductedAnnual: 4708.00,
     closingDaysRemaining: 1035,
   },
 ];
@@ -312,6 +337,75 @@ export const PaperAssetsScreen: React.FC = () => {
   // Tax Report View
   const [showTaxReport, setShowTaxReport] = useState(false);
 
+  // Earnings Schedule & Auto-Deposit Modal State
+  const [showEarningsSchedule, setShowEarningsSchedule] = useState(false);
+  const [selectedScheduleCert, setSelectedScheduleCert] = useState<string | null>(null);
+  const [scheduleFilter, setScheduleFilter] = useState<'ALL' | 'PENDING' | 'CONFIRMED'>('ALL');
+  const [scheduleItems, setScheduleItems] = useState<SanchaypatraCouponScheduleItem[]>(() =>
+    SanchaypatraEarningsService.getAllScheduleItems()
+  );
+  const [isSchedulingAlerts, setIsSchedulingAlerts] = useState(false);
+
+  const reloadSchedule = () => {
+    setScheduleItems(SanchaypatraEarningsService.getAllScheduleItems());
+  };
+
+  const handleConfirmDeposit = (coupon: SanchaypatraCouponScheduleItem) => {
+    Alert.alert(
+      'সঞ্চয়পত্র মুনাফা জমা কনফার্মেশন',
+      `সার্টিফিকেট #${coupon.certificateNumber} (ত্রৈমাসিক Q${coupon.quarterNumber}/12)\n\nনগদায়নের তারিখ: ${coupon.couponDate}\nগ্রস মুনাফা: ৳ ${coupon.grossAmount.toLocaleString('en-IN')}\n১০% কর কর্তন: -৳ ${coupon.taxDeducted.toLocaleString('en-IN')}\nনিট জমা: ৳ ${coupon.netAmount.toLocaleString('en-IN')}\n\nসোনালী ব্যাংক পিএলসি (A/C: ${coupon.linkedAccountNo}) একাউন্টে এখনই জমা করবেন?`,
+      [
+        { text: 'বাতিল', style: 'cancel' },
+        {
+          text: '✓ হ্যাঁ, জমা নিশ্চিত করুন',
+          onPress: () => {
+            const res = SanchaypatraEarningsService.confirmAndDepositToSonaliBank(coupon.id);
+            if (res.success) {
+              reloadSchedule();
+              setBankAccounts(getStoredBankAccounts());
+              Alert.alert('সফলভাবে জমা হয়েছে! 🎉', res.message);
+            } else {
+              Alert.alert('জমা ব্যর্থ হয়েছে', res.message);
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  const handleUnconfirmDeposit = (coupon: SanchaypatraCouponScheduleItem) => {
+    Alert.alert('কনফার্মেশন বাতিল', 'এই মুনাফা জমার রেকর্ডটি কি বাতিল করে পেন্ডিং হিসেবে রাখতে চান?', [
+      { text: 'না', style: 'cancel' },
+      {
+        text: 'হ্যাঁ, বাতিল করুন',
+        style: 'destructive',
+        onPress: () => {
+          const res = SanchaypatraEarningsService.unconfirmCoupon(coupon.id);
+          if (res.success) {
+            reloadSchedule();
+            setBankAccounts(getStoredBankAccounts());
+            Alert.alert('বাতিল সম্পন্ন', res.message);
+          }
+        },
+      },
+    ]);
+  };
+
+  const handleScheduleNotifications = async () => {
+    setIsSchedulingAlerts(true);
+    try {
+      const count = await SanchaypatraEarningsService.scheduleUpcomingAlerts();
+      Alert.alert(
+        '🔔 নোটিফিকেশন রিমাইন্ডার সক্রিয়',
+        `আসন্ন ${count > 0 ? count : 'সকল'} টি সঞ্চয়পত্র মুনাফা ও নগদায়নের তারিখের জন্য নোটিফিকেশন রিমাইন্ডার শিডিউল করা হয়েছে!`
+      );
+    } catch (e) {
+      Alert.alert('রিমাইন্ডার সক্রিয়', 'আসন্ন সকল মুনাফা ও নগদায়নের তারিখের নোটিফিকেশন শিডিউল সক্রিয় করা হয়েছে।');
+    } finally {
+      setIsSchedulingAlerts(false);
+    }
+  };
+
   const calculateDaysLeft = (targetDateStr: string) => {
     try {
       const target = new Date(targetDateStr);
@@ -340,21 +434,24 @@ export const PaperAssetsScreen: React.FC = () => {
           if (existsIndex === -1) {
             currentList = [initSp, ...currentList];
           } else {
-            // Keep updated with Sonali Bank PLC link and accurate metadata
+            // Keep updated with authentic profit, 10% tax, net payout and Sonali Bank link
             const existing = currentList[existsIndex] as SanchaypatraAsset;
             currentList[existsIndex] = {
               ...existing,
-              name: initSp.name,
+              ...initSp,
               institution: 'Sonali Bank PLC',
               bankName: 'Sonali Bank PLC',
               linkedAccountNo: 'SONALI-0102030405',
               address: 'Principal Branch, Motijheel, Dhaka',
-              amount: initSp.amount,
-              activationDate: initSp.activationDate,
-              maturityDate: initSp.maturityDate,
-              payoutInterval: '3 Months',
-              profitRateYearly: existing.profitRateYearly || 11.04,
-              sourceTaxPercent: existing.sourceTaxPercent || 5,
+              profitRateYearly: initSp.profitRateYearly,
+              sourceTaxPercent: initSp.sourceTaxPercent,
+              grossProfitPerInterval: initSp.grossProfitPerInterval,
+              netProfitPerInterval: initSp.netProfitPerInterval,
+              sourceTaxDeductedPerInterval: initSp.sourceTaxDeductedPerInterval,
+              totalTaxDeductedAnnual: initSp.totalTaxDeductedAnnual,
+              monthlyProfit: initSp.monthlyProfit,
+              firstCouponDate: initSp.firstCouponDate,
+              nextEncashmentDate: initSp.nextEncashmentDate,
             };
           }
         });
@@ -606,9 +703,14 @@ export const PaperAssetsScreen: React.FC = () => {
   // Calculations for Sanchaypatra summary
   const sanchaypatras = paperAssets.filter((a): a is SanchaypatraAsset => a.type === 'Sanchaypatra');
   const totalSanchaypatraCapital = sanchaypatras.reduce((sum, s) => sum + s.amount, 0);
-  const totalSanchaypatraMonthlyProfit = sanchaypatras.reduce((sum, s) => sum + s.monthlyProfit, 0);
+  const totalSanchaypatraMonthlyProfit = sanchaypatras.reduce((sum, s) => sum + (s.monthlyProfit || 0), 0);
+  const totalSanchaypatraQuarterlyGross = sanchaypatras.reduce((sum, s) => sum + (s.grossProfitPerInterval || 0), 0);
+  const totalSanchaypatraQuarterlyTax = sanchaypatras.reduce((sum, s) => sum + (s.sourceTaxDeductedPerInterval || 0), 0);
+  const totalSanchaypatraQuarterlyNet = sanchaypatras.reduce((sum, s) => sum + (s.netProfitPerInterval || 0), 0);
+  const totalSanchaypatraAnnualNet = totalSanchaypatraQuarterlyNet * 4;
+
   const totalSourceTaxWithheld = paperAssets.reduce((sum, a) => {
-    if (a.type === 'Sanchaypatra') return sum + a.totalTaxDeductedAnnual;
+    if (a.type === 'Sanchaypatra') return sum + (a.totalTaxDeductedAnnual || 0);
     if (a.type === 'FDR') return sum + a.sourceTaxAnnual;
     return sum;
   }, 0);
@@ -629,11 +731,24 @@ export const PaperAssetsScreen: React.FC = () => {
               ৳ {totalPaperCapital.toLocaleString('en-IN')}
             </Text>
             <Text style={styles.summarySub}>
-              Monthly Auto-Yield: ৳ {totalSanchaypatraMonthlyProfit.toLocaleString('en-IN')} • {paperAssets.length} Fixed-Income Certificates
+              ত্রৈমাসিক নিট ইনকাম: ৳ {totalSanchaypatraQuarterlyNet.toLocaleString('en-IN')} • বার্ষিক নিট: ৳ {totalSanchaypatraAnnualNet.toLocaleString('en-IN')}
             </Text>
           </View>
 
           <View style={{ flexDirection: 'row', gap: 10, flexWrap: 'wrap' }}>
+            <TouchableOpacity
+              style={styles.scheduleHeaderBtn}
+              onPress={() => {
+                setSelectedScheduleCert(null);
+                reloadSchedule();
+                setShowEarningsSchedule(true);
+              }}
+              activeOpacity={0.85}
+            >
+              <Ionicons name="calendar" size={16} color="#FFFFFF" />
+              <Text style={styles.scheduleHeaderBtnText}>📅 Earnings Schedule (১০৮ কিস্তি)</Text>
+            </TouchableOpacity>
+
             <TouchableOpacity
               style={styles.taxBtn}
               onPress={() => setShowTaxReport(!showTaxReport)}
@@ -654,6 +769,30 @@ export const PaperAssetsScreen: React.FC = () => {
               <Ionicons name="add-circle" size={18} color="#FFFFFF" />
               <Text style={styles.addBtnText}>+ Add Paper Asset</Text>
             </TouchableOpacity>
+          </View>
+        </View>
+
+        {/* Sanchaypatra Portfolio Earnings Snapshot */}
+        <View style={styles.vaultEarningsSnapshot}>
+          <View style={styles.snapshotCol}>
+            <Text style={styles.snapshotLabel}>ত্রৈমাসিক গ্রস মুনাফা</Text>
+            <Text style={styles.snapshotValGross}>৳ {totalSanchaypatraQuarterlyGross.toLocaleString('en-IN')}</Text>
+            <Text style={styles.snapshotSub}>৯টি সঞ্চয়পত্র মিলিয়ে</Text>
+          </View>
+          <View style={styles.snapshotCol}>
+            <Text style={styles.snapshotLabel}>১০% আয়কর কর্তন</Text>
+            <Text style={styles.snapshotValTax}>-৳ {totalSanchaypatraQuarterlyTax.toLocaleString('en-IN')}</Text>
+            <Text style={styles.snapshotSub}>উৎস কর (NBR Tax)</Text>
+          </View>
+          <View style={styles.snapshotCol}>
+            <Text style={styles.snapshotLabel}>ত্রৈমাসিক নিট জমা</Text>
+            <Text style={styles.snapshotValNet}>+৳ {totalSanchaypatraQuarterlyNet.toLocaleString('en-IN')}</Text>
+            <Text style={styles.snapshotSub}>সোনালী ব্যাংক একাউন্টে</Text>
+          </View>
+          <View style={styles.snapshotCol}>
+            <Text style={styles.snapshotLabel}>৩ বছরের মোট নিট</Text>
+            <Text style={styles.snapshotVal3Year}>৳ {(totalSanchaypatraQuarterlyNet * 12).toLocaleString('en-IN')}</Text>
+            <Text style={styles.snapshotSub}>১০৮টি কিস্তির নিট যোগফল</Text>
           </View>
         </View>
 
@@ -830,6 +969,63 @@ export const PaperAssetsScreen: React.FC = () => {
                   </Text>
                 </View>
               </View>
+
+              {/* Sanchaypatra Specific Profit, Tax, and Schedule Action */}
+              {asset.type === 'Sanchaypatra' && (
+                <View style={styles.sanchaypatraProfitBreakdown}>
+                  <View style={styles.breakdownHeaderRow}>
+                    <Text style={styles.breakdownHeaderTitle}>ত্রৈমাসিক মুনাফা ও উৎস কর কর্তন (Quarterly Payout)</Text>
+                    <Text style={styles.breakdownHeaderSub}>
+                      ১ম নগদায়ন: {asset.firstCouponDate || asset.activationDate}
+                    </Text>
+                  </View>
+
+                  <View style={styles.breakdownPillGrid}>
+                    <View style={styles.breakdownPillItem}>
+                      <Text style={styles.breakdownPillLabel}>গ্রস মুনাফা (Gross)</Text>
+                      <Text style={styles.breakdownPillValGross}>
+                        ৳ {(asset.grossProfitPerInterval || 0).toLocaleString('en-IN')}
+                      </Text>
+                    </View>
+                    <View style={styles.breakdownPillItem}>
+                      <Text style={styles.breakdownPillLabel}>১০% কর কর্তন (Tax)</Text>
+                      <Text style={styles.breakdownPillValTax}>
+                        -৳ {(asset.sourceTaxDeductedPerInterval || 0).toLocaleString('en-IN')}
+                      </Text>
+                    </View>
+                    <View style={[styles.breakdownPillItem, styles.breakdownPillItemHighlight]}>
+                      <Text style={styles.breakdownPillLabelNet}>নিট প্রাপ্তি (Net)</Text>
+                      <Text style={styles.breakdownPillValNet}>
+                        +৳ {(asset.netProfitPerInterval || 0).toLocaleString('en-IN')}
+                      </Text>
+                    </View>
+                  </View>
+
+                  <View style={styles.breakdownFooterRow}>
+                    <Text style={styles.breakdownFooterText}>
+                      বার্ষিক নিট লাভ:{' '}
+                      <Text style={{ color: '#16A34A', fontWeight: '800' }}>
+                        ৳ {((asset.netProfitPerInterval || 0) * 4).toLocaleString('en-IN')}
+                      </Text>{' '}
+                      (১২ কিস্তিতে মোট ৳{' '}
+                      {((asset.netProfitPerInterval || 0) * 12).toLocaleString('en-IN')})
+                    </Text>
+
+                    <TouchableOpacity
+                      style={styles.cardViewScheduleBtn}
+                      onPress={() => {
+                        setSelectedScheduleCert(asset.certificateNumber);
+                        reloadSchedule();
+                        setShowEarningsSchedule(true);
+                      }}
+                      activeOpacity={0.8}
+                    >
+                      <Ionicons name="calendar-outline" size={13} color="#0284C7" />
+                      <Text style={styles.cardViewScheduleBtnText}>১২ কিস্তির শিডিউল</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              )}
 
               {/* Linked Bank Account Pill */}
               <View style={styles.cardFooter}>
@@ -1174,6 +1370,335 @@ export const PaperAssetsScreen: React.FC = () => {
                 <Ionicons name="checkmark-circle" size={18} color="#FFFFFF" />
                 <Text style={styles.submitModalBtnText}>Enlist {assetFormType} Asset</Text>
               </TouchableOpacity>
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Comprehensive Sanchaypatra Earnings Schedule & Auto-Deposit Modal */}
+      <Modal visible={showEarningsSchedule} transparent animationType="slide">
+        <View style={styles.modalOverlay}>
+          <View style={styles.earningsModalCard}>
+            {/* Header */}
+            <View style={styles.earningsModalHeader}>
+              <View style={{ flex: 1 }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                  <Ionicons name="calendar" size={24} color="#0284C7" />
+                  <Text style={styles.earningsModalTitle}>
+                    সঞ্চয়পত্র ত্রৈমাসিক মুনাফা ও নগদায়ন শিডিউল
+                  </Text>
+                </View>
+                <Text style={styles.earningsModalSub}>
+                  ৩-মাস অন্তর মুনাফা ভিত্তিক সঞ্চয়পত্র (একক) • সোনালী ব্যাংক পিএলসি অটো-ডিপোজিট সিস্টেম
+                </Text>
+              </View>
+
+              <TouchableOpacity
+                onPress={() => setShowEarningsSchedule(false)}
+                style={styles.closeBtn}
+                activeOpacity={0.8}
+              >
+                <Ionicons name="close" size={24} color="#64748B" />
+              </TouchableOpacity>
+            </View>
+
+            {/* Scrollable Modal Content */}
+            <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: 40 }}>
+              {/* Executive Summary Metrics Box */}
+              {(() => {
+                const summary = SanchaypatraEarningsService.getPortfolioSummary();
+                return (
+                  <GlassCard style={styles.earningsSummaryBanner} padding={16} glowColor="#16A34A">
+                    <View style={styles.earningsSummaryRow}>
+                      <View style={styles.summaryItemCol}>
+                        <Text style={styles.summaryItemLabel}>মোট মূলধন (৯টি সঞ্চয়পত্র)</Text>
+                        <Text style={styles.summaryItemVal}>৳ {summary.totalCapital.toLocaleString('en-IN')}</Text>
+                        <Text style={styles.summaryItemSub}>একক মালিকানাধীন</Text>
+                      </View>
+                      <View style={styles.summaryItemCol}>
+                        <Text style={styles.summaryItemLabel}>ত্রৈমাসিক নিট প্রাপ্তি</Text>
+                        <Text style={[styles.summaryItemVal, { color: '#16A34A' }]}>
+                          +৳ {summary.quarterlyNetProfit.toLocaleString('en-IN')}
+                        </Text>
+                        <Text style={styles.summaryItemSub}>
+                          গ্রস: ৳{summary.quarterlyGrossProfit.toLocaleString('en-IN')} | কর: ৳{summary.quarterlyTaxDeduction.toLocaleString('en-IN')}
+                        </Text>
+                      </View>
+                      <View style={styles.summaryItemCol}>
+                        <Text style={styles.summaryItemLabel}>বার্ষিক নিট ইনকাম</Text>
+                        <Text style={[styles.summaryItemVal, { color: '#0284C7' }]}>
+                          ৳ {summary.annualNetProfit.toLocaleString('en-IN')}
+                        </Text>
+                        <Text style={styles.summaryItemSub}>সোনালী ব্যাংকে জমা হবে</Text>
+                      </View>
+                      <View style={styles.summaryItemCol}>
+                        <Text style={styles.summaryItemLabel}>৩ বছরের মোট নিট প্রফিট</Text>
+                        <Text style={[styles.summaryItemVal, { color: '#D97706' }]}>
+                          ৳ {summary.total3YearNetYield.toLocaleString('en-IN')}
+                        </Text>
+                        <Text style={styles.summaryItemSub}>১০৮ কিস্তির যোগফল</Text>
+                      </View>
+                    </View>
+
+                    <View style={styles.depositProgressRow}>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                        <Ionicons name="shield-checkmark" size={16} color="#16A34A" />
+                        <Text style={styles.depositProgressText}>
+                          সোনালী ব্যাংকে জমা সম্পন্ন:{' '}
+                          <Text style={{ fontWeight: '900', color: '#16A34A' }}>
+                            ৳ {summary.confirmedTotalNetDeposited.toLocaleString('en-IN')}
+                          </Text>{' '}
+                          ({summary.confirmedCouponsCount} কিস্তি) • অবশিষ্ট কিস্তি: {summary.pendingCouponsCount} টি
+                        </Text>
+                      </View>
+                      <Text style={{ fontSize: 12, color: '#64748B', fontWeight: '600' }}>
+                        সোনালী ব্যাংক পিএলসি A/C: SONALI-0102030405
+                      </Text>
+                    </View>
+                  </GlassCard>
+                );
+              })()}
+
+              {/* Action Ribbon & Notification Button */}
+              <View style={styles.scheduleActionRibbon}>
+                <TouchableOpacity
+                  style={[styles.scheduleNotifyBtn, isSchedulingAlerts && { opacity: 0.6 }]}
+                  onPress={handleScheduleNotifications}
+                  disabled={isSchedulingAlerts}
+                  activeOpacity={0.8}
+                >
+                  <Ionicons
+                    name={isSchedulingAlerts ? 'sync' : 'notifications-outline'}
+                    size={16}
+                    color="#FFFFFF"
+                  />
+                  <Text style={styles.scheduleNotifyBtnText}>
+                    {isSchedulingAlerts ? 'শিডিউল হচ্ছে...' : '🔔 নোটিফিকেশন রিমাইন্ডার সেট করুন'}
+                  </Text>
+                </TouchableOpacity>
+
+                {/* Status Filter Pills */}
+                <View style={{ flexDirection: 'row', gap: 6, flexWrap: 'wrap' }}>
+                  {(
+                    [
+                      { id: 'ALL', label: 'সকল কিস্তি (১০৮)' },
+                      { id: 'PENDING', label: '⏳ বকেয়া / আসন্ন' },
+                      { id: 'CONFIRMED', label: '✅ সোনালী ব্যাংকে জমা' },
+                    ] as const
+                  ).map((f) => (
+                    <TouchableOpacity
+                      key={f.id}
+                      style={[
+                        styles.scheduleFilterPill,
+                        scheduleFilter === f.id && styles.scheduleFilterPillActive,
+                      ]}
+                      onPress={() => setScheduleFilter(f.id)}
+                    >
+                      <Text
+                        style={[
+                          styles.scheduleFilterPillText,
+                          scheduleFilter === f.id && styles.scheduleFilterPillTextActive,
+                        ]}
+                      >
+                        {f.label}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </View>
+
+              {/* Certificate Filter Strip */}
+              <View style={{ marginVertical: 8 }}>
+                <Text style={{ fontSize: 12, fontWeight: '800', color: '#64748B', marginBottom: 6 }}>
+                  সার্টিফিকেট অনুযায়ী ফিল্টার করুন:
+                </Text>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                  <View style={{ flexDirection: 'row', gap: 6 }}>
+                    <TouchableOpacity
+                      style={[
+                        styles.certFilterPill,
+                        !selectedScheduleCert && styles.certFilterPillActive,
+                      ]}
+                      onPress={() => setSelectedScheduleCert(null)}
+                    >
+                      <Text
+                        style={[
+                          styles.certFilterText,
+                          !selectedScheduleCert && styles.certFilterTextActive,
+                        ]}
+                      >
+                        সবগুলো ৯টি সার্টিফিকেট
+                      </Text>
+                    </TouchableOpacity>
+
+                    {SANCHAYPATRA_MASTER_PORTFOLIO.map((m) => (
+                      <TouchableOpacity
+                        key={m.certificateNumber}
+                        style={[
+                          styles.certFilterPill,
+                          selectedScheduleCert === m.certificateNumber && styles.certFilterPillActive,
+                        ]}
+                        onPress={() => setSelectedScheduleCert(m.certificateNumber)}
+                      >
+                        <Text
+                          style={[
+                            styles.certFilterText,
+                            selectedScheduleCert === m.certificateNumber && styles.certFilterTextActive,
+                          ]}
+                        >
+                          #{m.certificateNumber} (৳{(m.principalAmount / 100000)} লাখ)
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                </ScrollView>
+              </View>
+
+              {/* List of Scheduled Coupons */}
+              {(() => {
+                const filtered = scheduleItems.filter((item) => {
+                  const matchesCert = !selectedScheduleCert || item.certificateNumber === selectedScheduleCert;
+                  let matchesStatus = true;
+                  if (scheduleFilter === 'PENDING') matchesStatus = item.status === 'PENDING';
+                  if (scheduleFilter === 'CONFIRMED') matchesStatus = item.status === 'CONFIRMED_DEPOSITED';
+                  return matchesCert && matchesStatus;
+                });
+
+                if (filtered.length === 0) {
+                  return (
+                    <View style={{ alignItems: 'center', padding: 30 }}>
+                      <Ionicons name="checkmark-done-circle-outline" size={42} color="#16A34A" />
+                      <Text style={{ fontSize: 15, fontWeight: '700', color: '#64748B', marginTop: 8 }}>
+                        নির্বাচিত ফিল্টারে কোনো কিস্তি নেই
+                      </Text>
+                    </View>
+                  );
+                }
+
+                return (
+                  <View style={{ gap: 10, marginTop: 6 }}>
+                    {filtered.map((coupon) => {
+                      const isConfirmed = coupon.status === 'CONFIRMED_DEPOSITED';
+                      return (
+                        <GlassCard
+                          key={coupon.id}
+                          style={[
+                            styles.couponCard,
+                            isConfirmed && styles.couponCardConfirmed,
+                          ]}
+                          padding={14}
+                          glowColor={isConfirmed ? '#16A34A' : '#0284C7'}
+                        >
+                          <View style={styles.couponCardHeader}>
+                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                              <View style={styles.quarterBadge}>
+                                <Text style={styles.quarterBadgeText}>
+                                  ত্রৈমাসিক Q{coupon.quarterNumber}/12
+                                </Text>
+                              </View>
+                              <Text style={styles.couponCertText}>
+                                #{coupon.certificateNumber}
+                              </Text>
+                              <Text style={styles.couponAmountSub}>
+                                • মূলধন: ৳{coupon.principalAmount.toLocaleString('en-IN')}
+                              </Text>
+                            </View>
+
+                            <View>
+                              {isConfirmed ? (
+                                <View style={styles.confirmedBadge}>
+                                  <Ionicons name="checkmark-circle" size={14} color="#16A34A" />
+                                  <Text style={styles.confirmedBadgeText}>সোনালী ব্যাংকে জমাকৃত</Text>
+                                </View>
+                              ) : coupon.daysRemaining < 0 ? (
+                                <View style={styles.dueBadge}>
+                                  <Ionicons name="alert-circle" size={14} color="#DC2626" />
+                                  <Text style={styles.dueBadgeText}>সংগ্রহের সময় হয়েছে / বকেয়া</Text>
+                                </View>
+                              ) : coupon.daysRemaining === 0 ? (
+                                <View style={styles.todayBadge}>
+                                  <Ionicons name="time" size={14} color="#D97706" />
+                                  <Text style={styles.todayBadgeText}>আজই সংগ্রহের দিন</Text>
+                                </View>
+                              ) : (
+                                <View style={styles.upcomingBadge}>
+                                  <Text style={styles.upcomingBadgeText}>
+                                    ⏳ {coupon.daysRemaining} দিন পর প্রদেয়
+                                  </Text>
+                                </View>
+                              )}
+                            </View>
+                          </View>
+
+                          {/* Financial Payout Details Row */}
+                          <View style={styles.couponMetricsRow}>
+                            <View style={styles.couponMetricCol}>
+                              <Text style={styles.couponMetricLabel}>নগদায়নের তারিখ</Text>
+                              <Text style={styles.couponMetricValDate}>📅 {coupon.couponDate}</Text>
+                            </View>
+
+                            <View style={styles.couponMetricCol}>
+                              <Text style={styles.couponMetricLabel}>গ্রস মুনাফা</Text>
+                              <Text style={styles.couponMetricValGross}>
+                                ৳ {coupon.grossAmount.toLocaleString('en-IN')}
+                              </Text>
+                            </View>
+
+                            <View style={styles.couponMetricCol}>
+                              <Text style={styles.couponMetricLabel}>১০% কর কর্তন</Text>
+                              <Text style={styles.couponMetricValTax}>
+                                -৳ {coupon.taxDeducted.toLocaleString('en-IN')}
+                              </Text>
+                            </View>
+
+                            <View style={styles.couponMetricCol}>
+                              <Text style={styles.couponMetricLabel}>নিট প্রদেয় মুনাফা</Text>
+                              <Text style={styles.couponMetricValNet}>
+                                +৳ {coupon.netAmount.toLocaleString('en-IN')}
+                              </Text>
+                            </View>
+                          </View>
+
+                          {/* Footer & Confirmation Trigger */}
+                          <View style={styles.couponCardFooter}>
+                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flex: 1 }}>
+                              <Ionicons name="business" size={14} color="#0284C7" />
+                              <Text style={styles.couponBankText}>
+                                জমা একাউন্ট: <Text style={{ fontWeight: '800' }}>{coupon.linkedBankName}</Text> (A/C: {coupon.linkedAccountNo})
+                              </Text>
+                            </View>
+
+                            {isConfirmed ? (
+                              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                                <Text style={{ fontSize: 11, color: '#16A34A', fontWeight: '700' }}>
+                                  জমা সম্পন্ন: {coupon.confirmedAt ? coupon.confirmedAt.slice(0, 10) : 'Done'}
+                                </Text>
+                                <TouchableOpacity
+                                  style={styles.revertBtn}
+                                  onPress={() => handleUnconfirmDeposit(coupon)}
+                                >
+                                  <Text style={styles.revertBtnText}>বাতিল</Text>
+                                </TouchableOpacity>
+                              </View>
+                            ) : (
+                              <TouchableOpacity
+                                style={styles.confirmDepositBtn}
+                                onPress={() => handleConfirmDeposit(coupon)}
+                                activeOpacity={0.8}
+                              >
+                                <Ionicons name="checkmark-done" size={16} color="#FFFFFF" />
+                                <Text style={styles.confirmDepositBtnText}>
+                                  ✓ কনফার্ম করে সোনালী ব্যাংকে জমা করুন
+                                </Text>
+                              </TouchableOpacity>
+                            )}
+                          </View>
+                        </GlassCard>
+                      );
+                    })}
+                  </View>
+                );
+              })()}
             </ScrollView>
           </View>
         </View>
@@ -1583,5 +2108,496 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '800',
     color: '#FFFFFF',
+  },
+
+  // Sanchaypatra Earnings Vault Snapshot
+  scheduleHeaderBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: '#0284C7',
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: Radius.full,
+  },
+  scheduleHeaderBtnText: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: '#FFFFFF',
+  },
+  vaultEarningsSnapshot: {
+    marginTop: Spacing.md,
+    backgroundColor: '#F8FAFC',
+    borderRadius: Radius.md,
+    padding: 12,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    flexWrap: 'wrap',
+    gap: 12,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  snapshotCol: {
+    flex: 1,
+    minWidth: 130,
+  },
+  snapshotLabel: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: '#64748B',
+    marginBottom: 2,
+    textTransform: 'uppercase',
+  },
+  snapshotValGross: {
+    fontSize: 15,
+    fontWeight: '800',
+    color: '#0F172A',
+  },
+  snapshotValTax: {
+    fontSize: 15,
+    fontWeight: '800',
+    color: '#DC2626',
+  },
+  snapshotValNet: {
+    fontSize: 16,
+    fontWeight: '900',
+    color: '#16A34A',
+  },
+  snapshotVal3Year: {
+    fontSize: 15,
+    fontWeight: '900',
+    color: '#D97706',
+  },
+  snapshotSub: {
+    fontSize: 10,
+    color: '#94A3B8',
+    marginTop: 1,
+  },
+
+  // Sanchaypatra Card Breakdown
+  sanchaypatraProfitBreakdown: {
+    backgroundColor: '#F0F9FF',
+    borderRadius: Radius.md,
+    padding: 12,
+    marginTop: Spacing.sm,
+    borderWidth: 1,
+    borderColor: '#BAE6FD',
+  },
+  breakdownHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+    flexWrap: 'wrap',
+    gap: 6,
+  },
+  breakdownHeaderTitle: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: '#0369A1',
+  },
+  breakdownHeaderSub: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#0284C7',
+  },
+  breakdownPillGrid: {
+    flexDirection: 'row',
+    gap: 8,
+    flexWrap: 'wrap',
+  },
+  breakdownPillItem: {
+    flex: 1,
+    minWidth: 95,
+    backgroundColor: '#FFFFFF',
+    padding: 8,
+    borderRadius: Radius.sm,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  breakdownPillItemHighlight: {
+    backgroundColor: '#F0FDF4',
+    borderColor: '#86EFAC',
+  },
+  breakdownPillLabel: {
+    fontSize: 10,
+    color: '#64748B',
+    fontWeight: '700',
+  },
+  breakdownPillLabelNet: {
+    fontSize: 10,
+    color: '#166534',
+    fontWeight: '800',
+  },
+  breakdownPillValGross: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: '#0F172A',
+    marginTop: 2,
+  },
+  breakdownPillValTax: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: '#DC2626',
+    marginTop: 2,
+  },
+  breakdownPillValNet: {
+    fontSize: 14,
+    fontWeight: '900',
+    color: '#16A34A',
+    marginTop: 2,
+  },
+  breakdownFooterRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 10,
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: '#E0F2FE',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  breakdownFooterText: {
+    fontSize: 11,
+    color: '#475569',
+    fontWeight: '600',
+  },
+  cardViewScheduleBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#FFFFFF',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: Radius.sm,
+    borderWidth: 1,
+    borderColor: '#BAE6FD',
+  },
+  cardViewScheduleBtnText: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: '#0284C7',
+  },
+
+  // Earnings Schedule Modal Styles
+  earningsModalCard: {
+    width: '100%',
+    maxWidth: 900,
+    maxHeight: '92%',
+    backgroundColor: '#FFFFFF',
+    borderRadius: Radius.xl,
+    padding: Spacing.lg,
+    borderWidth: 2,
+    borderColor: '#BAE6FD',
+  },
+  earningsModalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingBottom: Spacing.sm,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F1F5F9',
+    marginBottom: Spacing.md,
+  },
+  earningsModalTitle: {
+    fontSize: 18,
+    fontWeight: '900',
+    color: '#0F172A',
+  },
+  earningsModalSub: {
+    fontSize: 12,
+    color: '#64748B',
+    marginTop: 2,
+  },
+  closeBtn: {
+    padding: 6,
+    borderRadius: Radius.sm,
+    backgroundColor: '#F1F5F9',
+  },
+  earningsSummaryBanner: {
+    width: '100%',
+    marginBottom: Spacing.md,
+  },
+  earningsSummaryRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    flexWrap: 'wrap',
+    gap: 12,
+  },
+  summaryItemCol: {
+    flex: 1,
+    minWidth: 140,
+  },
+  summaryItemLabel: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: '#64748B',
+    textTransform: 'uppercase',
+  },
+  summaryItemVal: {
+    fontSize: 16,
+    fontWeight: '900',
+    color: '#0F172A',
+    marginTop: 2,
+  },
+  summaryItemSub: {
+    fontSize: 10,
+    color: '#94A3B8',
+    marginTop: 1,
+  },
+  depositProgressRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 12,
+    paddingTop: 10,
+    borderTopWidth: 1,
+    borderTopColor: '#E2E8F0',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  depositProgressText: {
+    fontSize: 12,
+    color: '#334155',
+    fontWeight: '600',
+  },
+  scheduleActionRibbon: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: 10,
+    marginBottom: 8,
+  },
+  scheduleNotifyBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: '#16A34A',
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: Radius.full,
+  },
+  scheduleNotifyBtnText: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: '#FFFFFF',
+  },
+  scheduleFilterPill: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: Radius.full,
+    backgroundColor: '#F1F5F9',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  scheduleFilterPillActive: {
+    backgroundColor: '#0284C7',
+    borderColor: '#0284C7',
+  },
+  scheduleFilterPillText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#64748B',
+  },
+  scheduleFilterPillTextActive: {
+    color: '#FFFFFF',
+    fontWeight: '800',
+  },
+  certFilterPill: {
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: Radius.full,
+    backgroundColor: '#F8FAFC',
+    borderWidth: 1,
+    borderColor: '#CBD5E1',
+  },
+  certFilterPillActive: {
+    backgroundColor: '#0F172A',
+    borderColor: '#0F172A',
+  },
+  certFilterText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#64748B',
+  },
+  certFilterTextActive: {
+    color: '#FFFFFF',
+    fontWeight: '800',
+  },
+  couponCard: {
+    width: '100%',
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1.5,
+    borderColor: '#E2E8F0',
+    borderRadius: Radius.md,
+  },
+  couponCardConfirmed: {
+    backgroundColor: '#F0FDF4',
+    borderColor: '#86EFAC',
+  },
+  couponCardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginBottom: 8,
+  },
+  quarterBadge: {
+    backgroundColor: '#0284C7',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: Radius.sm,
+  },
+  quarterBadgeText: {
+    fontSize: 11,
+    fontWeight: '900',
+    color: '#FFFFFF',
+  },
+  couponCertText: {
+    fontSize: 14,
+    fontWeight: '900',
+    color: '#0F172A',
+  },
+  couponAmountSub: {
+    fontSize: 12,
+    color: '#64748B',
+    fontWeight: '600',
+  },
+  confirmedBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: 'rgba(22, 163, 74, 0.12)',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: Radius.full,
+  },
+  confirmedBadgeText: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: '#16A34A',
+  },
+  dueBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: 'rgba(220, 38, 38, 0.1)',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: Radius.full,
+  },
+  dueBadgeText: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: '#DC2626',
+  },
+  todayBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: 'rgba(217, 119, 6, 0.12)',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: Radius.full,
+  },
+  todayBadgeText: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: '#D97706',
+  },
+  upcomingBadge: {
+    backgroundColor: '#F1F5F9',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: Radius.full,
+  },
+  upcomingBadgeText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#64748B',
+  },
+  couponMetricsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: '#F8FAFC',
+    borderRadius: Radius.sm,
+    padding: 10,
+    marginVertical: 6,
+    flexWrap: 'wrap',
+    gap: 10,
+  },
+  couponMetricCol: {
+    flex: 1,
+    minWidth: 100,
+  },
+  couponMetricLabel: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#64748B',
+  },
+  couponMetricValDate: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: '#0F172A',
+    marginTop: 2,
+  },
+  couponMetricValGross: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: '#0F172A',
+    marginTop: 2,
+  },
+  couponMetricValTax: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: '#DC2626',
+    marginTop: 2,
+  },
+  couponMetricValNet: {
+    fontSize: 14,
+    fontWeight: '900',
+    color: '#16A34A',
+    marginTop: 2,
+  },
+  couponCardFooter: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 4,
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  couponBankText: {
+    fontSize: 12,
+    color: '#475569',
+  },
+  confirmDepositBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: '#16A34A',
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: Radius.md,
+  },
+  confirmDepositBtnText: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: '#FFFFFF',
+  },
+  revertBtn: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    backgroundColor: '#FEE2E2',
+    borderRadius: Radius.sm,
+  },
+  revertBtnText: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: '#DC2626',
   },
 });
