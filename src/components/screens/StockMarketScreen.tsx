@@ -174,8 +174,8 @@ export const StockMarketScreen: React.FC<StockMarketScreenProps> = ({
       if (exists) {
         return prev.filter((s) => s.symbol !== stock.symbol);
       }
-      if (prev.length >= 3) {
-        Alert.alert('Comparison Limit', 'You can compare up to 3 stocks at a time.');
+      if (prev.length >= 4) {
+        Alert.alert('Comparison Limit', 'You can compare up to 4 stocks at a time.');
         return prev;
       }
       return [...prev, stock];
@@ -1177,7 +1177,7 @@ export const StockMarketScreen: React.FC<StockMarketScreenProps> = ({
                   </Text>
                 </View>
                 <Text style={{ fontSize: 12, color: '#64748B', marginTop: 2 }}>
-                  Compare up to 3 stocks side-by-side across 7 research dimensions (Valuation, DCF Fair Value, AI Scores, ROE, Margins, Fraud Radar, and Dividends) with full PDF export.
+                  Compare up to 4 stocks side-by-side across 7 research dimensions (Valuation, DCF Fair Value, AI Scores, ROE, Margins, Fraud Radar, and Dividends) with full PDF export.
                 </Text>
               </View>
 
@@ -3183,7 +3183,7 @@ export const StockMarketScreen: React.FC<StockMarketScreenProps> = ({
             <Text style={{ fontSize: 20 }}>⚖️</Text>
             <View style={{ flex: 1 }}>
               <Text style={{ fontSize: 13, fontWeight: '900', color: '#FFFFFF' }}>
-                Comparing ({compareStocks.length}/3): {compareStocks.map((s) => s.symbol).join(' vs ')}
+                Comparing ({compareStocks.length}/4): {compareStocks.map((s) => s.symbol).join(' vs ')}
               </Text>
               <Text style={{ fontSize: 11, color: '#94A3B8' }}>
                 Tap to evaluate side-by-side or download comparative PDF report

@@ -271,8 +271,8 @@ export class StockDossierPdfGenerator {
    * Generates vector SVG for 5-Model Competing AI Ensemble Weights
    */
   private static renderAiEnsembleSvg(ens: any): string {
-    const width = 760;
-    const height = 175;
+    const width = 800;
+    const height = 185;
     const models = [
       ens.modelA_TimeSeries,
       ens.modelB_MachineLearning,
@@ -282,23 +282,48 @@ export class StockDossierPdfGenerator {
     ];
 
     let barsSvg = '';
-    const rowH = 30;
+    const rowH = 33;
     models.forEach((m: any, idx: number) => {
-      const y = 10 + idx * rowH;
-      const barMaxW = 280;
-      const w = (m.weightInEnsemblePercent / 35) * barMaxW;
+      const y = 8 + idx * rowH;
+      const barMaxW = 180;
+      const w = Math.max(16, Math.round((m.weightInEnsemblePercent / 35) * barMaxW));
+      const barX = 295;
+      const weightX = barX + w + 8;
+
+      // Clean descriptive title without truncation
+      let cleanTitle = m.modelTitle;
+      if (cleanTitle.includes('Ensembl')) cleanTitle = 'Machine Learning Ensemble';
+      else if (cleanTitle.includes('Regime') || cleanTitle.includes('Macro')) cleanTitle = 'Market-Regime & Volatility';
+      else if (cleanTitle.includes('NLP') || cleanTitle.includes('LLM')) cleanTitle = 'NLP & Sentiment Analysis';
+      else if (cleanTitle.includes('Time-Series')) cleanTitle = 'Time-Series Statistical';
+      else if (cleanTitle.includes('Neural')) cleanTitle = 'Deep Learning Neural Net';
 
       barsSvg += `
-        <text x="10" y="${y + 16}" font-size="11" font-weight="bold" fill="#0F172A" font-family="sans-serif">${m.modelGroup}</text>
-        <text x="140" y="${y + 16}" font-size="10" fill="#64748B" font-family="sans-serif">${m.modelTitle.slice(0, 24)}</text>
-        <rect x="300" y="${y + 4}" width="${w}" height="14" fill="#0284C7" rx="3" />
-        <text x="310 + ${w}" y="${y + 15}" font-size="10" font-weight="bold" fill="#0284C7" font-family="sans-serif">${m.weightInEnsemblePercent}% Wt</text>
-        <text x="620" y="${y + 16}" font-size="11" font-weight="bold" fill="#16A34A" font-family="sans-serif">৳${m.forecastPrice} (+${m.expectedReturnPercent}%)</text>
+        <!-- Alternating Row Track -->
+        <rect x="6" y="${y}" width="${width - 12}" height="28" fill="${idx % 2 === 0 ? '#FFFFFF' : '#F8FAFC'}" rx="4" />
+
+        <!-- Model Group -->
+        <text x="16" y="${y + 18}" font-size="11" font-weight="bold" fill="#0F172A" font-family="sans-serif">${m.modelGroup}</text>
+
+        <!-- Model Tech Title -->
+        <text x="95" y="${y + 18}" font-size="10.5" font-weight="600" fill="#475569" font-family="sans-serif">${cleanTitle}</text>
+
+        <!-- Bar Track -->
+        <rect x="${barX}" y="${y + 7}" width="${barMaxW}" height="14" fill="#E2E8F0" rx="3" />
+
+        <!-- Bar Fill -->
+        <rect x="${barX}" y="${y + 7}" width="${w}" height="14" fill="#0284C7" rx="3" />
+
+        <!-- Weight Percent Label (Correct mathematical offset) -->
+        <text x="${weightX}" y="${y + 18}" font-size="10" font-weight="bold" fill="#0369A1" font-family="sans-serif">${m.weightInEnsemblePercent}% Wt</text>
+
+        <!-- Forecast Target Price & Upside (Right-Aligned) -->
+        <text x="${width - 18}" y="${y + 18}" font-size="11.5" font-weight="bold" text-anchor="end" fill="#16A34A" font-family="sans-serif">৳${m.forecastPrice} (+${m.expectedReturnPercent}%)</text>
       `;
     });
 
     return `
-      <svg width="100%" height="${height}" viewBox="0 0 ${width} ${height}" xmlns="http://www.w3.org/2000/svg" style="background:#F8FAFC;border-radius:6px;">
+      <svg width="100%" height="${height}" viewBox="0 0 ${width} ${height}" xmlns="http://www.w3.org/2000/svg" style="background:#F8FAFC;border:1px solid #E2E8F0;border-radius:6px;margin:8px 0 12px 0;">
         ${barsSvg}
       </svg>
     `;

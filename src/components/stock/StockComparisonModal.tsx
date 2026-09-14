@@ -13,6 +13,7 @@ import {
   TouchableOpacity,
   ScrollView,
   Modal,
+  TextInput,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { DseStockItem, DSE_STOCK_UNIVERSE } from '../../finance/bdStockIntelligence';
@@ -39,13 +40,12 @@ export const StockComparisonModal: React.FC<StockComparisonModalProps> = ({
   initialStocks = [],
   onSelectStockDetail,
 }) => {
-  // Up to 3 stocks can be selected
+  // Up to 4 stocks can be selected simultaneously
   const [selectedSymbols, setSelectedSymbols] = useState<string[]>(() => {
     if (initialStocks.length >= 2) {
-      return initialStocks.slice(0, 3).map((s) => s.symbol);
+      return initialStocks.slice(0, 4).map((s) => s.symbol);
     }
     if (initialStocks.length === 1) {
-      // Find a natural peer in the same sector or default to another large cap
       const baseStock = initialStocks[0];
       const peer = DSE_STOCK_UNIVERSE.find(
         (s) => s.sector === baseStock.sector && s.symbol !== baseStock.symbol
@@ -56,11 +56,12 @@ export const StockComparisonModal: React.FC<StockComparisonModalProps> = ({
   });
 
   const [isAddPickerOpen, setIsAddPickerOpen] = useState(false);
+  const [stockSearchQuery, setStockSearchQuery] = useState('');
 
   // Sync with initialStocks when opened
   React.useEffect(() => {
     if (initialStocks.length >= 2) {
-      setSelectedSymbols(initialStocks.slice(0, 3).map((s) => s.symbol));
+      setSelectedSymbols(initialStocks.slice(0, 4).map((s) => s.symbol));
     } else if (initialStocks.length === 1) {
       const base = initialStocks[0];
       const peer = DSE_STOCK_UNIVERSE.find(
@@ -171,13 +172,26 @@ export const StockComparisonModal: React.FC<StockComparisonModalProps> = ({
     }
   };
 
+  const filteredUniverse = useMemo(() => {
+    const q = stockSearchQuery.trim().toUpperCase();
+    return DSE_STOCK_UNIVERSE.filter((s) => {
+      if (!q) return true;
+      return (
+        s.symbol.toUpperCase().includes(q) ||
+        s.companyName.toUpperCase().includes(q) ||
+        s.sector.toUpperCase().includes(q)
+      );
+    });
+  }, [stockSearchQuery]);
+
   const addStockToCompare = (symbol: string) => {
     if (selectedSymbols.includes(symbol)) return;
-    if (selectedSymbols.length >= 3) {
-      setSelectedSymbols([selectedSymbols[0], selectedSymbols[1], symbol]);
+    if (selectedSymbols.length >= 4) {
+      setSelectedSymbols([...selectedSymbols.slice(0, 3), symbol]);
     } else {
       setSelectedSymbols([...selectedSymbols, symbol]);
     }
+    setStockSearchQuery('');
     setIsAddPickerOpen(false);
   };
 
@@ -217,6 +231,15 @@ export const StockComparisonModal: React.FC<StockComparisonModalProps> = ({
             </View>
 
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+              <TouchableOpacity
+                style={styles.addHeaderBtn}
+                onPress={() => setIsAddPickerOpen(!isAddPickerOpen)}
+                activeOpacity={0.8}
+              >
+                <Ionicons name={isAddPickerOpen ? "chevron-up" : "add-circle"} size={16} color="#FFFFFF" />
+                <Text style={styles.addHeaderBtnText}>+ Add Stock ({selectedSymbols.length}/4)</Text>
+              </TouchableOpacity>
+
               <TouchableOpacity
                 style={styles.printBtn}
                 onPress={handlePrintComparisonPdf}
@@ -384,39 +407,84 @@ export const StockComparisonModal: React.FC<StockComparisonModalProps> = ({
                 );
               })}
 
-              {/* Add Stock Slot if fewer than 3 */}
-              {stockAnalyses.length < 3 && (
+              {/* Add Stock Slot if fewer than 4 */}
+              {stockAnalyses.length < 4 && (
                 <TouchableOpacity
                   style={styles.addStockSlot}
                   onPress={() => setIsAddPickerOpen(!isAddPickerOpen)}
                 >
                   <Ionicons name="add-circle-outline" size={32} color="#0284C7" />
-                  <Text style={styles.addStockSlotText}>+ Add 3rd Stock to Compare</Text>
+                  <Text style={styles.addStockSlotText}>+ Add Stock to Compare ({stockAnalyses.length}/4)</Text>
                   <Text style={{ fontSize: 11, color: '#64748B', textAlign: 'center' }}>
-                    Compare up to 3 peers side-by-side
+                    Compare up to 4 peers side-by-side
                   </Text>
                 </TouchableOpacity>
               )}
             </View>
 
-            {/* Inline Stock Selector Dropdown */}
+            {/* Inline Stock Selector Dropdown with Search */}
             {isAddPickerOpen && (
               <View style={styles.pickerContainer}>
-                <Text style={{ fontSize: 12, fontWeight: '800', color: '#0F172A', marginBottom: 8 }}>
-                  SELECT A STOCK TO ADD TO COMPARISON:
-                </Text>
-                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
-                  {DSE_STOCK_UNIVERSE.filter((s) => !selectedSymbols.includes(s.symbol)).map((s) => (
-                    <TouchableOpacity
-                      key={s.symbol}
-                      style={styles.pickerStockPill}
-                      onPress={() => addStockToCompare(s.symbol)}
-                    >
-                      <Text style={{ fontSize: 12, fontWeight: '800', color: '#0284C7' }}>{s.symbol}</Text>
-                      <Text style={{ fontSize: 10, color: '#64748B' }}>৳{s.ltp}</Text>
-                    </TouchableOpacity>
-                  ))}
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                  <Text style={{ fontSize: 12, fontWeight: '800', color: '#0F172A' }}>
+                    SELECT A STOCK TO ADD TO COMPARISON ({selectedSymbols.length}/4):
+                  </Text>
+                  <TouchableOpacity onPress={() => setIsAddPickerOpen(false)}>
+                    <Ionicons name="close-circle" size={18} color="#64748B" />
+                  </TouchableOpacity>
                 </View>
+
+                {/* Search Box */}
+                <View style={styles.searchBarBox}>
+                  <Ionicons name="search" size={16} color="#64748B" style={{ marginRight: 6 }} />
+                  <TextInput
+                    style={styles.searchBarInput}
+                    placeholder="Search stock symbol, name or sector (e.g. BRACBANK, GP, Pharma)..."
+                    placeholderTextColor="#94A3B8"
+                    value={stockSearchQuery}
+                    onChangeText={setStockSearchQuery}
+                    autoCapitalize="characters"
+                  />
+                  {stockSearchQuery.length > 0 && (
+                    <TouchableOpacity onPress={() => setStockSearchQuery('')}>
+                      <Ionicons name="close-circle" size={16} color="#94A3B8" />
+                    </TouchableOpacity>
+                  )}
+                </View>
+
+                <ScrollView style={{ maxHeight: 200 }} nestedScrollEnabled={true}>
+                  <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
+                    {filteredUniverse.map((s) => {
+                      const isSelected = selectedSymbols.includes(s.symbol);
+                      return (
+                        <TouchableOpacity
+                          key={s.symbol}
+                          style={[
+                            styles.pickerStockPill,
+                            isSelected && styles.pickerStockPillDisabled,
+                          ]}
+                          disabled={isSelected}
+                          onPress={() => addStockToCompare(s.symbol)}
+                        >
+                          <View>
+                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                              <Text style={{ fontSize: 12, fontWeight: '800', color: isSelected ? '#94A3B8' : '#0284C7' }}>
+                                {s.symbol}
+                              </Text>
+                              <Text style={styles.pickerSectorTag}>{s.sector}</Text>
+                            </View>
+                            <Text style={styles.pickerCompanyName} numberOfLines={1}>
+                              {s.companyName}
+                            </Text>
+                          </View>
+                          <Text style={{ fontSize: 11, fontWeight: '700', color: isSelected ? '#94A3B8' : '#16A34A', marginLeft: 4 }}>
+                            {isSelected ? '✓ Added' : `৳${s.ltp}`}
+                          </Text>
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </View>
+                </ScrollView>
               </View>
             )}
 
@@ -1204,6 +1272,37 @@ const styles = StyleSheet.create({
     marginTop: 6,
     marginBottom: 2,
   },
+  addHeaderBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: '#0284C7',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: Radius.sm,
+  },
+  addHeaderBtnText: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: '#FFFFFF',
+  },
+  searchBarBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#BAE6FD',
+    borderRadius: Radius.sm,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    marginBottom: 8,
+  },
+  searchBarInput: {
+    flex: 1,
+    fontSize: 12,
+    color: '#0F172A',
+    padding: 0,
+  },
   pickerContainer: {
     backgroundColor: '#F0F9FF',
     borderWidth: 1,
@@ -1220,8 +1319,27 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#BAE6FD',
     paddingHorizontal: 10,
-    paddingVertical: 5,
+    paddingVertical: 6,
     borderRadius: Radius.sm,
+  },
+  pickerStockPillDisabled: {
+    backgroundColor: '#F1F5F9',
+    borderColor: '#E2E8F0',
+    opacity: 0.6,
+  },
+  pickerSectorTag: {
+    fontSize: 9,
+    fontWeight: '700',
+    color: '#64748B',
+    backgroundColor: '#F1F5F9',
+    paddingHorizontal: 4,
+    paddingVertical: 1,
+    borderRadius: 2,
+  },
+  pickerCompanyName: {
+    fontSize: 9.5,
+    color: '#64748B',
+    maxWidth: 130,
   },
   matrixSection: {
     marginBottom: 16,
