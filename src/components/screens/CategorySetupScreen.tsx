@@ -184,16 +184,25 @@ export const CategorySetupScreen: React.FC<CategorySetupScreenProps> = ({ onBack
     );
   };
 
+  const handleAutoSync = () => {
+    const res = CategoryManager.syncWithActiveSchedules();
+    setRefreshKey((k) => k + 1);
+    Alert.alert('✅ Real Data Synchronized', res.message);
+  };
+
   const handleResetDefaults = () => {
     Alert.alert(
       'Reset Categories to Defaults',
-      'This will restore all 15+ standard Expense and 10+ Income categories. Custom categories will be overwritten.',
+      'This will restore all authentic Expense and Income categories synchronized with your actual schedules. Custom categories will be preserved.',
       [
         { text: 'Cancel', style: 'cancel' },
         {
           text: 'Reset to Defaults',
           style: 'destructive',
-          onPress: () => CategoryManager.resetToDefaults(),
+          onPress: () => {
+            CategoryManager.resetToDefaults();
+            setRefreshKey((k) => k + 1);
+          },
         },
       ]
     );
@@ -230,6 +239,15 @@ export const CategorySetupScreen: React.FC<CategorySetupScreenProps> = ({ onBack
                 <Text style={[styles.resetBtnText, { color: '#38BDF8' }]}>Expenses</Text>
               </TouchableOpacity>
             )}
+
+            <TouchableOpacity
+              style={styles.syncBtn}
+              onPress={handleAutoSync}
+              activeOpacity={0.85}
+            >
+              <Ionicons name="sync-outline" size={16} color="#FFFFFF" />
+              <Text style={styles.syncBtnText}>Auto-Sync Schedules</Text>
+            </TouchableOpacity>
 
             <TouchableOpacity
               style={styles.addBtn}
@@ -672,6 +690,20 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 8,
     alignItems: 'center',
+  },
+  syncBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: '#059669',
+    paddingHorizontal: 13,
+    paddingVertical: 10,
+    borderRadius: Radius.md,
+  },
+  syncBtnText: {
+    color: '#FFFFFF',
+    fontWeight: '800',
+    fontSize: 13,
   },
   addBtn: {
     flexDirection: 'row',

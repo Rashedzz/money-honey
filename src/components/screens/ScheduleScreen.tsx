@@ -51,24 +51,82 @@ export const getStoredSchedules = (): ScheduledItem[] => {
   try {
     if (typeof window !== 'undefined' && window.localStorage) {
       const raw = window.localStorage.getItem(SCHEDULE_STORAGE_KEY);
-      if (raw) return JSON.parse(raw);
+      if (raw) {
+        const list: ScheduledItem[] = JSON.parse(raw);
+        const hasBankSalary = list.some(
+          (i) => i.id === 'SCH-SALARY-BANK' || (i.flowType === 'income' && i.title.toLowerCase().includes('salary') && i.targetType === 'bank')
+        );
+        const hasCashSalary = list.some(
+          (i) => i.id === 'SCH-SALARY-CASH' || (i.flowType === 'income' && i.title.toLowerCase().includes('salary') && (i.targetType === 'cash' || i.linkedAccount?.toLowerCase().includes('cash')))
+        );
+
+        if (!hasBankSalary || !hasCashSalary) {
+          const filtered = list.filter((i) => i.id !== 'SCH-SALARY-01' && !i.title.toLowerCase().includes('executive tech salary'));
+          const bankSalary: ScheduledItem = {
+            id: 'SCH-SALARY-BANK',
+            title: 'Primary Tech Salary (Sonali Bank PLC)',
+            category: 'Salary',
+            amount: 100000,
+            flowType: 'income',
+            dueDay: 7, // 5th to 10th window
+            frequency: 'monthly',
+            linkedAccount: 'Sonali Bank PLC',
+            targetType: 'bank',
+            isAutoDebit: true,
+            notes: 'Monthly corporate payroll direct deposit into Sonali Bank PLC (credited 5th–10th)',
+            status: 'active',
+          };
+          const cashSalary: ScheduledItem = {
+            id: 'SCH-SALARY-CASH',
+            title: 'Executive Salary & Allowance (Cash in Hand)',
+            category: 'Salary',
+            amount: 25000,
+            flowType: 'income',
+            dueDay: 7, // 5th to 10th window
+            frequency: 'monthly',
+            linkedAccount: 'Cash in Hand',
+            targetType: 'cash',
+            isAutoDebit: false,
+            notes: 'Physical cash disbursement for executive allowances & living expenses (received 5th–10th)',
+            status: 'active',
+          };
+          const upgraded = [bankSalary, cashSalary, ...filtered];
+          saveStoredSchedules(upgraded);
+          return upgraded;
+        }
+        return list;
+      }
     }
   } catch (e) {}
 
   // Default seed schedules if empty
   return [
     {
-      id: 'SCH-SALARY-01',
-      title: 'Executive Tech Salary',
+      id: 'SCH-SALARY-BANK',
+      title: 'Primary Tech Salary (Sonali Bank PLC)',
       category: 'Salary',
-      amount: 125000,
+      amount: 100000,
       flowType: 'income',
       dueDay: 7, // 5th to 10th window
       frequency: 'monthly',
       linkedAccount: 'Sonali Bank PLC',
       targetType: 'bank',
       isAutoDebit: true,
-      notes: 'Monthly corporate payroll (credited between 5th and 10th)',
+      notes: 'Monthly corporate payroll direct deposit into Sonali Bank PLC (credited 5th–10th)',
+      status: 'active',
+    },
+    {
+      id: 'SCH-SALARY-CASH',
+      title: 'Executive Salary & Allowance (Cash in Hand)',
+      category: 'Salary',
+      amount: 25000,
+      flowType: 'income',
+      dueDay: 7, // 5th to 10th window
+      frequency: 'monthly',
+      linkedAccount: 'Cash in Hand',
+      targetType: 'cash',
+      isAutoDebit: false,
+      notes: 'Physical cash disbursement for executive allowances & living expenses (received 5th–10th)',
       status: 'active',
     },
     {
@@ -149,6 +207,10 @@ export const ScheduleScreen: React.FC = () => {
     SanchaypatraEarningsService.getAllScheduleItems()
   );
   const sanchaySummary = useMemo(() => SanchaypatraEarningsService.getPortfolioSummary(), [sanchayCoupons]);
+
+  // Sanchaypatra View & Expansion states
+  const [showOnlyAdvanced, setShowOnlyAdvanced] = useState(true);
+  const [expandedCertNumber, setExpandedCertNumber] = useState<string | null>(null);
 
   // Accounts list for target routing
   const [accounts, setAccounts] = useState<BankAccountItem[]>(() => TransactionManager.getAccountsWithCash());
@@ -360,6 +422,32 @@ export const ScheduleScreen: React.FC = () => {
     } else {
       Alert.alert('Notice', res.message);
     }
+  };
+
+  // Mark all past coupons as read/cleared
+  const handleClearAllPastCoupons = () => {
+    const cleared = SanchaypatraEarningsService.markAllPastCouponsAsRead();
+    reloadSanchaypatra();
+    SoundService.playAlertSound();
+    Alert.alert(
+      '🧹 Past Schedules Cleared',
+      cleared > 0
+        ? `${cleared} elapsed quarterly schedule notifications marked as read and dismissed. Displaying active and advanced schedules.`
+        : 'All past notifications are already cleared.'
+    );
+  };
+
+  // Mark single coupon as read
+  const handleMarkCouponRead = (couponId: string) => {
+    SanchaypatraEarningsService.markCouponAsRead(couponId);
+    reloadSanchaypatra();
+    SoundService.playAlertSound();
+  };
+
+  // Unmark coupon read (restore to active view)
+  const handleUnmarkCouponRead = (couponId: string) => {
+    SanchaypatraEarningsService.unmarkCouponAsRead(couponId);
+    reloadSanchaypatra();
   };
 
   const handleSaveItem = () => {
@@ -660,103 +748,272 @@ export const ScheduleScreen: React.FC = () => {
             </View>
           </View>
 
+          {/* Action Toolbar: Clear Past & Advanced View Mode */}
+          <View style={styles.sanchayToolbar}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap', flex: 1 }}>
+              <TouchableOpacity
+                style={styles.clearPastToolbarBtn}
+                onPress={handleClearAllPastCoupons}
+                activeOpacity={0.8}
+              >
+                <Ionicons name="checkmark-done-circle" size={16} color="#0284C7" />
+                <Text style={styles.clearPastToolbarBtnText}>🧹 Mark All Past as Read</Text>
+              </TouchableOpacity>
+              <Text style={styles.toolbarHintText}>
+                Dismisses elapsed 2025/past notifications & keeps only active upcoming schedules
+              </Text>
+            </View>
+
+            <View style={styles.viewModeFilterRow}>
+              <TouchableOpacity
+                style={[styles.viewModePill, showOnlyAdvanced && styles.viewModePillActive]}
+                onPress={() => setShowOnlyAdvanced(true)}
+              >
+                <Text style={[styles.viewModePillText, showOnlyAdvanced && styles.viewModePillTextActive]}>
+                  ⚡ Advanced Only
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.viewModePill, !showOnlyAdvanced && styles.viewModePillActive]}
+                onPress={() => setShowOnlyAdvanced(false)}
+              >
+                <Text style={[styles.viewModePillText, !showOnlyAdvanced && styles.viewModePillTextActive]}>
+                  📜 All Quarters (108)
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+
           {/* Sanchaypatra Certificates Payout Timeline */}
           <View style={styles.listContainer}>
             {SANCHAYPATRA_MASTER_PORTFOLIO.map((item) => {
               // Find all coupons for this certificate
               const certCoupons = sanchayCoupons.filter((c) => c.certificateNumber === item.certificateNumber);
-              const pending = certCoupons.filter((c) => c.status === 'PENDING');
-              const nextCoupon = pending.length > 0 ? pending[0] : null;
+              const pendingActive = certCoupons.filter((c) => c.status === 'PENDING' && (!showOnlyAdvanced || !c.isRead));
+              const nextCoupon = pendingActive.length > 0 ? pendingActive[0] : (certCoupons.find((c) => c.status === 'PENDING') || null);
               const isDeposited = !nextCoupon;
+              const isPastDueUnread = nextCoupon && nextCoupon.isPastDue && !nextCoupon.isRead;
+              const isExpanded = expandedCertNumber === item.certificateNumber;
 
               return (
-                <View key={item.certificateNumber} style={styles.scheduleCard}>
-                  <View style={[styles.accentStripe, { backgroundColor: isDeposited ? '#94A3B8' : '#16A34A' }]} />
+                <View key={item.certificateNumber} style={styles.scheduleCardWrapper}>
+                  <View style={styles.scheduleCard}>
+                    <View style={[styles.accentStripe, { backgroundColor: isDeposited ? '#94A3B8' : '#16A34A' }]} />
 
-                  <View style={styles.cardMain}>
-                    {/* Header */}
-                    <View style={styles.cardHeaderRow}>
-                      <View style={styles.cardHeaderLeft}>
-                        <View style={[styles.iconBox, { backgroundColor: '#F0FDF4' }]}>
-                          <Ionicons name="document-text" size={20} color="#16A34A" />
+                    <View style={styles.cardMain}>
+                      {/* Header */}
+                      <View style={styles.cardHeaderRow}>
+                        <View style={styles.cardHeaderLeft}>
+                          <View style={[styles.iconBox, { backgroundColor: '#F0FDF4' }]}>
+                            <Ionicons name="document-text" size={20} color="#16A34A" />
+                          </View>
+                          <View>
+                            <Text style={styles.itemTitle}>
+                              {item.schemeName} #{item.certificateNumber}
+                            </Text>
+                            <Text style={styles.itemCategory}>
+                              Issue Date: {item.issueDate} • Principal: ৳ {item.principalAmount.toLocaleString('en-IN')} • 3-Month Interval
+                            </Text>
+                          </View>
                         </View>
-                        <View>
-                          <Text style={styles.itemTitle}>
-                            {item.schemeName} #{item.certificateNumber}
+
+                        {/* Amounts */}
+                        <View style={styles.amountCol}>
+                          <Text style={[styles.itemAmount, { color: '#16A34A' }]}>
+                            +৳ {item.quarterlyNet.toLocaleString('en-IN')}
                           </Text>
-                          <Text style={styles.itemCategory}>
-                            Issue Date: {item.issueDate} • Principal: ৳ {item.principalAmount.toLocaleString('en-IN')} • 3-Month Interval
+                          <Text style={styles.itemAmountLakhs}>
+                            Gross: ৳{item.quarterlyGross.toLocaleString('en-IN')} (Tax: 10%)
                           </Text>
                         </View>
                       </View>
 
-                      {/* Amounts */}
-                      <View style={styles.amountCol}>
-                        <Text style={[styles.itemAmount, { color: '#16A34A' }]}>
-                          +৳ {item.quarterlyNet.toLocaleString('en-IN')}
-                        </Text>
-                        <Text style={styles.itemAmountLakhs}>
-                          Gross: ৳{item.quarterlyGross.toLocaleString('en-IN')} (Tax: 10%)
-                        </Text>
-                      </View>
-                    </View>
-
-                    {/* Next Deposit Date & Countdown */}
-                    <View style={styles.cardFooterRow}>
-                      <View style={styles.badgeRow}>
-                        {nextCoupon ? (
-                          <View
-                            style={[
-                              styles.dueBadge,
-                              nextCoupon.daysRemaining <= 0 && { backgroundColor: '#FEE2E2', borderColor: '#FCA5A5' },
-                              nextCoupon.daysRemaining > 0 && nextCoupon.daysRemaining <= 15 && { backgroundColor: '#FEF3C7', borderColor: '#FCD34D' },
-                            ]}
-                          >
-                            <Ionicons
-                              name={nextCoupon.daysRemaining <= 0 ? 'alert-circle' : 'time-outline'}
-                              size={14}
-                              color={nextCoupon.daysRemaining <= 0 ? '#DC2626' : '#B45309'}
-                            />
-                            <Text
+                      {/* Next Deposit Date & Countdown */}
+                      <View style={styles.cardFooterRow}>
+                        <View style={styles.badgeRow}>
+                          {nextCoupon ? (
+                            <View
                               style={[
-                                styles.dueBadgeText,
-                                nextCoupon.daysRemaining <= 0 && { color: '#DC2626', fontWeight: '800' },
-                                nextCoupon.daysRemaining > 0 && { color: '#B45309', fontWeight: '800' },
+                                styles.dueBadge,
+                                nextCoupon.daysRemaining <= 0 && { backgroundColor: '#FEE2E2', borderColor: '#FCA5A5' },
+                                nextCoupon.daysRemaining > 0 && nextCoupon.daysRemaining <= 15 && { backgroundColor: '#FEF3C7', borderColor: '#FCD34D' },
                               ]}
                             >
-                              {nextCoupon.daysRemaining <= 0
-                                ? `Due: ${nextCoupon.couponDate} (Encash Now)`
-                                : `Next Payout: ${nextCoupon.couponDate} (${nextCoupon.daysRemaining} days left)`}
-                            </Text>
-                          </View>
-                        ) : (
-                          <View style={[styles.dueBadge, { backgroundColor: '#DCFCE7', borderColor: '#86EFAC' }]}>
-                            <Ionicons name="checkmark-done" size={14} color="#16A34A" />
-                            <Text style={[styles.dueBadgeText, { color: '#16A34A', fontWeight: '800' }]}>
-                              All Coupons Settled
-                            </Text>
-                          </View>
-                        )}
+                              <Ionicons
+                                name={nextCoupon.daysRemaining <= 0 ? 'alert-circle' : 'time-outline'}
+                                size={14}
+                                color={nextCoupon.daysRemaining <= 0 ? '#DC2626' : '#B45309'}
+                              />
+                              <Text
+                                style={[
+                                  styles.dueBadgeText,
+                                  nextCoupon.daysRemaining <= 0 && { color: '#DC2626', fontWeight: '800' },
+                                  nextCoupon.daysRemaining > 0 && { color: '#B45309', fontWeight: '800' },
+                                ]}
+                              >
+                                {nextCoupon.daysRemaining <= 0
+                                  ? `Due: ${nextCoupon.couponDate} (${Math.abs(nextCoupon.daysRemaining)}d ago)`
+                                  : `Next Payout: ${nextCoupon.couponDate} (${nextCoupon.daysRemaining} days left)`}
+                              </Text>
+                            </View>
+                          ) : (
+                            <View style={[styles.dueBadge, { backgroundColor: '#DCFCE7', borderColor: '#86EFAC' }]}>
+                              <Ionicons name="checkmark-done" size={14} color="#16A34A" />
+                              <Text style={[styles.dueBadgeText, { color: '#16A34A', fontWeight: '800' }]}>
+                                All Coupons Settled
+                              </Text>
+                            </View>
+                          )}
 
-                        <View style={styles.autoDebitPill}>
-                          <Ionicons name="business" size={12} color="#0284C7" />
-                          <Text style={styles.autoDebitText}>{item.linkedBankName}</Text>
+                          <View style={styles.autoDebitPill}>
+                            <Ionicons name="business" size={12} color="#0284C7" />
+                            <Text style={styles.autoDebitText}>{item.linkedBankName}</Text>
+                          </View>
+                        </View>
+
+                        {/* Action Buttons */}
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                          {isPastDueUnread && nextCoupon && (
+                            <TouchableOpacity
+                              style={styles.markReadOutlineBtn}
+                              onPress={() => handleMarkCouponRead(nextCoupon.id)}
+                              activeOpacity={0.8}
+                            >
+                              <Ionicons name="checkmark-done" size={14} color="#475569" />
+                              <Text style={styles.markReadOutlineBtnText}>Mark Read</Text>
+                            </TouchableOpacity>
+                          )}
+
+                          {nextCoupon && (
+                            <TouchableOpacity
+                              style={styles.depositActionBtn}
+                              onPress={() => handleDepositSanchaypatra(nextCoupon.id)}
+                              activeOpacity={0.8}
+                            >
+                              <Ionicons name="checkmark-circle" size={15} color="#FFFFFF" />
+                              <Text style={styles.depositActionBtnText}>Confirm Deposited</Text>
+                            </TouchableOpacity>
+                          )}
+
+                          <TouchableOpacity
+                            style={styles.expandScheduleBtn}
+                            onPress={() => setExpandedCertNumber(isExpanded ? null : item.certificateNumber)}
+                            activeOpacity={0.8}
+                          >
+                            <Ionicons name={isExpanded ? 'chevron-up' : 'chevron-down'} size={14} color="#0284C7" />
+                            <Text style={styles.expandScheduleBtnText}>
+                              {isExpanded ? 'Hide' : '12 Quarters'}
+                            </Text>
+                          </TouchableOpacity>
                         </View>
                       </View>
-
-                      {/* Action Button */}
-                      {nextCoupon && (
-                        <TouchableOpacity
-                          style={styles.depositActionBtn}
-                          onPress={() => handleDepositSanchaypatra(nextCoupon.id)}
-                          activeOpacity={0.8}
-                        >
-                          <Ionicons name="checkmark-circle" size={15} color="#FFFFFF" />
-                          <Text style={styles.depositActionBtnText}>Confirm Deposited</Text>
-                        </TouchableOpacity>
-                      )}
                     </View>
                   </View>
+
+                  {/* Expanded 12-Quarter Amortization Table */}
+                  {isExpanded && (
+                    <View style={styles.expandedScheduleContainer}>
+                      <View style={styles.expandedScheduleHeader}>
+                        <Text style={styles.expandedTitle}>
+                          Full 12-Quarter Payout Schedule ({item.issueDate} to {item.maturityDate})
+                        </Text>
+                        <Text style={styles.expandedSub}>
+                          Principal: ৳{item.principalAmount.toLocaleString('en-IN')} • Net/Qtr: ৳{item.quarterlyNet.toLocaleString('en-IN')} • Destination: {item.linkedBankName}
+                        </Text>
+                      </View>
+
+                      <View style={styles.quarterGrid}>
+                        {certCoupons.map((c) => {
+                          const isConfirmed = c.status === 'CONFIRMED_DEPOSITED';
+                          const isReadPast = c.isPastDue && c.isRead && !isConfirmed;
+                          const isDueUnread = c.isPastDue && !c.isRead && !isConfirmed;
+
+                          return (
+                            <View key={c.id} style={[styles.quarterItemRow, isConfirmed && styles.quarterItemRowConfirmed]}>
+                              <View style={styles.quarterMetaCol}>
+                                <View style={[styles.quarterNumBadge, isConfirmed && { backgroundColor: '#DCFCE7' }]}>
+                                  <Text style={[styles.quarterNumText, isConfirmed && { color: '#16A34A' }]}>
+                                    Q{c.quarterNumber}
+                                  </Text>
+                                </View>
+                                <View>
+                                  <Text style={styles.quarterDateText}>{c.couponDate}</Text>
+                                  <Text style={styles.quarterAmountText}>
+                                    Net: ৳{c.netAmount.toLocaleString('en-IN')} (Gross: ৳{c.grossAmount.toLocaleString('en-IN')})
+                                  </Text>
+                                </View>
+                              </View>
+
+                              <View style={styles.quarterActionCol}>
+                                {isConfirmed ? (
+                                  <View style={styles.confirmedPill}>
+                                    <Ionicons name="checkmark-done" size={13} color="#16A34A" />
+                                    <Text style={styles.confirmedPillText}>✓ Deposited</Text>
+                                  </View>
+                                ) : isReadPast ? (
+                                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                                    <View style={styles.readPastPill}>
+                                      <Ionicons name="checkmark-circle" size={12} color="#64748B" />
+                                      <Text style={styles.readPastPillText}>Read / Dismissed</Text>
+                                    </View>
+                                    <TouchableOpacity
+                                      style={styles.unmarkBtn}
+                                      onPress={() => handleUnmarkCouponRead(c.id)}
+                                      activeOpacity={0.75}
+                                    >
+                                      <Text style={styles.unmarkBtnText}>Restore</Text>
+                                    </TouchableOpacity>
+                                    <TouchableOpacity
+                                      style={styles.depositSmallBtn}
+                                      onPress={() => handleDepositSanchaypatra(c.id)}
+                                      activeOpacity={0.8}
+                                    >
+                                      <Text style={styles.depositSmallBtnText}>Deposit</Text>
+                                    </TouchableOpacity>
+                                  </View>
+                                ) : isDueUnread ? (
+                                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                                    <View style={styles.duePastPill}>
+                                      <Ionicons name="alert-circle" size={12} color="#DC2626" />
+                                      <Text style={styles.duePastPillText}>⚠️ Past Due ({Math.abs(c.daysRemaining)}d)</Text>
+                                    </View>
+                                    <TouchableOpacity
+                                      style={styles.markReadSmallBtn}
+                                      onPress={() => handleMarkCouponRead(c.id)}
+                                      activeOpacity={0.8}
+                                    >
+                                      <Text style={styles.markReadSmallBtnText}>Mark Read</Text>
+                                    </TouchableOpacity>
+                                    <TouchableOpacity
+                                      style={styles.depositSmallBtn}
+                                      onPress={() => handleDepositSanchaypatra(c.id)}
+                                      activeOpacity={0.8}
+                                    >
+                                      <Text style={styles.depositSmallBtnText}>Deposit</Text>
+                                    </TouchableOpacity>
+                                  </View>
+                                ) : (
+                                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                                    <View style={styles.upcomingPill}>
+                                      <Ionicons name="time" size={12} color="#0284C7" />
+                                      <Text style={styles.upcomingPillText}>⏱️ In {c.daysRemaining} days</Text>
+                                    </View>
+                                    <TouchableOpacity
+                                      style={styles.depositSmallBtn}
+                                      onPress={() => handleDepositSanchaypatra(c.id)}
+                                      activeOpacity={0.8}
+                                    >
+                                      <Text style={styles.depositSmallBtnText}>Deposit</Text>
+                                    </TouchableOpacity>
+                                  </View>
+                                )}
+                              </View>
+                            </View>
+                          );
+                        })}
+                      </View>
+                    </View>
+                  )}
                 </View>
               );
             })}
@@ -767,17 +1024,80 @@ export const ScheduleScreen: React.FC = () => {
       {/* ================= TAB 3: SCHEDULED INCOMES (SALARY, CASH, BANK) ================= */}
       {activeTab === 'incomes' && (
         <View style={{ gap: 16 }}>
-          {/* 5th to 10th Salary Notice Banner */}
-          <View style={styles.salaryBanner}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-              <Ionicons name="calendar" size={20} color="#16A34A" />
-              <Text style={styles.salaryBannerTitle}>
-                Monthly Salary & Inflow Countdown (5th to 10th Window)
-              </Text>
+          {/* Executive Dual-Channel Salary Dashboard Card */}
+          <View style={styles.dualSalaryCard}>
+            <View style={styles.dualSalaryHeader}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1, minWidth: 260 }}>
+                <View style={[styles.destIconBox, { backgroundColor: '#DCFCE7' }]}>
+                  <Ionicons name="cash" size={24} color="#16A34A" />
+                </View>
+                <View>
+                  <Text style={styles.dualSalaryTitle}>Executive Dual-Channel Salary Dashboard</Text>
+                  <Text style={styles.dualSalarySub}>
+                    Total Monthly Salary: <Text style={{ fontWeight: '900', color: '#16A34A' }}>৳ 1,25,000</Text> • Dual Deposit Routing (Bank & Cash)
+                  </Text>
+                </View>
+              </View>
+
+              <View style={[styles.dueBadge, { backgroundColor: getSalaryWindowStatus(7).badgeColor }]}>
+                <Ionicons name="time" size={14} color={getSalaryWindowStatus(7).textColor} />
+                <Text style={[styles.dueBadgeText, { color: getSalaryWindowStatus(7).textColor, fontWeight: '800' }]}>
+                  {getSalaryWindowStatus(7).label}
+                </Text>
+              </View>
             </View>
-            <Text style={styles.salaryBannerText}>
-              Salary, freelancing, and regular incomes operate on a monthly schedule. The system activates an urgent countdown between the 5th and 10th of each month. Clicking "Mark as Deposited" immediately credits either your designated Bank Account or Physical Cash in Hand.
-            </Text>
+
+            <View style={styles.dualSalaryGrid}>
+              {/* Channel 1: Bank (Sonali Bank PLC) */}
+              <View style={styles.channelCol}>
+                <View style={styles.channelBadgeRow}>
+                  <Ionicons name="business" size={16} color="#0284C7" />
+                  <Text style={styles.channelColTitle}>Primary Tech Salary (Bank - Sonali Bank PLC)</Text>
+                </View>
+                <Text style={styles.channelAmount}>৳ 1,00,000</Text>
+                <Text style={styles.channelHint}>
+                  Electronic payroll credited between 5th & 10th into Sonali Bank PLC
+                </Text>
+                <TouchableOpacity
+                  style={[styles.depositActionBtn, { backgroundColor: '#0284C7', marginTop: 10 }]}
+                  onPress={() => {
+                    const bankItem = incomeList.find(
+                      (i) => i.id === 'SCH-SALARY-BANK' || (i.targetType === 'bank' && i.title.toLowerCase().includes('salary'))
+                    );
+                    if (bankItem) handleDepositIncome(bankItem);
+                  }}
+                  activeOpacity={0.85}
+                >
+                  <Ionicons name="business" size={15} color="#FFFFFF" />
+                  <Text style={styles.depositActionBtnText}>🏦 Deposit to Sonali Bank</Text>
+                </TouchableOpacity>
+              </View>
+
+              {/* Channel 2: Cash in Hand */}
+              <View style={styles.channelCol}>
+                <View style={styles.channelBadgeRow}>
+                  <Ionicons name="wallet" size={16} color="#16A34A" />
+                  <Text style={styles.channelColTitle}>Executive Salary & Allowance (Cash in Hand)</Text>
+                </View>
+                <Text style={styles.channelAmount}>৳ 25,000</Text>
+                <Text style={styles.channelHint}>
+                  Physical cash allowance received between 5th & 10th for pocket liquidity
+                </Text>
+                <TouchableOpacity
+                  style={[styles.depositActionBtn, { backgroundColor: '#16A34A', marginTop: 10 }]}
+                  onPress={() => {
+                    const cashItem = incomeList.find(
+                      (i) => i.id === 'SCH-SALARY-CASH' || (i.targetType === 'cash' && i.title.toLowerCase().includes('salary'))
+                    );
+                    if (cashItem) handleDepositIncome(cashItem);
+                  }}
+                  activeOpacity={0.85}
+                >
+                  <Ionicons name="cash" size={15} color="#FFFFFF" />
+                  <Text style={styles.depositActionBtnText}>💵 Deposit to Cash in Hand</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
           </View>
 
           {/* Income List */}
@@ -1736,5 +2056,325 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '800',
     color: '#FFFFFF',
+  },
+  sanchayToolbar: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    padding: 12,
+    borderRadius: Radius.md,
+    borderWidth: 1,
+    borderColor: '#BAE6FD',
+    gap: 10,
+    flexWrap: 'wrap',
+  },
+  clearPastToolbarBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: '#F0F9FF',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: Radius.sm,
+    borderWidth: 1,
+    borderColor: '#BAE6FD',
+  },
+  clearPastToolbarBtnText: {
+    fontSize: 12.5,
+    fontWeight: '800',
+    color: '#0284C7',
+  },
+  toolbarHintText: {
+    fontSize: 12,
+    color: '#64748B',
+  },
+  viewModeFilterRow: {
+    flexDirection: 'row',
+    gap: 6,
+  },
+  viewModePill: {
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: Radius.sm,
+    borderWidth: 1,
+    borderColor: '#CBD5E1',
+    backgroundColor: '#F8FAFC',
+  },
+  viewModePillActive: {
+    backgroundColor: '#0284C7',
+    borderColor: '#0284C7',
+  },
+  viewModePillText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#64748B',
+  },
+  viewModePillTextActive: {
+    color: '#FFFFFF',
+    fontWeight: '800',
+  },
+  scheduleCardWrapper: {
+    gap: 4,
+  },
+  markReadOutlineBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#F8FAFC',
+    paddingHorizontal: 9,
+    paddingVertical: 6,
+    borderRadius: Radius.sm,
+    borderWidth: 1,
+    borderColor: '#CBD5E1',
+  },
+  markReadOutlineBtnText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#475569',
+  },
+  expandScheduleBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#F0F9FF',
+    paddingHorizontal: 9,
+    paddingVertical: 6,
+    borderRadius: Radius.sm,
+    borderWidth: 1,
+    borderColor: '#BAE6FD',
+  },
+  expandScheduleBtnText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#0284C7',
+  },
+  expandedScheduleContainer: {
+    backgroundColor: '#F8FAFC',
+    borderRadius: Radius.md,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    padding: 12,
+    marginTop: -4,
+    gap: 10,
+  },
+  expandedScheduleHeader: {
+    gap: 2,
+    paddingBottom: 6,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E2E8F0',
+  },
+  expandedTitle: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: '#0F172A',
+  },
+  expandedSub: {
+    fontSize: 11.5,
+    color: '#64748B',
+  },
+  quarterGrid: {
+    gap: 6,
+  },
+  quarterItemRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    padding: 8,
+    borderRadius: Radius.sm,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    flexWrap: 'wrap',
+    gap: 6,
+  },
+  quarterItemRowConfirmed: {
+    backgroundColor: '#F0FDF4',
+    borderColor: '#BBF7D0',
+  },
+  quarterMetaCol: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  quarterNumBadge: {
+    backgroundColor: '#F1F5F9',
+    paddingHorizontal: 7,
+    paddingVertical: 3,
+    borderRadius: 4,
+  },
+  quarterNumText: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: '#475569',
+  },
+  quarterDateText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#0F172A',
+  },
+  quarterAmountText: {
+    fontSize: 11.5,
+    color: '#64748B',
+    marginTop: 1,
+  },
+  quarterActionCol: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  confirmedPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#DCFCE7',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 4,
+  },
+  confirmedPillText: {
+    fontSize: 11.5,
+    fontWeight: '800',
+    color: '#16A34A',
+  },
+  readPastPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#F1F5F9',
+    paddingHorizontal: 7,
+    paddingVertical: 4,
+    borderRadius: 4,
+  },
+  readPastPillText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#64748B',
+  },
+  duePastPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#FEE2E2',
+    paddingHorizontal: 7,
+    paddingVertical: 4,
+    borderRadius: 4,
+  },
+  duePastPillText: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: '#DC2626',
+  },
+  upcomingPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#E0F2FE',
+    paddingHorizontal: 7,
+    paddingVertical: 4,
+    borderRadius: 4,
+  },
+  upcomingPillText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#0284C7',
+  },
+  unmarkBtn: {
+    paddingHorizontal: 6,
+    paddingVertical: 4,
+    backgroundColor: '#F8FAFC',
+    borderRadius: 4,
+    borderWidth: 1,
+    borderColor: '#CBD5E1',
+  },
+  unmarkBtnText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#64748B',
+  },
+  markReadSmallBtn: {
+    paddingHorizontal: 6,
+    paddingVertical: 4,
+    backgroundColor: '#F1F5F9',
+    borderRadius: 4,
+    borderWidth: 1,
+    borderColor: '#CBD5E1',
+  },
+  markReadSmallBtnText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#475569',
+  },
+  depositSmallBtn: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    backgroundColor: '#16A34A',
+    borderRadius: 4,
+  },
+  depositSmallBtnText: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: '#FFFFFF',
+  },
+  dualSalaryCard: {
+    backgroundColor: '#FFFFFF',
+    padding: 18,
+    borderRadius: Radius.md,
+    borderWidth: 1.5,
+    borderColor: '#86EFAC',
+    gap: 14,
+  },
+  dualSalaryHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: 10,
+  },
+  dualSalaryTitle: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: '#0F172A',
+  },
+  dualSalarySub: {
+    fontSize: 13,
+    color: '#475569',
+    marginTop: 2,
+  },
+  dualSalaryGrid: {
+    flexDirection: 'row',
+    gap: 14,
+    flexWrap: 'wrap',
+  },
+  channelCol: {
+    flex: 1,
+    minWidth: 260,
+    backgroundColor: '#F8FAFC',
+    padding: 14,
+    borderRadius: Radius.md,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    gap: 4,
+  },
+  channelBadgeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  channelColTitle: {
+    fontSize: 12.5,
+    fontWeight: '800',
+    color: '#334155',
+  },
+  channelAmount: {
+    fontSize: 22,
+    fontWeight: '900',
+    color: '#0F172A',
+    marginTop: 4,
+  },
+  channelHint: {
+    fontSize: 12,
+    color: '#64748B',
+    lineHeight: 16,
   },
 });

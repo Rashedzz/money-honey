@@ -42,6 +42,7 @@ export interface SanchaypatraCouponScheduleItem {
   transactionId?: string;
   daysRemaining: number;
   isPastDue: boolean;
+  isRead?: boolean;
 }
 
 export const SANCHAYPATRA_MASTER_PORTFOLIO: SanchaypatraMasterRecord[] = [
@@ -174,6 +175,7 @@ export const SANCHAYPATRA_MASTER_PORTFOLIO: SanchaypatraMasterRecord[] = [
 ];
 
 const COUPON_STATUS_KEY = 'mh_sanchaypatra_coupons_status';
+const COUPON_READ_PAST_KEY = 'mh_sanchaypatra_read_past';
 const COUPON_EVENT = 'mh_sanchaypatra_coupon_updated';
 
 function addMonthsToDate(dateStr: string, monthsToAdd: number): string {
@@ -187,15 +189,73 @@ function addMonthsToDate(dateStr: string, monthsToAdd: number): string {
 
 export class SanchaypatraEarningsService {
   /**
+   * Reads persistent list of past coupon IDs marked as read/dismissed
+   */
+  public static getReadPastIds(): string[] {
+    try {
+      if (typeof window !== 'undefined' && window.localStorage) {
+        const raw = window.localStorage.getItem(COUPON_READ_PAST_KEY);
+        if (raw) return JSON.parse(raw);
+      }
+    } catch (e) {}
+    return [];
+  }
+
+  /**
+   * Saves persistent list of read past coupon IDs
+   */
+  public static saveReadPastIds(ids: string[]): void {
+    try {
+      if (typeof window !== 'undefined' && window.localStorage) {
+        window.localStorage.setItem(COUPON_READ_PAST_KEY, JSON.stringify(ids));
+        window.dispatchEvent(new Event(COUPON_EVENT));
+      }
+    } catch (e) {}
+  }
+
+  /**
+   * Marks a specific coupon as read/cleared
+   */
+  public static markCouponAsRead(couponId: string): void {
+    const existing = new Set(this.getReadPastIds());
+    existing.add(couponId);
+    this.saveReadPastIds(Array.from(existing));
+  }
+
+  /**
+   * Unmarks a coupon from read status
+   */
+  public static unmarkCouponAsRead(couponId: string): void {
+    const existing = new Set(this.getReadPastIds());
+    existing.delete(couponId);
+    this.saveReadPastIds(Array.from(existing));
+  }
+
+  /**
+   * Marks ALL past-due coupons (whose date has already passed) as read/cleared.
+   * This immediately clears old notifications and keeps only advanced/upcoming schedules.
+   */
+  public static markAllPastCouponsAsRead(): number {
+    const all = this.getAllScheduleItems();
+    const pastUnread = all.filter((c) => c.isPastDue && !c.isRead && c.status === 'PENDING');
+    const existing = new Set(this.getReadPastIds());
+    pastUnread.forEach((c) => existing.add(c.id));
+    this.saveReadPastIds(Array.from(existing));
+    return pastUnread.length;
+  }
+
+  /**
    * Generates all 12 quarterly coupon entries for a certificate across its 3-year life
    */
   public static generateCouponsForCertificate(
     record: SanchaypatraMasterRecord,
-    statusMap: Record<string, { status: 'CONFIRMED_DEPOSITED'; confirmedAt: string; transactionId: string }>
+    statusMap: Record<string, { status: 'CONFIRMED_DEPOSITED'; confirmedAt: string; transactionId: string }>,
+    readPastIds?: Set<string>
   ): SanchaypatraCouponScheduleItem[] {
     const coupons: SanchaypatraCouponScheduleItem[] = [];
     const today = new Date();
     today.setHours(0, 0, 0, 0);
+    const readSet = readPastIds || new Set(this.getReadPastIds());
 
     for (let q = 1; q <= 12; q++) {
       const couponId = `coupon_${record.certificateNumber}_q${q}`;
@@ -226,6 +286,7 @@ export class SanchaypatraEarningsService {
         transactionId: confirmedMeta?.transactionId,
         daysRemaining,
         isPastDue,
+        isRead: readSet.has(couponId),
       });
     }
 
@@ -264,14 +325,23 @@ export class SanchaypatraEarningsService {
    */
   public static getAllScheduleItems(): SanchaypatraCouponScheduleItem[] {
     const statusMap = this.getStatusMap();
+    const readPastIds = new Set(this.getReadPastIds());
     const all: SanchaypatraCouponScheduleItem[] = [];
 
     for (const master of SANCHAYPATRA_MASTER_PORTFOLIO) {
-      all.push(...this.generateCouponsForCertificate(master, statusMap));
+      all.push(...this.generateCouponsForCertificate(master, statusMap, readPastIds));
     }
 
     // Sort chronologically
     return all.sort((a, b) => a.couponDate.localeCompare(b.couponDate));
+  }
+
+  /**
+   * Retrieves only active upcoming and non-dismissed schedules (advanced view)
+   */
+  public static getAdvancedScheduleItems(): SanchaypatraCouponScheduleItem[] {
+    const all = this.getAllScheduleItems();
+    return all.filter((c) => !c.isRead);
   }
 
   /**
@@ -409,10 +479,11 @@ export class SanchaypatraEarningsService {
     const confirmed = all.filter((c) => c.status === 'CONFIRMED_DEPOSITED');
     const confirmedTotalNetDeposited = confirmed.reduce((sum, c) => sum + c.netAmount, 0);
 
-    const pending = all.filter((c) => c.status === 'PENDING');
-    // Find next nearest due coupon
-    const upcoming = pending.filter((c) => c.daysRemaining >= 0);
-    const nextDueCoupon = upcoming.length > 0 ? upcoming[0] : (pending[0] || null);
+    const allPending = all.filter((c) => c.status === 'PENDING');
+    const activePending = allPending.filter((c) => !c.isRead);
+    // Find next nearest due coupon from active unread coupons
+    const upcoming = activePending.filter((c) => c.daysRemaining >= 0);
+    const nextDueCoupon = upcoming.length > 0 ? upcoming[0] : (activePending[0] || (allPending.length > 0 ? allPending[0] : null));
 
     return {
       totalCapital,
@@ -427,7 +498,7 @@ export class SanchaypatraEarningsService {
       totalCouponsCount: all.length,
       confirmedCouponsCount: confirmed.length,
       confirmedTotalNetDeposited,
-      pendingCouponsCount: pending.length,
+      pendingCouponsCount: activePending.length,
       nextDueCoupon,
     };
   }

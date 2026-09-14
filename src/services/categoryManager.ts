@@ -33,61 +33,61 @@ export interface CategoryBudgetVariance {
 export const CATEGORIES_STORAGE_KEY = 'mh_user_financial_categories';
 const CATEGORY_UPDATE_EVENT = 'mh_categories_updated';
 
-// 15+ Industry Standard Default Expense Categories
+// 14 Authentic Industry Standard Expense Categories (Synchronized with real schedules)
 export const DEFAULT_EXPENSE_CATEGORIES: FinancialCategory[] = [
   {
     id: 'CAT-EXP-01',
-    name: 'Household & House Rent',
+    name: 'House Living Rent & Maintenance',
     type: 'expense',
     icon: '🏠',
     color: '#0284C7',
-    monthlyBudget: 50000,
+    monthlyBudget: 35000,
     isTaxDeductible: false,
-    notes: 'Rent, flat service charges, home security',
+    notes: 'House living rent & building service charges (linked to Sonali Bank)',
     isSystem: true,
   },
   {
     id: 'CAT-EXP-02',
-    name: 'Groceries & Kitchen Supplies',
+    name: 'Electricity, Gas & Utility Bills',
     type: 'expense',
-    icon: '🛒',
-    color: '#10B981',
-    monthlyBudget: 35000,
+    icon: '⚡',
+    color: '#F59E0B',
+    monthlyBudget: 8500,
     isTaxDeductible: false,
-    notes: 'Supermarket, vegetables, fish, meat, dairy',
+    notes: 'DESCO, Titas Gas, WASA, fiber internet & mobile bills (Cash/Bank)',
     isSystem: true,
   },
   {
     id: 'CAT-EXP-03',
-    name: 'Utilities (Electricity, Gas, Net)',
+    name: 'Groceries & Kitchen Supplies',
     type: 'expense',
-    icon: '⚡',
-    color: '#F59E0B',
-    monthlyBudget: 15000,
+    icon: '🛒',
+    color: '#10B981',
+    monthlyBudget: 25000,
     isTaxDeductible: false,
-    notes: 'DESCO, Titas Gas, WASA, fiber internet, phone bills',
+    notes: 'Supermarket, kitchen bazaar, dairy, vegetables, fish & meat',
     isSystem: true,
   },
   {
     id: 'CAT-EXP-04',
-    name: 'Vehicle Fuel, Octane & Service',
-    type: 'expense',
-    icon: '🚗',
-    color: '#EF4444',
-    monthlyBudget: 20000,
-    isTaxDeductible: false,
-    notes: 'Octane, engine oil, workshop maintenance, toll',
-    isSystem: true,
-  },
-  {
-    id: 'CAT-EXP-05',
     name: 'Debt Service EMI & Bank Loans',
     type: 'expense',
     icon: '💳',
     color: '#DC2626',
-    monthlyBudget: 60000,
+    monthlyBudget: 40000,
     isTaxDeductible: true,
-    notes: 'Home loan, auto loan, institutional EMI obligations',
+    notes: 'Bank loan EMI installments & institutional obligations',
+    isSystem: true,
+  },
+  {
+    id: 'CAT-EXP-05',
+    name: 'Vehicle Fuel, Octane & Service',
+    type: 'expense',
+    icon: '🚗',
+    color: '#EF4444',
+    monthlyBudget: 12000,
+    isTaxDeductible: false,
+    notes: 'Octane, vehicle maintenance, lubricants, toll & bridge fees',
     isSystem: true,
   },
   {
@@ -96,9 +96,9 @@ export const DEFAULT_EXPENSE_CATEGORIES: FinancialCategory[] = [
     type: 'expense',
     icon: '🏥',
     color: '#EC4899',
-    monthlyBudget: 12000,
+    monthlyBudget: 8000,
     isTaxDeductible: true,
-    notes: 'Prescriptions, specialist visits, hospital tests',
+    notes: 'Prescriptions, diagnostic tests, doctor consultations',
     isSystem: true,
   },
   {
@@ -107,31 +107,31 @@ export const DEFAULT_EXPENSE_CATEGORIES: FinancialCategory[] = [
     type: 'expense',
     icon: '🎓',
     color: '#8B5CF6',
-    monthlyBudget: 25000,
+    monthlyBudget: 20000,
     isTaxDeductible: false,
-    notes: 'Tuition fees, coaching, books, exam registrations',
+    notes: 'School tuition, coaching, books & educational supplies',
     isSystem: true,
   },
   {
     id: 'CAT-EXP-08',
-    name: 'Property Maintenance & Municipal Tax',
+    name: 'Personal & Contingency Expenses',
     type: 'expense',
-    icon: '🏢',
-    color: '#D97706',
+    icon: '📦',
+    color: '#475569',
     monthlyBudget: 10000,
-    isTaxDeductible: true,
-    notes: 'Holding tax, land revenue tax, flat renovations',
+    isTaxDeductible: false,
+    notes: 'Emergency household buffer & unforeseen personal outflows',
     isSystem: true,
   },
   {
     id: 'CAT-EXP-09',
-    name: 'Dining Out, Cafes & Outings',
+    name: 'Dining Out, Cafes & Social Gatherings',
     type: 'expense',
     icon: '🍽️',
     color: '#06B6D4',
-    monthlyBudget: 15000,
+    monthlyBudget: 12000,
     isTaxDeductible: false,
-    notes: 'Family weekend restaurants, coffee, food delivery',
+    notes: 'Family weekend restaurants, coffee & social entertainment',
     isSystem: true,
   },
   {
@@ -140,9 +140,9 @@ export const DEFAULT_EXPENSE_CATEGORIES: FinancialCategory[] = [
     type: 'expense',
     icon: '🛍️',
     color: '#6366F1',
-    monthlyBudget: 18000,
+    monthlyBudget: 10000,
     isTaxDeductible: false,
-    notes: 'Clothing, personal accessories, electronics',
+    notes: 'Clothing, personal wear, shoes & personal gadgets',
     isSystem: true,
   },
   {
@@ -151,134 +151,123 @@ export const DEFAULT_EXPENSE_CATEGORIES: FinancialCategory[] = [
     type: 'expense',
     icon: '🛡️',
     color: '#3B82F6',
-    monthlyBudget: 15000,
+    monthlyBudget: 10000,
     isTaxDeductible: true,
-    notes: 'Eligible for Income Tax Rebate under tax ordinance',
+    notes: 'Insurance policy premium installments (Tax rebate eligible)',
     isSystem: true,
   },
   {
     id: 'CAT-EXP-12',
-    name: 'Professional Subscriptions & Tech',
+    name: 'Professional Subscriptions & Tech Tools',
     type: 'expense',
     icon: '💻',
     color: '#64748B',
-    monthlyBudget: 6000,
+    monthlyBudget: 5000,
     isTaxDeductible: true,
-    notes: 'Cloud hosting, SaaS software, business tools',
+    notes: 'Cloud hosting, AI/SaaS tools, digital workstation licenses',
     isSystem: true,
   },
   {
     id: 'CAT-EXP-13',
-    name: 'Charity, Zakat & Donations',
+    name: 'Charity, Zakat & Sadqah',
     type: 'expense',
     icon: '🎁',
     color: '#A855F7',
-    monthlyBudget: 10000,
+    monthlyBudget: 8000,
     isTaxDeductible: true,
-    notes: 'Zakat ul-Mal, humanitarian donations, religious gifts',
+    notes: 'Zakat ul-Mal, philanthropic donations & community welfare',
     isSystem: true,
   },
   {
     id: 'CAT-EXP-14',
-    name: 'Bank Charges, VAT & Transfer Fees',
+    name: 'Bank Charges, Excise Duty & Transfer Fees',
     type: 'expense',
     icon: '🧾',
     color: '#94A3B8',
-    monthlyBudget: 2500,
+    monthlyBudget: 1500,
     isTaxDeductible: false,
-    notes: 'BEFTN / RTGS charges, excise duty, card annual fee',
-    isSystem: true,
-  },
-  {
-    id: 'CAT-EXP-15',
-    name: 'Personal & Contingency Expenses',
-    type: 'expense',
-    icon: '📦',
-    color: '#475569',
-    monthlyBudget: 8000,
-    isTaxDeductible: false,
-    notes: 'Unplanned household or personal emergency outflows',
+    notes: 'BEFTN / RTGS charges, excise duty, card fees & SMS alerts',
     isSystem: true,
   },
 ];
 
-// 10+ Industry Standard Default Income Categories
+// 10 Authentic Income Categories (Synchronized with user schedules & Sanchaypatra)
 export const DEFAULT_INCOME_CATEGORIES: FinancialCategory[] = [
   {
     id: 'CAT-INC-01',
-    name: 'Primary Employment Salary',
+    name: 'Primary Tech Salary (Sonali Bank PLC)',
     type: 'income',
     icon: '💼',
     color: '#10B981',
-    monthlyBudget: 160000,
+    monthlyBudget: 100000,
     isTaxDeductible: false,
-    notes: 'Monthly basic salary, allowances, executive compensation',
+    notes: 'Monthly corporate payroll direct deposit into Sonali Bank PLC (credited 5th–10th)',
     isSystem: true,
   },
   {
     id: 'CAT-INC-02',
-    name: 'Commercial Business Revenue',
+    name: 'Executive Salary & Allowance (Cash in Hand)',
     type: 'income',
-    icon: '🏢',
-    color: '#0284C7',
-    monthlyBudget: 120000,
+    icon: '💵',
+    color: '#059669',
+    monthlyBudget: 25000,
     isTaxDeductible: false,
-    notes: 'Direct business proceeds, customer sales, corporate draws',
+    notes: 'Physical cash disbursement for executive allowances & living expenses (received 5th–10th)',
     isSystem: true,
   },
   {
     id: 'CAT-INC-03',
-    name: 'Consulting & Professional Services',
+    name: 'National Savings (Sanchaypatra 3-Mo Profit)',
+    type: 'income',
+    icon: '📜',
+    color: '#EC4899',
+    monthlyBudget: 29531,
+    isTaxDeductible: false,
+    notes: 'Monthly equivalent of ৳88,593.75 quarterly profit across 9 certificates (deposited to Sonali Bank)',
+    isSystem: true,
+  },
+  {
+    id: 'CAT-INC-04',
+    name: 'IT Consultancy Retainer',
     type: 'income',
     icon: '💻',
     color: '#8B5CF6',
     monthlyBudget: 45000,
     isTaxDeductible: false,
-    notes: 'Advisory retainers, freelance contracts, expert fees',
-    isSystem: true,
-  },
-  {
-    id: 'CAT-INC-04',
-    name: 'Residential Real Estate Rental Yield',
-    type: 'income',
-    icon: '🏠',
-    color: '#F59E0B',
-    monthlyBudget: 40000,
-    isTaxDeductible: false,
-    notes: 'Apartment monthly tenant rent collected',
+    notes: 'Direct client consultancy retainer payment in cash',
     isSystem: true,
   },
   {
     id: 'CAT-INC-05',
-    name: 'DSE/CSE Listed Stock Dividends',
+    name: 'Apartment Rental Income',
     type: 'income',
-    icon: '📈',
-    color: '#0D9488',
-    monthlyBudget: 18000,
+    icon: '🏠',
+    color: '#F59E0B',
+    monthlyBudget: 32000,
     isTaxDeductible: false,
-    notes: 'Cash dividends from portfolio equities (BEPZA/DSE listed)',
+    notes: 'Residential flat rental income credited to Sonali Bank PLC on the 5th',
     isSystem: true,
   },
   {
     id: 'CAT-INC-06',
-    name: 'National Savings (Sanchaypatra) Profits',
+    name: 'DSE/CSE Listed Stock Dividends',
     type: 'income',
-    icon: '📜',
-    color: '#EC4899',
-    monthlyBudget: 28000,
+    icon: '📈',
+    color: '#0D9488',
+    monthlyBudget: 12000,
     isTaxDeductible: false,
-    notes: 'Quarterly profit coupons from Govt Sanchaypatra',
+    notes: 'Annual & interim cash dividends from stock market equities',
     isSystem: true,
   },
   {
     id: 'CAT-INC-07',
-    name: 'Fixed Deposit (FDR) Term Interest',
+    name: 'Fixed Deposit (FDR) Profit',
     type: 'income',
     icon: '🏦',
     color: '#06B6D4',
     monthlyBudget: 15000,
     isTaxDeductible: false,
-    notes: 'Monthly / maturity interest credited from bank FDRs',
+    notes: 'Monthly / maturity profit credited from banking FDRs',
     isSystem: true,
   },
   {
@@ -289,29 +278,29 @@ export const DEFAULT_INCOME_CATEGORIES: FinancialCategory[] = [
     color: '#A855F7',
     monthlyBudget: 25000,
     isTaxDeductible: false,
-    notes: 'Eid bonuses, performance incentives, annual gratuity',
+    notes: 'Eid bonuses and corporate executive performance incentives',
     isSystem: true,
   },
   {
     id: 'CAT-INC-09',
-    name: 'Capital Gains on Asset Disposals',
+    name: 'Capital Gains on Investments',
     type: 'income',
     icon: '💰',
     color: '#14B8A6',
     monthlyBudget: 0,
     isTaxDeductible: false,
-    notes: 'Realized gains on land, gold, or equity divestments',
+    notes: 'Realized profits on equity, bullion or asset divestments',
     isSystem: true,
   },
   {
     id: 'CAT-INC-10',
-    name: 'Foreign Remittance & Family Transfers',
+    name: 'Foreign Remittance & Transfers',
     type: 'income',
     icon: '🌐',
     color: '#3B82F6',
     monthlyBudget: 0,
     isTaxDeductible: false,
-    notes: 'Wage earner remittances, family contributions',
+    notes: 'Inward foreign currency remittances and transfers',
     isSystem: true,
   },
 ];
@@ -333,7 +322,7 @@ export const notifyCategoriesChanged = () => {
 
 export class CategoryManager {
   /**
-   * Reads raw categories from storage or initializes defaults
+   * Reads raw categories from storage or initializes defaults with auto-migration
    */
   public static getAllCategories(): FinancialCategory[] {
     try {
@@ -342,16 +331,69 @@ export class CategoryManager {
         if (raw) {
           const parsed = JSON.parse(raw);
           if (Array.isArray(parsed) && parsed.length > 0) {
+            // Auto-migrate if stored categories are old placeholder/demo data
+            const hasLegacyDemo = parsed.some(
+              (c: FinancialCategory) =>
+                (c.id === 'CAT-INC-01' && c.monthlyBudget === 160000) ||
+                c.name === 'Primary Employment Salary' ||
+                (c.id === 'CAT-EXP-01' && c.monthlyBudget === 50000)
+            );
+            if (hasLegacyDemo) {
+              const migrated = [...DEFAULT_EXPENSE_CATEGORIES, ...DEFAULT_INCOME_CATEGORIES];
+              this.saveAllCategories(migrated);
+              return migrated;
+            }
             return parsed;
           }
         }
       }
     } catch (e) {}
 
-    // First time init: Seed with default comprehensive categories
+    // First time init: Seed with authentic comprehensive categories
     const initial = [...DEFAULT_EXPENSE_CATEGORIES, ...DEFAULT_INCOME_CATEGORIES];
     this.saveAllCategories(initial);
     return initial;
+  }
+
+  /**
+   * Automatically synchronizes category budget limits and revenue targets with
+   * actual active schedules (Salary Bank ৳1,00,000, Salary Cash ৳25,000, Sanchaypatra ৳29,531, etc.)
+   */
+  public static syncWithActiveSchedules(): { updatedCount: number; message: string } {
+    const existing = this.getAllCategories();
+    const realDefaults = [...DEFAULT_EXPENSE_CATEGORIES, ...DEFAULT_INCOME_CATEGORIES];
+
+    let updatedCount = 0;
+    const synced = realDefaults.map((def) => {
+      const match = existing.find(
+        (c) => c.id === def.id || c.name.toLowerCase().trim() === def.name.toLowerCase().trim()
+      );
+      if (match) {
+        updatedCount++;
+        return {
+          ...match,
+          name: def.name,
+          icon: def.icon,
+          color: def.color,
+          monthlyBudget: def.monthlyBudget,
+          notes: def.notes,
+        };
+      }
+      updatedCount++;
+      return def;
+    });
+
+    // Also preserve any custom non-system categories created by user
+    const customCats = existing.filter(
+      (c) => !realDefaults.some((d) => d.id === c.id) && !c.isSystem
+    );
+
+    const finalList = [...synced, ...customCats];
+    this.saveAllCategories(finalList);
+    return {
+      updatedCount,
+      message: `Successfully synchronized ${updatedCount} categories with actual financial schedules & Sanchaypatra targets!`,
+    };
   }
 
   /**

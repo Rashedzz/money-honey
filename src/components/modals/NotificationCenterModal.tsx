@@ -64,7 +64,7 @@ export const NotificationCenterModal: React.FC<NotificationCenterModalProps> = (
     try {
       const coupons = SanchaypatraEarningsService.getAllScheduleItems();
       const pendingCoupons = coupons.filter(
-        (c) => c.status === 'PENDING' && c.daysRemaining <= 45
+        (c) => c.status === 'PENDING' && !c.isRead && c.daysRemaining <= 60
       );
 
       pendingCoupons.slice(0, 8).forEach((c) => {
@@ -78,7 +78,7 @@ export const NotificationCenterModal: React.FC<NotificationCenterModalProps> = (
           message: isToday
             ? `আজকে মুনাফা প্রদানের তারিখ! নিট ৳${c.netAmount.toLocaleString('en-IN')} সোনালী ব্যাংকে জমা করার জন্য প্রস্তুত।`
             : isPastDue
-            ? `${Math.abs(c.daysRemaining)} দিন পূর্বে মুনাফা তোলার তারিখ অতিক্রম হয়েছে। নিট ৳${c.netAmount.toLocaleString('en-IN')} জমা করুন।`
+            ? `${Math.abs(c.daysRemaining)} দিন পূর্বে মুনাফা তোলার তারিখ অতিক্রম হয়েছে। নিট ৳${c.netAmount.toLocaleString('en-IN')} সোনালী ব্যাংকে জমা করুন বা Mark as Read করুন।`
             : `আর ${c.daysRemaining} দিন বাকি। সোনালী ব্যাংক পিএলসি অ্যাকাউন্টে নিট ৳${c.netAmount.toLocaleString('en-IN')} জমা হবে।`,
           amount: c.netAmount,
           dateStr: c.couponDate,
@@ -218,7 +218,25 @@ export const NotificationCenterModal: React.FC<NotificationCenterModalProps> = (
     loadNotifications();
   };
 
+  const handleClearPastNotifications = () => {
+    const cleared = SanchaypatraEarningsService.markAllPastCouponsAsRead();
+    loadNotifications();
+    SoundService.playAlertSound();
+    Alert.alert(
+      '🧹 Past Schedules Cleared',
+      cleared > 0
+        ? `${cleared} past schedule notifications have been marked as read and cleared from alerts. Only upcoming and advanced schedules will be displayed.`
+        : 'All past notifications are already cleared.'
+    );
+  };
+
+  const handleMarkCouponRead = (couponId: string) => {
+    SanchaypatraEarningsService.markCouponAsRead(couponId);
+    loadNotifications();
+  };
+
   const visibleNotifications = notifications.filter((n) => !dismissedIds.includes(n.id));
+  const pastDueNotificationsCount = visibleNotifications.filter((n) => n.daysRemaining < 0).length;
 
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
@@ -243,7 +261,7 @@ export const NotificationCenterModal: React.FC<NotificationCenterModalProps> = (
             </TouchableOpacity>
           </View>
 
-          {/* Sound Control Bar */}
+          {/* Sound Control Bar & Past Clear */}
           <View style={styles.soundBar}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
               <Ionicons
@@ -251,25 +269,35 @@ export const NotificationCenterModal: React.FC<NotificationCenterModalProps> = (
                 size={18}
                 color={soundEnabled ? '#16A34A' : '#94A3B8'}
               />
-              <Text style={styles.soundBarText}>Audio Chimes (Sound Effects)</Text>
-            </View>
-
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-              <TouchableOpacity
-                style={styles.testSoundBtn}
-                onPress={handleTestChime}
-                activeOpacity={0.8}
-              >
-                <Ionicons name="play" size={13} color="#0284C7" />
-                <Text style={styles.testSoundBtnText}>Test Sound</Text>
-              </TouchableOpacity>
-
+              <Text style={styles.soundBarText}>Audio Chimes</Text>
               <Switch
                 value={soundEnabled}
                 onValueChange={handleToggleSound}
                 trackColor={{ false: '#CBD5E1', true: '#86EFAC' }}
                 thumbColor={soundEnabled ? '#16A34A' : '#F1F5F9'}
               />
+            </View>
+
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+              {pastDueNotificationsCount > 0 && (
+                <TouchableOpacity
+                  style={styles.clearPastBtn}
+                  onPress={handleClearPastNotifications}
+                  activeOpacity={0.8}
+                >
+                  <Ionicons name="checkmark-done-outline" size={13} color="#0284C7" />
+                  <Text style={styles.clearPastBtnText}>Clear Past ({pastDueNotificationsCount})</Text>
+                </TouchableOpacity>
+              )}
+
+              <TouchableOpacity
+                style={styles.testSoundBtn}
+                onPress={handleTestChime}
+                activeOpacity={0.8}
+              >
+                <Ionicons name="play" size={13} color="#0284C7" />
+                <Text style={styles.testSoundBtnText}>Test</Text>
+              </TouchableOpacity>
             </View>
           </View>
 
@@ -350,6 +378,17 @@ export const NotificationCenterModal: React.FC<NotificationCenterModalProps> = (
                           >
                             <Ionicons name="checkmark-circle" size={14} color="#FFFFFF" />
                             <Text style={styles.depositActionBtnText}>Confirm Deposited</Text>
+                          </TouchableOpacity>
+                        )}
+
+                        {notif.couponId && notif.daysRemaining < 0 && (
+                          <TouchableOpacity
+                            style={styles.markReadOutlineBtn}
+                            onPress={() => handleMarkCouponRead(notif.couponId!)}
+                            activeOpacity={0.8}
+                          >
+                            <Ionicons name="checkmark-done" size={13} color="#475569" />
+                            <Text style={styles.markReadOutlineBtnText}>Mark Read</Text>
                           </TouchableOpacity>
                         )}
 
@@ -616,5 +655,37 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '700',
     color: '#0284C7',
+  },
+  clearPastBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#F0F9FF',
+    paddingHorizontal: 9,
+    paddingVertical: 5,
+    borderRadius: Radius.sm,
+    borderWidth: 1,
+    borderColor: '#BAE6FD',
+  },
+  clearPastBtnText: {
+    fontSize: 11.5,
+    fontWeight: '700',
+    color: '#0284C7',
+  },
+  markReadOutlineBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#F8FAFC',
+    paddingHorizontal: 9,
+    paddingVertical: 6,
+    borderRadius: Radius.sm,
+    borderWidth: 1,
+    borderColor: '#CBD5E1',
+  },
+  markReadOutlineBtnText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#475569',
   },
 });

@@ -249,7 +249,7 @@ const styles = StyleSheet.create({
     letterSpacing: -0.5,
   },
   brandSubtitle: {
-    fontSize: 11,
+    fontSize: 12.5,
     color: '#38BDF8',
     fontWeight: '700',
     textTransform: 'uppercase',
@@ -274,12 +274,12 @@ const styles = StyleSheet.create({
     fontSize: 28,
   },
   avatarImg: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 38,
+    height: 38,
+    borderRadius: 19,
   },
   profileName: {
-    fontSize: 14,
+    fontSize: 15.5,
     fontWeight: '800',
     color: '#FFFFFF',
   },
@@ -295,7 +295,7 @@ const styles = StyleSheet.create({
     borderRadius: 3,
   },
   profileId: {
-    fontSize: 11,
+    fontSize: 12.5,
     color: '#94A3B8',
   },
   quickEntryBtn: {
@@ -309,7 +309,7 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.sm,
   },
   quickEntryBtnText: {
-    fontSize: 14,
+    fontSize: 15,
     fontWeight: '800',
     color: '#FFFFFF',
   },
@@ -320,18 +320,18 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
-    paddingVertical: 10,
+    paddingVertical: 11,
     paddingHorizontal: 12,
     borderRadius: Radius.md,
-    marginVertical: 1,
+    marginVertical: 1.5,
   },
   menuItemActive: {
     backgroundColor: '#1E293B',
   },
   menuLabel: {
-    fontSize: 13,
+    fontSize: 15,
     fontWeight: '600',
-    color: '#94A3B8',
+    color: '#CBD5E1',
     flex: 1,
   },
   menuLabelActive: {
@@ -340,17 +340,17 @@ const styles = StyleSheet.create({
   },
   badge: {
     paddingHorizontal: 8,
-    paddingVertical: 2,
+    paddingVertical: 2.5,
     borderRadius: 10,
   },
   badgeActive: {
-    backgroundColor: 'rgba(2, 132, 199, 0.2)',
+    backgroundColor: 'rgba(2, 132, 199, 0.25)',
   },
   badgeInactive: {
     backgroundColor: '#1E293B',
   },
   badgeText: {
-    fontSize: 10,
+    fontSize: 11.5,
     fontWeight: '800',
   },
   badgeTextActive: {
@@ -372,7 +372,7 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(56, 189, 248, 0.3)',
   },
   mobileAppUtilityText: {
-    fontSize: 13,
+    fontSize: 14,
     fontWeight: '700',
     color: '#38BDF8',
     flex: 1,
