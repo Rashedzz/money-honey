@@ -29,6 +29,7 @@ interface MobileDrawerProps {
     photoUri?: string;
   };
   isOnline?: boolean;
+  pendingNotifCount?: number;
 }
 
 export const MobileDrawer: React.FC<MobileDrawerProps> = ({
@@ -41,6 +42,7 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({
   onOpenAuthModal,
   userProfile = { id: 'rashed01', name: 'Rashed Zaman', avatar: '👨‍💼' },
   isOnline = true,
+  pendingNotifCount = 0,
 }) => {
   const menuItems: Array<{
     id: SidebarTabType;
@@ -56,7 +58,12 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({
     { id: 'stocks', label: 'Stock Market Equities', icon: 'trending-up-outline', badge: 'DSE/CSE' },
     { id: 'accounts', label: 'Bank Accounts & Cash', icon: 'wallet-outline' },
     { id: 'loans', label: 'Loans & Debt Service', icon: 'card-outline' },
-    { id: 'schedules', label: 'Bills & Income Schedules', icon: 'calendar-outline' },
+    {
+      id: 'schedules',
+      label: 'Bills & Income Schedules',
+      icon: 'calendar-outline',
+      badge: pendingNotifCount > 0 ? `${pendingNotifCount}` : undefined,
+    },
     { id: 'paper_assets', label: 'Paper Assets (Sanchaypatra)', icon: 'document-text-outline' },
     { id: 'physical_assets', label: 'Physical Assets (Land/Gold)', icon: 'business-outline' },
     { id: 'settings', label: 'Settings & Security Vault', icon: 'settings-outline' },
@@ -164,12 +171,19 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({
                         style={[
                           styles.badge,
                           isActive ? styles.badgeActive : styles.badgeInactive,
+                          item.id === 'schedules' && {
+                            backgroundColor: '#EF4444',
+                            borderRadius: 10,
+                            minWidth: 18,
+                            paddingHorizontal: 5,
+                          },
                         ]}
                       >
                         <Text
                           style={[
                             styles.badgeText,
                             isActive ? styles.badgeTextActive : styles.badgeTextInactive,
+                            item.id === 'schedules' && { color: '#FFFFFF', fontWeight: '900' },
                           ]}
                         >
                           {item.badge}

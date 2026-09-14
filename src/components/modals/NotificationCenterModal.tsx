@@ -23,26 +23,18 @@ import {
   ScheduledItem,
 } from '../screens/ScheduleScreen';
 import { TransactionManager, CASH_IN_HAND_ID } from '../../services/transactionManager';
+import {
+  AppNotificationService,
+  AppNotificationItem,
+} from '../../services/appNotificationService';
+
+export { AppNotificationItem };
 
 interface NotificationCenterModalProps {
   visible: boolean;
   onClose: () => void;
   onNavigateToSchedules?: () => void;
   onNavigateToSanchaypatra?: () => void;
-}
-
-export interface AppNotificationItem {
-  id: string;
-  type: 'sanchaypatra' | 'salary' | 'bill' | 'market';
-  title: string;
-  message: string;
-  amount?: number;
-  dateStr?: string;
-  daysRemaining: number;
-  urgency: 'critical' | 'warning' | 'normal' | 'info';
-  couponId?: string;
-  scheduleId?: string;
-  targetAccount?: string;
 }
 
 export const NotificationCenterModal: React.FC<NotificationCenterModalProps> = ({
@@ -53,103 +45,29 @@ export const NotificationCenterModal: React.FC<NotificationCenterModalProps> = (
 }) => {
   const [soundEnabled, setSoundEnabled] = useState(SoundService.isAudioEnabled());
   const [notifications, setNotifications] = useState<AppNotificationItem[]>([]);
-  const [dismissedIds, setDismissedIds] = useState<string[]>([]);
 
   const loadNotifications = () => {
-    const items: AppNotificationItem[] = [];
-    const today = new Date();
-    const currentDay = today.getDate();
-
-    // 1. Sanchaypatra Upcoming or Pending Coupons
     try {
-      const coupons = SanchaypatraEarningsService.getAllScheduleItems();
-      const pendingCoupons = coupons.filter(
-        (c) => c.status === 'PENDING' && !c.isRead && c.daysRemaining <= 60
-      );
-
-      pendingCoupons.slice(0, 8).forEach((c) => {
-        const isPastDue = c.daysRemaining < 0;
-        const isToday = c.daysRemaining === 0;
-
-        items.push({
-          id: `notif_sp_${c.id}`,
-          type: 'sanchaypatra',
-          title: `সঞ্চয়পত্র ৩-মাস মুনাফা #${c.certificateNumber}`,
-          message: isToday
-            ? `আজকে মুনাফা প্রদানের তারিখ! নিট ৳${c.netAmount.toLocaleString('en-IN')} সোনালী ব্যাংকে জমা করার জন্য প্রস্তুত।`
-            : isPastDue
-            ? `${Math.abs(c.daysRemaining)} দিন পূর্বে মুনাফা তোলার তারিখ অতিক্রম হয়েছে। নিট ৳${c.netAmount.toLocaleString('en-IN')} সোনালী ব্যাংকে জমা করুন বা Mark as Read করুন।`
-            : `আর ${c.daysRemaining} দিন বাকি। সোনালী ব্যাংক পিএলসি অ্যাকাউন্টে নিট ৳${c.netAmount.toLocaleString('en-IN')} জমা হবে।`,
-          amount: c.netAmount,
-          dateStr: c.couponDate,
-          daysRemaining: c.daysRemaining,
-          urgency: isToday || isPastDue ? 'critical' : c.daysRemaining <= 7 ? 'warning' : 'normal',
-          couponId: c.id,
-          targetAccount: 'Sonali Bank PLC',
-        });
-      });
-    } catch (e) {}
-
-    // 2. Scheduled Incomes & Salaries (especially highlighting 5th - 10th window)
-    try {
-      const schedules = getStoredSchedules();
-      const incomeSchedules = schedules.filter((s) => s.flowType === 'income');
-
-      incomeSchedules.forEach((s) => {
-        let daysToWindow = 0;
-        let inWindow = false;
-
-        if (currentDay >= 5 && currentDay <= 10) {
-          inWindow = true;
-        } else if (currentDay < 5) {
-          daysToWindow = 5 - currentDay;
-        } else {
-          // Next month's 5th
-          const lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
-          daysToWindow = lastDay - currentDay + 5;
-        }
-
-        const isSalary = s.title.toLowerCase().includes('salary') || s.category.toLowerCase().includes('salary');
-
-        if (inWindow) {
-          items.push({
-            id: `notif_sch_${s.id}`,
-            type: 'salary',
-            title: `💰 ${s.title} (Deposit Window Active)`,
-            message: `Current payment window (5th–10th). Deposit ৳${s.amount.toLocaleString('en-IN')} into ${s.linkedAccount || 'designated account'}.`,
-            amount: s.amount,
-            daysRemaining: 0,
-            urgency: 'critical',
-            scheduleId: s.id,
-            targetAccount: s.linkedAccount || (isSalary ? 'Bank' : 'Cash in Hand'),
-          });
-        } else if (daysToWindow <= 10) {
-          items.push({
-            id: `notif_sch_${s.id}`,
-            type: 'salary',
-            title: `🗓️ ${s.title} Countdown`,
-            message: `${daysToWindow} days until the 5th–10th monthly deposit cycle begins. Planned: ৳${s.amount.toLocaleString('en-IN')}.`,
-            amount: s.amount,
-            daysRemaining: daysToWindow,
-            urgency: 'normal',
-            scheduleId: s.id,
-            targetAccount: s.linkedAccount || 'Bank / Cash in Hand',
-          });
-        }
-      });
-    } catch (e) {}
-
-    // Sort by urgency: critical first, then warning, normal
-    const rank = { critical: 0, warning: 1, normal: 2, info: 3 };
-    items.sort((a, b) => rank[a.urgency] - rank[b.urgency]);
-
-    setNotifications(items);
+      const items = AppNotificationService.getActiveNotifications();
+      setNotifications(items);
+    } catch (e) {
+      setNotifications([]);
+    }
   };
 
   useEffect(() => {
     if (visible) {
       loadNotifications();
       SoundService.playNotificationChime();
+    }
+    if (typeof window !== 'undefined') {
+      const handler = () => loadNotifications();
+      window.addEventListener('mh_notifications_updated', handler);
+      window.addEventListener('mh_sanchaypatra_coupon_updated', handler);
+      return () => {
+        window.removeEventListener('mh_notifications_updated', handler);
+        window.removeEventListener('mh_sanchaypatra_coupon_updated', handler);
+      };
     }
   }, [visible]);
 
@@ -219,7 +137,7 @@ export const NotificationCenterModal: React.FC<NotificationCenterModalProps> = (
   };
 
   const handleClearPastNotifications = () => {
-    const cleared = SanchaypatraEarningsService.markAllPastCouponsAsRead();
+    const cleared = AppNotificationService.clearPastDueAlerts();
     loadNotifications();
     SoundService.playAlertSound();
     Alert.alert(
@@ -230,12 +148,29 @@ export const NotificationCenterModal: React.FC<NotificationCenterModalProps> = (
     );
   };
 
+  const handleClearAllNotifications = () => {
+    const cleared = AppNotificationService.clearAllAlerts();
+    loadNotifications();
+    SoundService.playAlertSound();
+    Alert.alert(
+      '🧹 All Alerts Cleared',
+      cleared > 0
+        ? `${cleared} notifications marked as cleared. Your Notification Center is now clean.`
+        : 'All notifications are already cleared.'
+    );
+  };
+
   const handleMarkCouponRead = (couponId: string) => {
-    SanchaypatraEarningsService.markCouponAsRead(couponId);
+    AppNotificationService.dismissNotification(`notif_sp_${couponId}`, couponId);
     loadNotifications();
   };
 
-  const visibleNotifications = notifications.filter((n) => !dismissedIds.includes(n.id));
+  const handleDismissNotification = (notif: AppNotificationItem) => {
+    AppNotificationService.dismissNotification(notif.id, notif.couponId);
+    loadNotifications();
+  };
+
+  const visibleNotifications = notifications;
   const pastDueNotificationsCount = visibleNotifications.filter((n) => n.daysRemaining < 0).length;
 
   return (
@@ -287,6 +222,17 @@ export const NotificationCenterModal: React.FC<NotificationCenterModalProps> = (
                 >
                   <Ionicons name="checkmark-done-outline" size={13} color="#0284C7" />
                   <Text style={styles.clearPastBtnText}>Clear Past ({pastDueNotificationsCount})</Text>
+                </TouchableOpacity>
+              )}
+
+              {visibleNotifications.length > 0 && (
+                <TouchableOpacity
+                  style={styles.clearAllBtn}
+                  onPress={handleClearAllNotifications}
+                  activeOpacity={0.8}
+                >
+                  <Ionicons name="trash-outline" size={13} color="#EF4444" />
+                  <Text style={styles.clearAllBtnText}>Clear All</Text>
                 </TouchableOpacity>
               )}
 
@@ -381,7 +327,7 @@ export const NotificationCenterModal: React.FC<NotificationCenterModalProps> = (
                           </TouchableOpacity>
                         )}
 
-                        {notif.couponId && notif.daysRemaining < 0 && (
+                        {notif.couponId && (
                           <TouchableOpacity
                             style={styles.markReadOutlineBtn}
                             onPress={() => handleMarkCouponRead(notif.couponId!)}
@@ -405,7 +351,7 @@ export const NotificationCenterModal: React.FC<NotificationCenterModalProps> = (
 
                         <TouchableOpacity
                           style={styles.dismissBtn}
-                          onPress={() => setDismissedIds((prev) => [...prev, notif.id])}
+                          onPress={() => handleDismissNotification(notif)}
                           activeOpacity={0.7}
                         >
                           <Ionicons name="close-circle-outline" size={16} color="#94A3B8" />
@@ -671,6 +617,22 @@ const styles = StyleSheet.create({
     fontSize: 11.5,
     fontWeight: '700',
     color: '#0284C7',
+  },
+  clearAllBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#FEF2F2',
+    paddingHorizontal: 9,
+    paddingVertical: 5,
+    borderRadius: Radius.sm,
+    borderWidth: 1,
+    borderColor: '#FECACA',
+  },
+  clearAllBtnText: {
+    fontSize: 11.5,
+    fontWeight: '700',
+    color: '#EF4444',
   },
   markReadOutlineBtn: {
     flexDirection: 'row',

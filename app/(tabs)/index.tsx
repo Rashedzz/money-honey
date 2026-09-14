@@ -23,6 +23,7 @@ import { FirebaseSyncService } from '../../src/services/firebaseSync';
 import { NotificationCenterModal } from '../../src/components/modals/NotificationCenterModal';
 import { SoundService } from '../../src/services/soundEffects';
 import { SanchaypatraEarningsService } from '../../src/services/sanchaypatraEarningsService';
+import { AppNotificationService } from '../../src/services/appNotificationService';
 import { RadialGauge } from '../../src/components/visuals/RadialGauge';
 import { SegmentedDonut } from '../../src/components/visuals/SegmentedDonut';
 import { FlowBreakdownBar } from '../../src/components/visuals/FlowBreakdownBar';
@@ -206,26 +207,23 @@ export default function MasterDashboardScreen() {
   const [pendingNotifCount, setPendingNotifCount] = useState(0);
 
   const calculatePendingNotifs = () => {
-    let count = 0;
     try {
-      const coupons = SanchaypatraEarningsService.getAllScheduleItems();
-      const pendingCoupons = coupons.filter((c) => c.status === 'PENDING' && c.daysRemaining <= 30);
-      count += pendingCoupons.length;
-
-      const today = new Date();
-      const currentDay = today.getDate();
-      if (currentDay >= 5 && currentDay <= 10) {
-        count += 1;
-      }
-    } catch (e) {}
-    setPendingNotifCount(count);
+      const count = AppNotificationService.getActiveNotificationCount();
+      setPendingNotifCount(count);
+    } catch (e) {
+      setPendingNotifCount(0);
+    }
   };
 
   useEffect(() => {
     calculatePendingNotifs();
     if (typeof window !== 'undefined') {
+      window.addEventListener('mh_notifications_updated', calculatePendingNotifs);
       window.addEventListener('mh_sanchaypatra_coupon_updated', calculatePendingNotifs);
-      return () => window.removeEventListener('mh_sanchaypatra_coupon_updated', calculatePendingNotifs);
+      return () => {
+        window.removeEventListener('mh_notifications_updated', calculatePendingNotifs);
+        window.removeEventListener('mh_sanchaypatra_coupon_updated', calculatePendingNotifs);
+      };
     }
   }, []);
 
@@ -449,6 +447,7 @@ export default function MasterDashboardScreen() {
             onToggleCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
             userProfile={user || { name: 'Rashed Zaman', avatar: '👨‍💼', id: 'rashed01' }}
             isOnline={isOnline}
+            pendingNotifCount={pendingNotifCount}
           />
         )}
 
@@ -1019,6 +1018,7 @@ export default function MasterDashboardScreen() {
         onOpenAuthModal={openAuthModal}
         userProfile={user || { name: 'Rashed Zaman', avatar: '👨‍💼', id: 'rashed01' }}
         isOnline={isOnline}
+        pendingNotifCount={pendingNotifCount}
       />
 
       {/* Universal Data Entry Vault Modal */}

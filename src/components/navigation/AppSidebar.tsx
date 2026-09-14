@@ -50,6 +50,7 @@ interface AppSidebarProps {
     photoUri?: string;
   };
   isOnline?: boolean;
+  pendingNotifCount?: number;
 }
 
 export const AppSidebar: React.FC<AppSidebarProps> = ({
@@ -70,6 +71,7 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
   onToggleCollapse,
   userProfile = { id: 'rashed01', name: 'Rashed Zaman', avatar: '👨‍💼' },
   isOnline = true,
+  pendingNotifCount = 0,
 }) => {
   const [hoveredItem, setHoveredItem] = useState<string | null>(null);
   const [bankingExpanded, setBankingExpanded] = useState(true);
@@ -93,7 +95,12 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
     { id: 'reports', label: 'Financial Statements', icon: 'document-text-outline', badge: 'IFRS' },
     { id: 'categories', label: 'Category & Budgets', icon: 'pricetags-outline' },
     { id: 'stocks', label: 'Stock Equities', icon: 'trending-up-outline', badge: 'DSE' },
-    { id: 'schedules', label: 'Bills & Schedules', icon: 'calendar-outline' },
+    {
+      id: 'schedules',
+      label: 'Bills & Schedules',
+      icon: 'calendar-outline',
+      badge: pendingNotifCount > 0 ? `${pendingNotifCount}` : undefined,
+    },
     { id: 'settings', label: 'Settings & Security', icon: 'settings-outline' },
   ];
 
@@ -212,8 +219,25 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
                       {item.label}
                     </Text>
                     {item.badge && (
-                      <View style={[styles.badge, isActive && styles.badgeActive]}>
-                        <Text style={[styles.badgeText, isActive && { color: '#38BDF8' }]}>
+                      <View
+                        style={[
+                          styles.badge,
+                          isActive && styles.badgeActive,
+                          item.id === 'schedules' && {
+                            backgroundColor: '#EF4444',
+                            borderRadius: 10,
+                            minWidth: 18,
+                            paddingHorizontal: 5,
+                          },
+                        ]}
+                      >
+                        <Text
+                          style={[
+                            styles.badgeText,
+                            isActive && { color: '#38BDF8' },
+                            item.id === 'schedules' && { color: '#FFFFFF', fontWeight: '900' },
+                          ]}
+                        >
                           {item.badge}
                         </Text>
                       </View>

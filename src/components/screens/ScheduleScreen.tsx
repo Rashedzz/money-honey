@@ -189,6 +189,8 @@ export const saveStoredSchedules = (list: ScheduledItem[]) => {
   try {
     if (typeof window !== 'undefined' && window.localStorage) {
       window.localStorage.setItem(SCHEDULE_STORAGE_KEY, JSON.stringify(list));
+      window.dispatchEvent(new Event('mh_notifications_updated'));
+      window.dispatchEvent(new Event('mh_sanchaypatra_coupon_updated'));
     }
   } catch (e) {}
 };
@@ -217,6 +219,7 @@ export const ScheduleScreen: React.FC = () => {
 
   const reloadSanchaypatra = () => {
     setSanchayCoupons(SanchaypatraEarningsService.getAllScheduleItems());
+    setSchedules(getStoredSchedules());
     setAccounts(TransactionManager.getAccountsWithCash());
   };
 
@@ -224,9 +227,11 @@ export const ScheduleScreen: React.FC = () => {
     if (typeof window !== 'undefined') {
       const handler = () => reloadSanchaypatra();
       window.addEventListener('mh_sanchaypatra_coupon_updated', handler);
+      window.addEventListener('mh_notifications_updated', handler);
       window.addEventListener('mh_balance_updated', handler);
       return () => {
         window.removeEventListener('mh_sanchaypatra_coupon_updated', handler);
+        window.removeEventListener('mh_notifications_updated', handler);
         window.removeEventListener('mh_balance_updated', handler);
       };
     }
