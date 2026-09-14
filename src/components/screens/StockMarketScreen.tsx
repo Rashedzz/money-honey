@@ -162,6 +162,134 @@ export const StockMarketScreen: React.FC<StockMarketScreenProps> = ({
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editPriceInput, setEditPriceInput] = useState('');
 
+  const handlePrintDossier = (stock: DseStockItem) => {
+    if (typeof window === 'undefined') return;
+    const tech = generateTechnicalIndicators(stock.symbol, stock.ltp, stock.supportLevel, stock.resistanceLevel);
+    const audit = performForensicAccountingAudit(stock.symbol, stock.companyName);
+
+    const printHtml = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>${stock.symbol} - Institutional Equity Research Dossier</title>
+          <style>
+            body { font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, sans-serif; color: #0F172A; padding: 24px; max-width: 900px; margin: 0 auto; line-height: 1.5; }
+            .header { border-bottom: 3px solid #0284C7; padding-bottom: 12px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: flex-end; }
+            .title { font-size: 26px; font-weight: 900; margin: 0; }
+            .sub { font-size: 13px; color: #64748B; margin-top: 4px; }
+            .rec-badge { font-size: 14px; font-weight: 800; padding: 6px 14px; background: #DCFCE7; color: #16A34A; border-radius: 6px; }
+            .kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 20px; }
+            .kpi-card { background: #F8FAFC; border: 1px solid #E2E8F0; padding: 10px; border-radius: 6px; }
+            .kpi-label { font-size: 11px; font-weight: 700; color: #64748B; text-transform: uppercase; }
+            .kpi-val { font-size: 18px; font-weight: 900; color: #0F172A; margin-top: 2px; }
+            .section { margin-top: 24px; }
+            .sec-title { font-size: 15px; font-weight: 800; border-bottom: 1px solid #CBD5E1; padding-bottom: 4px; margin-bottom: 10px; color: #0369A1; }
+            table { width: 100%; border-collapse: collapse; margin-top: 8px; font-size: 12px; }
+            th, td { border: 1px solid #E2E8F0; padding: 8px 10px; text-align: left; }
+            th { background: #F1F5F9; font-weight: 700; }
+            .highlight { font-weight: 800; color: #16A34A; }
+            .thesis-box { background: #F0F9FF; border: 1px solid #BAE6FD; padding: 14px; border-radius: 6px; font-size: 13px; line-height: 1.6; }
+            @media print {
+              body { padding: 0; }
+              button { display: none; }
+            }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <div>
+              <div class="title">${stock.companyName} (${stock.symbol})</div>
+              <div class="sub">Dhaka Stock Exchange (DSE) • Sector: ${stock.sector} • Report Generated: ${new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}</div>
+            </div>
+            <div class="rec-badge">${stock.recommendation} (Score: ${stock.totalAiScore}/100)</div>
+          </div>
+
+          <div class="kpi-grid">
+            <div class="kpi-card"><div class="kpi-label">Last Traded Price</div><div class="kpi-val">৳${stock.ltp}</div></div>
+            <div class="kpi-card"><div class="kpi-label">DCF Intrinsic Fair Value</div><div class="kpi-val highlight">৳${stock.dcfIntrinsicValue}</div></div>
+            <div class="kpi-card"><div class="kpi-label">Margin of Safety</div><div class="kpi-val highlight">+${stock.marginOfSafetyPercent}%</div></div>
+            <div class="kpi-card"><div class="kpi-label">Consensus Target</div><div class="kpi-val highlight">৳${stock.ensembleTargetPrice}</div></div>
+          </div>
+
+          <div class="section">
+            <div class="sec-title">🎯 INVESTMENT THESIS & STRATEGY</div>
+            <div class="thesis-box">${stock.aiInvestmentThesis}</div>
+          </div>
+
+          <div class="section">
+            <div class="sec-title">📐 TECHNICAL & MOMENTUM PROFILE</div>
+            <table>
+              <tr><th>Metric</th><th>Value</th><th>Metric</th><th>Value</th></tr>
+              <tr><td>RSI (14-Day)</td><td>${tech.rsi14} (${tech.rsiStatus})</td><td>MACD Status</td><td>${tech.macdStatus}</td></tr>
+              <tr><td>Trend Direction</td><td>${tech.trendDirection}</td><td>Supertrend</td><td>৳${tech.supertrend}</td></tr>
+              <tr><td>Support Level</td><td>৳${stock.supportLevel}</td><td>Resistance Level</td><td>৳${stock.resistanceLevel}</td></tr>
+              <tr><td>52-Week Range</td><td>৳${stock.week52Low} - ৳${stock.week52High}</td><td>Beta / Volatility</td><td>${(stock as any).beta || 1.05}</td></tr>
+            </table>
+          </div>
+
+          <div class="section">
+            <div class="sec-title">📊 FUNDAMENTAL & VALUATION METRICS</div>
+            <table>
+              <tr><th>Metric</th><th>Value</th><th>Metric</th><th>Value</th></tr>
+              <tr><td>EPS (Diluted)</td><td>৳${stock.eps}</td><td>NAV per Share</td><td>৳${stock.nav}</td></tr>
+              <tr><td>P/E Ratio</td><td>${stock.peRatio}x</td><td>P/B Ratio</td><td>${stock.pbRatio}x</td></tr>
+              <tr><td>Dividend Yield</td><td>${stock.dividendYieldPercent}%</td><td>ROE</td><td>${stock.roePercent}%</td></tr>
+              <tr><td>Market Cap</td><td>৳${stock.marketCapCrore.toLocaleString('en-IN')} Cr</td><td>Debt / Equity</td><td>${stock.debtToEquity}</td></tr>
+            </table>
+          </div>
+
+          <div class="section">
+            <div class="sec-title">🛡️ FORENSIC AUDIT & FRAUD RADAR</div>
+            <table>
+              <tr><th>Audit Model</th><th>Score</th><th>Verdict / Assessment</th></tr>
+              <tr><td>Altman Z-Score</td><td>${audit.altmanZScore}</td><td>${audit.altmanVerdict}</td></tr>
+              <tr><td>Beneish M-Score</td><td>${audit.beneishMScore}</td><td>${audit.beneishVerdict}</td></tr>
+              <tr><td>Piotroski F-Score</td><td>${audit.piotroskiFScore}/9</td><td>${audit.piotroskiVerdict}</td></tr>
+            </table>
+          </div>
+
+          <div style="margin-top: 30px; border-top: 1px solid #E2E8F0; padding-top: 10px; font-size: 11px; color: #94A3B8; text-align: center;">
+            CONFIDENTIAL FINANCIAL INTELLIGENCE DOSSIER • GENERATED BY MONEY-HONEY RESEARCH ENGINE
+          </div>
+
+          <script>
+            window.onload = function() { window.print(); };
+          </script>
+        </body>
+      </html>
+    `;
+
+    const printWin = window.open('', '_blank');
+    if (printWin) {
+      printWin.document.write(printHtml);
+      printWin.document.close();
+    }
+  };
+
+  const handleShareDossier = async (stock: DseStockItem) => {
+    const text = `📊 DSE Institutional Research Dossier: ${stock.companyName} (${stock.symbol})\n• LTP: ৳${stock.ltp} | Recommendation: ${stock.recommendation}\n• DCF Fair Value: ৳${stock.dcfIntrinsicValue} (Margin of Safety: +${stock.marginOfSafetyPercent}%)\n• Target Price: ৳${stock.ensembleTargetPrice} (+${stock.potentialUpsidePercent}% upside)\n• Thesis: ${stock.aiInvestmentThesis}\nGenerated via Money-Honey Financial Suite.`;
+
+    if (typeof navigator !== 'undefined' && navigator.share) {
+      try {
+        await navigator.share({
+          title: `${stock.symbol} Dossier - Money-Honey`,
+          text: text,
+        });
+        return;
+      } catch (e) {}
+    }
+
+    if (typeof navigator !== 'undefined' && (navigator as any).clipboard) {
+      try {
+        await (navigator as any).clipboard.writeText(text);
+        Alert.alert('📋 Copied to Clipboard', `Full institutional research briefing for ${stock.symbol} has been copied to your clipboard.`);
+        return;
+      } catch (e) {}
+    }
+
+    Alert.alert('Share Dossier', text);
+  };
+
   // Screener filter logic
   const exchangeUniverse = selectedExchange === 'ALL'
     ? DSE_STOCK_UNIVERSE
@@ -1763,8 +1891,50 @@ export const StockMarketScreen: React.FC<StockMarketScreenProps> = ({
                     </Text>
                   </View>
 
-                  {/* Advanced Sub-Tabs Navigation */}
-                  <View style={{ flexDirection: 'row', gap: 6, flexWrap: 'wrap', marginTop: 8, marginBottom: 12, borderBottomWidth: 1, borderBottomColor: '#E2E8F0', paddingBottom: 8 }}>
+                    {/* Print & Share Executive Action Bar */}
+                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10, marginTop: 12, marginBottom: 8, paddingHorizontal: 4 }}>
+                      <Text style={{ fontSize: 13, fontWeight: '800', color: '#0F172A' }}>
+                        RESEARCH DIMENSIONS & REPORTS
+                      </Text>
+                      <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }}>
+                        <TouchableOpacity
+                          style={{
+                            flexDirection: 'row',
+                            alignItems: 'center',
+                            gap: 6,
+                            paddingHorizontal: 12,
+                            paddingVertical: 7,
+                            backgroundColor: '#0284C7',
+                            borderRadius: Radius.sm,
+                          }}
+                          onPress={() => handlePrintDossier(selectedStock)}
+                          activeOpacity={0.8}
+                        >
+                          <Ionicons name="print-outline" size={14} color="#FFFFFF" />
+                          <Text style={{ fontSize: 12, fontWeight: '800', color: '#FFFFFF' }}>🖨️ Print / PDF Dossier</Text>
+                        </TouchableOpacity>
+
+                        <TouchableOpacity
+                          style={{
+                            flexDirection: 'row',
+                            alignItems: 'center',
+                            gap: 6,
+                            paddingHorizontal: 12,
+                            paddingVertical: 7,
+                            backgroundColor: '#16A34A',
+                            borderRadius: Radius.sm,
+                          }}
+                          onPress={() => handleShareDossier(selectedStock)}
+                          activeOpacity={0.8}
+                        >
+                          <Ionicons name="share-social-outline" size={14} color="#FFFFFF" />
+                          <Text style={{ fontSize: 12, fontWeight: '800', color: '#FFFFFF' }}>📤 Share Full Report</Text>
+                        </TouchableOpacity>
+                      </View>
+                    </View>
+
+                    {/* Advanced Sub-Tabs Navigation */}
+                    <View style={{ flexDirection: 'row', gap: 6, flexWrap: 'wrap', marginTop: 4, marginBottom: 12, borderBottomWidth: 1, borderBottomColor: '#E2E8F0', paddingBottom: 8 }}>
                     {[
                       { id: 'dossier', label: '📋 One-Page Dossier' },
                       { id: 'candlestick_chart', label: '📈 TradingView Chart' },
@@ -1834,6 +2004,12 @@ export const StockMarketScreen: React.FC<StockMarketScreenProps> = ({
                           onTimeframeChange={setHistTimeframe}
                           supportLevel={selectedStock.supportLevel}
                           resistanceLevel={selectedStock.resistanceLevel}
+                          dayChange={selectedStock.change}
+                          week52High={selectedStock.week52High}
+                          week52Low={selectedStock.week52Low}
+                          dayOpen={selectedStock.open}
+                          dayHigh={selectedStock.high}
+                          dayLow={selectedStock.low}
                         />
 
                         {/* 1. TECHNICAL OVERVIEW */}
@@ -1948,6 +2124,12 @@ export const StockMarketScreen: React.FC<StockMarketScreenProps> = ({
                       onTimeframeChange={setHistTimeframe}
                       supportLevel={selectedStock.supportLevel}
                       resistanceLevel={selectedStock.resistanceLevel}
+                      dayChange={selectedStock.change}
+                      week52High={selectedStock.week52High}
+                      week52Low={selectedStock.week52Low}
+                      dayOpen={selectedStock.open}
+                      dayHigh={selectedStock.high}
+                      dayLow={selectedStock.low}
                     />
                   )}
 

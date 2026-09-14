@@ -27,10 +27,46 @@ interface StockCandleChartProps {
   onTimeframeChange: (tf: HistoricalTimeframe) => void;
   supportLevel?: number;
   resistanceLevel?: number;
+  dayChange?: number;
+  week52High?: number;
+  week52Low?: number;
+  dayOpen?: number;
+  dayHigh?: number;
+  dayLow?: number;
 }
 
-// Generate realistic historical candle data based on symbol and timeframe
-export function generateCandleSeries(symbol: string, currentPrice: number, tf: HistoricalTimeframe): CandleDataPoint[] {
+function seededRandom(seed: number) {
+  let s = seed % 2147483647;
+  if (s <= 0) s += 2147483646;
+  return () => {
+    s = (s * 16807) % 2147483647;
+    return (s - 1) / 2147483646;
+  };
+}
+
+function stringToSeed(str: string): number {
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    hash = ((hash << 5) - hash) + str.charCodeAt(i);
+    hash |= 0;
+  }
+  return Math.abs(hash) + 1000;
+}
+
+// Generate authentic, stock-specific historical candle data working backwards from currentPrice
+export function generateCandleSeries(
+  symbol: string,
+  currentPrice: number,
+  tf: HistoricalTimeframe,
+  options?: {
+    dayChange?: number;
+    week52High?: number;
+    week52Low?: number;
+    dayOpen?: number;
+    dayHigh?: number;
+    dayLow?: number;
+  }
+): CandleDataPoint[] {
   let count = 28;
   let dateStepDays = 1;
   let volatility = 0.015;
@@ -69,35 +105,73 @@ export function generateCandleSeries(symbol: string, currentPrice: number, tf: H
     volatility = 0.045;
   }
 
-  const series: CandleDataPoint[] = [];
-  let prevClose = currentPrice * (1 - volatility * (count * 0.4));
-  const baseVolume = symbol === 'SQURPHARMA' ? 180000 : symbol === 'BRACBANK' ? 450000 : 95000;
+  const rng = seededRandom(stringToSeed(symbol + '_' + tf));
+  const series: CandleDataPoint[] = new Array(count);
 
-  for (let i = 0; i < count; i++) {
-    const isLast = i === count - 1;
-    const changeFactor = isLast
-      ? currentPrice / prevClose
-      : 1 + (Math.sin(i * 0.7) * 0.02 + (Math.random() - 0.48) * volatility);
+  const baseVolume =
+    symbol === 'SQURPHARMA'
+      ? 180000
+      : symbol === 'BRACBANK'
+      ? 450000
+      : symbol === 'GP'
+      ? 220000
+      : symbol === 'BATBC'
+      ? 140000
+      : 85000;
 
-    const open = Math.round(prevClose * 10) / 10;
-    const close = isLast ? currentPrice : Math.round(open * changeFactor * 10) / 10;
-    const high = Math.round(Math.max(open, close) * (1 + Math.random() * (volatility * 0.8)) * 10) / 10;
-    const low = Math.round(Math.min(open, close) * (1 - Math.random() * (volatility * 0.8)) * 10) / 10;
-    const volume = Math.round(baseVolume * (0.6 + Math.random() * 0.9 + (close > open ? 0.3 : 0)));
+  // Build backwards starting from today (index count - 1)
+  const lastChange = options?.dayChange ?? (rng() > 0.45 ? currentPrice * 0.008 : -currentPrice * 0.008);
+  const lastOpen = options?.dayOpen ?? Math.round((currentPrice - lastChange) * 10) / 10;
+  const lastClose = currentPrice;
+  const lastHigh = options?.dayHigh ?? Math.round(Math.max(lastOpen, lastClose) * (1 + rng() * 0.008) * 10) / 10;
+  const lastLow = options?.dayLow ?? Math.round(Math.min(lastOpen, lastClose) * (1 - rng() * 0.008) * 10) / 10;
+  const lastVol = Math.round(baseVolume * (0.8 + rng() * 0.6));
+
+  const today = new Date();
+  series[count - 1] = {
+    date: today.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' }),
+    open: lastOpen,
+    high: lastHigh,
+    low: lastLow,
+    close: lastClose,
+    volume: lastVol,
+  };
+
+  let nextCandleOpen = lastOpen;
+  const w52High = options?.week52High || currentPrice * 1.35;
+  const w52Low = options?.week52Low || currentPrice * 0.65;
+
+  for (let i = count - 2; i >= 0; i--) {
+    // Yesterday's close aligns naturally with today's open
+    const gap = (rng() - 0.5) * volatility * 0.3;
+    const close = Math.round(nextCandleOpen * (1 + gap) * 10) / 10;
+
+    // Step return backwards
+    const stepReturn = (rng() - 0.49) * volatility * 1.8;
+    let open = Math.round(close * (1 - stepReturn) * 10) / 10;
+
+    // Enforce realistic bounds
+    if (open > w52High) open = Math.round(w52High * 0.98 * 10) / 10;
+    if (open < w52Low) open = Math.round(w52Low * 1.02 * 10) / 10;
+
+    const high = Math.round(Math.max(open, close) * (1 + rng() * volatility) * 10) / 10;
+    const low = Math.round(Math.min(open, close) * (1 - rng() * volatility) * 10) / 10;
+    const vol = Math.round(baseVolume * (0.5 + rng() * 1.0 + (close > open ? 0.25 : 0)));
 
     const d = new Date();
     d.setDate(d.getDate() - Math.round((count - 1 - i) * dateStepDays));
     const dateStr = d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' });
 
-    series.push({
+    series[i] = {
       date: dateStr,
       open,
       high,
       low,
       close,
-      volume,
-    });
-    prevClose = close;
+      volume: vol,
+    };
+
+    nextCandleOpen = open;
   }
 
   return series;
@@ -110,17 +184,35 @@ export const StockCandleChart: React.FC<StockCandleChartProps> = ({
   onTimeframeChange,
   supportLevel,
   resistanceLevel,
+  dayChange,
+  week52High,
+  week52Low,
+  dayOpen,
+  dayHigh,
+  dayLow,
 }) => {
   const [chartMode, setChartMode] = useState<'candle' | 'line'>('candle');
   const [showSma20, setShowSma20] = useState<boolean>(true);
   const [showSma50, setShowSma50] = useState<boolean>(true);
   const [showBollinger, setShowBollinger] = useState<boolean>(false);
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
+  const [containerWidth, setContainerWidth] = useState<number>(0);
 
-  const data = useMemo(() => generateCandleSeries(symbol, currentPrice, timeframe), [symbol, currentPrice, timeframe]);
+  const data = useMemo(
+    () =>
+      generateCandleSeries(symbol, currentPrice, timeframe, {
+        dayChange,
+        week52High,
+        week52Low,
+        dayOpen,
+        dayHigh,
+        dayLow,
+      }),
+    [symbol, currentPrice, timeframe, dayChange, week52High, week52Low, dayOpen, dayHigh, dayLow]
+  );
 
-  // Chart dimensions
-  const chartWidth = 620;
+  // Responsive Chart dimensions
+  const chartWidth = containerWidth > 0 ? Math.max(280, Math.min(containerWidth - 10, 680)) : 600;
   const mainHeight = 220;
   const volumeHeight = 60;
   const totalSvgHeight = 310;
@@ -129,7 +221,7 @@ export const StockCandleChart: React.FC<StockCandleChartProps> = ({
   const paddingTop = 15;
   const paddingBottom = 25;
 
-  const plotWidth = chartWidth - paddingLeft - paddingRight;
+  const plotWidth = Math.max(180, chartWidth - paddingLeft - paddingRight);
 
   // Min and Max prices for scaling
   const minPrice = useMemo(() => {
@@ -205,7 +297,15 @@ export const StockCandleChart: React.FC<StockCandleChartProps> = ({
     : 0;
 
   return (
-    <View style={styles.cardContainer}>
+    <View
+      style={styles.cardContainer}
+      onLayout={(e) => {
+        const w = e.nativeEvent.layout.width;
+        if (w > 0 && Math.abs(w - containerWidth) > 5) {
+          setContainerWidth(w);
+        }
+      }}
+    >
       {/* Top Controls Header */}
       <View style={styles.headerRow}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>

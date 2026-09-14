@@ -2169,8 +2169,8 @@ const styles = StyleSheet.create({
     color: '#D97706',
   },
   snapshotSub: {
-    fontSize: 10,
-    color: '#94A3B8',
+    fontSize: 12,
+    color: '#64748B',
     marginTop: 1,
   },
 
@@ -2192,12 +2192,12 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   breakdownHeaderTitle: {
-    fontSize: 12,
+    fontSize: 13,
     fontWeight: '800',
     color: '#0369A1',
   },
   breakdownHeaderSub: {
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: '700',
     color: '#0284C7',
   },
@@ -2220,12 +2220,12 @@ const styles = StyleSheet.create({
     borderColor: '#86EFAC',
   },
   breakdownPillLabel: {
-    fontSize: 10,
+    fontSize: 12,
     color: '#64748B',
     fontWeight: '700',
   },
   breakdownPillLabelNet: {
-    fontSize: 10,
+    fontSize: 12,
     color: '#166534',
     fontWeight: '800',
   },
@@ -2342,8 +2342,8 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   summaryItemSub: {
-    fontSize: 10,
-    color: '#94A3B8',
+    fontSize: 12,
+    color: '#64748B',
     marginTop: 1,
   },
   depositProgressRow: {
@@ -2535,7 +2535,7 @@ const styles = StyleSheet.create({
     minWidth: 100,
   },
   couponMetricLabel: {
-    fontSize: 10,
+    fontSize: 12,
     fontWeight: '700',
     color: '#64748B',
   },
@@ -2596,7 +2596,7 @@ const styles = StyleSheet.create({
     borderRadius: Radius.sm,
   },
   revertBtnText: {
-    fontSize: 10,
+    fontSize: 12,
     fontWeight: '800',
     color: '#DC2626',
   },

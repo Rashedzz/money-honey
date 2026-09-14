@@ -20,6 +20,9 @@ import { MobileBottomNav } from '../../src/components/navigation/MobileBottomNav
 import { PwaInstallModal } from '../../src/components/modals/PwaInstallModal';
 import { FirebaseSyncModal } from '../../src/components/modals/FirebaseSyncModal';
 import { FirebaseSyncService } from '../../src/services/firebaseSync';
+import { NotificationCenterModal } from '../../src/components/modals/NotificationCenterModal';
+import { SoundService } from '../../src/services/soundEffects';
+import { SanchaypatraEarningsService } from '../../src/services/sanchaypatraEarningsService';
 import { RadialGauge } from '../../src/components/visuals/RadialGauge';
 import { SegmentedDonut } from '../../src/components/visuals/SegmentedDonut';
 import { FlowBreakdownBar } from '../../src/components/visuals/FlowBreakdownBar';
@@ -199,6 +202,32 @@ export default function MasterDashboardScreen() {
   const [qrModalVisible, setQrModalVisible] = useState(false);
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
   const [firebaseModalVisible, setFirebaseModalVisible] = useState(false);
+  const [notificationModalVisible, setNotificationModalVisible] = useState(false);
+  const [pendingNotifCount, setPendingNotifCount] = useState(0);
+
+  const calculatePendingNotifs = () => {
+    let count = 0;
+    try {
+      const coupons = SanchaypatraEarningsService.getAllScheduleItems();
+      const pendingCoupons = coupons.filter((c) => c.status === 'PENDING' && c.daysRemaining <= 30);
+      count += pendingCoupons.length;
+
+      const today = new Date();
+      const currentDay = today.getDate();
+      if (currentDay >= 5 && currentDay <= 10) {
+        count += 1;
+      }
+    } catch (e) {}
+    setPendingNotifCount(count);
+  };
+
+  useEffect(() => {
+    calculatePendingNotifs();
+    if (typeof window !== 'undefined') {
+      window.addEventListener('mh_sanchaypatra_coupon_updated', calculatePendingNotifs);
+      return () => window.removeEventListener('mh_sanchaypatra_coupon_updated', calculatePendingNotifs);
+    }
+  }, []);
 
   // Computed Values - Harmonized with AccountsScreen storage
   const totalBankBalances = bankAccounts.reduce((sum, a) => sum + (a.currentBalance || 0), 0);
@@ -508,6 +537,52 @@ export default function MasterDashboardScreen() {
                 <Text style={{ fontSize: 11, fontWeight: '800', color: syncStatus === 'synced' ? '#16A34A' : '#475569' }}>
                   {isSyncing ? 'Syncing...' : lastSyncedAt ? 'Cloud Synced' : 'Sync Now'}
                 </Text>
+              </TouchableOpacity>
+
+              {/* Notification Center Bell with Badge & Audio Chime */}
+              <TouchableOpacity
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: 6,
+                  paddingHorizontal: 12,
+                  paddingVertical: 7,
+                  backgroundColor: pendingNotifCount > 0 ? '#FFFBEB' : '#FFFFFF',
+                  borderRadius: Radius.full,
+                  borderWidth: 1.5,
+                  borderColor: pendingNotifCount > 0 ? '#F59E0B' : '#BAE6FD',
+                }}
+                onPress={() => {
+                  SoundService.playNotificationChime();
+                  setNotificationModalVisible(true);
+                }}
+                activeOpacity={0.8}
+              >
+                <Ionicons
+                  name={pendingNotifCount > 0 ? 'notifications' : 'notifications-outline'}
+                  size={16}
+                  color={pendingNotifCount > 0 ? '#D97706' : '#0284C7'}
+                />
+                <Text style={{ fontSize: 12, fontWeight: '800', color: pendingNotifCount > 0 ? '#B45309' : '#0F172A' }}>
+                  Alerts
+                </Text>
+                {pendingNotifCount > 0 && (
+                  <View
+                    style={{
+                      backgroundColor: '#EF4444',
+                      borderRadius: 10,
+                      minWidth: 18,
+                      height: 18,
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      paddingHorizontal: 4,
+                    }}
+                  >
+                    <Text style={{ fontSize: 10, fontWeight: '900', color: '#FFFFFF' }}>
+                      {pendingNotifCount}
+                    </Text>
+                  </View>
+                )}
               </TouchableOpacity>
 
               <TouchableOpacity
@@ -975,6 +1050,14 @@ export default function MasterDashboardScreen() {
           setPoliciesState(getStoredData('mh_user_policies', []));
           setBirthdaysState(getStoredData('mh_user_birthdays', []));
         }}
+      />
+
+      {/* Notification Center & Audio Alerts Modal */}
+      <NotificationCenterModal
+        visible={notificationModalVisible}
+        onClose={() => setNotificationModalVisible(false)}
+        onNavigateToSchedules={() => setActiveTab('schedules')}
+        onNavigateToSanchaypatra={() => setActiveTab('paper_assets')}
       />
     </SafeAreaView>
   );
