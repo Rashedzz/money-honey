@@ -61,6 +61,7 @@ import { useWatchlist } from '../../hooks/useWatchlist';
 import { StockPortfolioDashboard } from '../stock/StockPortfolioDashboard';
 import { useLiveStockFeed } from '../../hooks/useLiveStockFeed';
 import { MarketExchange } from '../../services/liveStockFeedService';
+import { StockDossierPdfGenerator } from '../../services/stockDossierPdfGenerator';
 
 interface StockMarketScreenProps {
   stocks: StockHolding[];
@@ -163,107 +164,7 @@ export const StockMarketScreen: React.FC<StockMarketScreenProps> = ({
   const [editPriceInput, setEditPriceInput] = useState('');
 
   const handlePrintDossier = (stock: DseStockItem) => {
-    if (typeof window === 'undefined') return;
-    const tech = generateTechnicalIndicators(stock.symbol, stock.ltp, stock.supportLevel, stock.resistanceLevel);
-    const audit = performForensicAccountingAudit(stock.symbol, stock.companyName);
-
-    const printHtml = `
-      <!DOCTYPE html>
-      <html>
-        <head>
-          <title>${stock.symbol} - Institutional Equity Research Dossier</title>
-          <style>
-            body { font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, sans-serif; color: #0F172A; padding: 24px; max-width: 900px; margin: 0 auto; line-height: 1.5; }
-            .header { border-bottom: 3px solid #0284C7; padding-bottom: 12px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: flex-end; }
-            .title { font-size: 26px; font-weight: 900; margin: 0; }
-            .sub { font-size: 13px; color: #64748B; margin-top: 4px; }
-            .rec-badge { font-size: 14px; font-weight: 800; padding: 6px 14px; background: #DCFCE7; color: #16A34A; border-radius: 6px; }
-            .kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 20px; }
-            .kpi-card { background: #F8FAFC; border: 1px solid #E2E8F0; padding: 10px; border-radius: 6px; }
-            .kpi-label { font-size: 11px; font-weight: 700; color: #64748B; text-transform: uppercase; }
-            .kpi-val { font-size: 18px; font-weight: 900; color: #0F172A; margin-top: 2px; }
-            .section { margin-top: 24px; }
-            .sec-title { font-size: 15px; font-weight: 800; border-bottom: 1px solid #CBD5E1; padding-bottom: 4px; margin-bottom: 10px; color: #0369A1; }
-            table { width: 100%; border-collapse: collapse; margin-top: 8px; font-size: 12px; }
-            th, td { border: 1px solid #E2E8F0; padding: 8px 10px; text-align: left; }
-            th { background: #F1F5F9; font-weight: 700; }
-            .highlight { font-weight: 800; color: #16A34A; }
-            .thesis-box { background: #F0F9FF; border: 1px solid #BAE6FD; padding: 14px; border-radius: 6px; font-size: 13px; line-height: 1.6; }
-            @media print {
-              body { padding: 0; }
-              button { display: none; }
-            }
-          </style>
-        </head>
-        <body>
-          <div class="header">
-            <div>
-              <div class="title">${stock.companyName} (${stock.symbol})</div>
-              <div class="sub">Dhaka Stock Exchange (DSE) • Sector: ${stock.sector} • Report Generated: ${new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}</div>
-            </div>
-            <div class="rec-badge">${stock.recommendation} (Score: ${stock.totalAiScore}/100)</div>
-          </div>
-
-          <div class="kpi-grid">
-            <div class="kpi-card"><div class="kpi-label">Last Traded Price</div><div class="kpi-val">৳${stock.ltp}</div></div>
-            <div class="kpi-card"><div class="kpi-label">DCF Intrinsic Fair Value</div><div class="kpi-val highlight">৳${stock.dcfIntrinsicValue}</div></div>
-            <div class="kpi-card"><div class="kpi-label">Margin of Safety</div><div class="kpi-val highlight">+${stock.marginOfSafetyPercent}%</div></div>
-            <div class="kpi-card"><div class="kpi-label">Consensus Target</div><div class="kpi-val highlight">৳${stock.ensembleTargetPrice}</div></div>
-          </div>
-
-          <div class="section">
-            <div class="sec-title">🎯 INVESTMENT THESIS & STRATEGY</div>
-            <div class="thesis-box">${stock.aiInvestmentThesis}</div>
-          </div>
-
-          <div class="section">
-            <div class="sec-title">📐 TECHNICAL & MOMENTUM PROFILE</div>
-            <table>
-              <tr><th>Metric</th><th>Value</th><th>Metric</th><th>Value</th></tr>
-              <tr><td>RSI (14-Day)</td><td>${tech.rsi14} (${tech.rsiStatus})</td><td>MACD Status</td><td>${tech.macdStatus}</td></tr>
-              <tr><td>Trend Direction</td><td>${tech.trendDirection}</td><td>Supertrend</td><td>৳${tech.supertrend}</td></tr>
-              <tr><td>Support Level</td><td>৳${stock.supportLevel}</td><td>Resistance Level</td><td>৳${stock.resistanceLevel}</td></tr>
-              <tr><td>52-Week Range</td><td>৳${stock.week52Low} - ৳${stock.week52High}</td><td>Beta / Volatility</td><td>${(stock as any).beta || 1.05}</td></tr>
-            </table>
-          </div>
-
-          <div class="section">
-            <div class="sec-title">📊 FUNDAMENTAL & VALUATION METRICS</div>
-            <table>
-              <tr><th>Metric</th><th>Value</th><th>Metric</th><th>Value</th></tr>
-              <tr><td>EPS (Diluted)</td><td>৳${stock.eps}</td><td>NAV per Share</td><td>৳${stock.nav}</td></tr>
-              <tr><td>P/E Ratio</td><td>${stock.peRatio}x</td><td>P/B Ratio</td><td>${stock.pbRatio}x</td></tr>
-              <tr><td>Dividend Yield</td><td>${stock.dividendYieldPercent}%</td><td>ROE</td><td>${stock.roePercent}%</td></tr>
-              <tr><td>Market Cap</td><td>৳${stock.marketCapCrore.toLocaleString('en-IN')} Cr</td><td>Debt / Equity</td><td>${stock.debtToEquity}</td></tr>
-            </table>
-          </div>
-
-          <div class="section">
-            <div class="sec-title">🛡️ FORENSIC AUDIT & FRAUD RADAR</div>
-            <table>
-              <tr><th>Audit Model</th><th>Score</th><th>Verdict / Assessment</th></tr>
-              <tr><td>Altman Z-Score</td><td>${audit.altmanZScore}</td><td>${audit.altmanVerdict}</td></tr>
-              <tr><td>Beneish M-Score</td><td>${audit.beneishMScore}</td><td>${audit.beneishVerdict}</td></tr>
-              <tr><td>Piotroski F-Score</td><td>${audit.piotroskiFScore}/9</td><td>${audit.piotroskiVerdict}</td></tr>
-            </table>
-          </div>
-
-          <div style="margin-top: 30px; border-top: 1px solid #E2E8F0; padding-top: 10px; font-size: 11px; color: #94A3B8; text-align: center;">
-            CONFIDENTIAL FINANCIAL INTELLIGENCE DOSSIER • GENERATED BY MONEY-HONEY RESEARCH ENGINE
-          </div>
-
-          <script>
-            window.onload = function() { window.print(); };
-          </script>
-        </body>
-      </html>
-    `;
-
-    const printWin = window.open('', '_blank');
-    if (printWin) {
-      printWin.document.write(printHtml);
-      printWin.document.close();
-    }
+    StockDossierPdfGenerator.openPrintDossier(stock);
   };
 
   const handleShareDossier = async (stock: DseStockItem) => {
