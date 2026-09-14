@@ -2397,7 +2397,8 @@ export const StockMarketScreen: React.FC<StockMarketScreenProps> = ({
 
                   {/* TAB 2: Full Step-by-Step DCF Valuation Waterfall */}
                   {modalSubTab === 'dcf_waterfall' && (() => {
-                    const dcf = calculateDetailedDCF(selectedStock.symbol, selectedStock.ltp, 886.45);
+                    const shares = selectedStock.sharesOutstandingMillion || (selectedStock.marketCapCrore > 0 ? Math.round((selectedStock.marketCapCrore / selectedStock.ltp) * 10 * 10) / 10 : 886.45);
+                    const dcf = calculateDetailedDCF(selectedStock.symbol, selectedStock.ltp, shares);
                     return (
                       <>
                         {/* DCF Valuation Status Banner */}

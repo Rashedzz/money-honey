@@ -18,7 +18,7 @@ interface ForecastAccuracyViewProps {
 export const ForecastAccuracyView: React.FC<ForecastAccuracyViewProps> = ({ symbol, currentPrice }) => {
   const [selectedRange, setSelectedRange] = useState<AccuracyDateRange>('1Y');
 
-  const accuracy = getForecastAccuracyAnalysis(symbol, selectedRange);
+  const accuracy = getForecastAccuracyAnalysis(symbol, selectedRange, currentPrice);
 
   // SVG dimensions for Forecast vs Actual trajectory
   const chartWidth = 620;
