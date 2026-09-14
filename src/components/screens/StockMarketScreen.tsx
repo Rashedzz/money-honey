@@ -62,6 +62,7 @@ import { StockPortfolioDashboard } from '../stock/StockPortfolioDashboard';
 import { useLiveStockFeed } from '../../hooks/useLiveStockFeed';
 import { MarketExchange } from '../../services/liveStockFeedService';
 import { StockDossierPdfGenerator } from '../../services/stockDossierPdfGenerator';
+import { StockComparisonModal } from '../stock/StockComparisonModal';
 
 interface StockMarketScreenProps {
   stocks: StockHolding[];
@@ -162,6 +163,28 @@ export const StockMarketScreen: React.FC<StockMarketScreenProps> = ({
   // Real Holdings Edit
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editPriceInput, setEditPriceInput] = useState('');
+
+  // Side-by-Side Stock Comparison State
+  const [compareStocks, setCompareStocks] = useState<DseStockItem[]>([]);
+  const [isCompareModalOpen, setIsCompareModalOpen] = useState<boolean>(false);
+
+  const toggleCompareStock = (stock: DseStockItem) => {
+    setCompareStocks((prev) => {
+      const exists = prev.some((s) => s.symbol === stock.symbol);
+      if (exists) {
+        return prev.filter((s) => s.symbol !== stock.symbol);
+      }
+      if (prev.length >= 3) {
+        Alert.alert('Comparison Limit', 'You can compare up to 3 stocks at a time.');
+        return prev;
+      }
+      return [...prev, stock];
+    });
+  };
+
+  const isStockInComparison = (symbol: string) => {
+    return compareStocks.some((s) => s.symbol === symbol);
+  };
 
   const handlePrintDossier = (stock: DseStockItem) => {
     StockDossierPdfGenerator.openPrintDossier(stock);
@@ -288,7 +311,9 @@ export const StockMarketScreen: React.FC<StockMarketScreenProps> = ({
   };
 
   const handlePrintPdf = () => {
-    if (typeof window !== 'undefined' && window.print) {
+    if (selectedStock) {
+      handlePrintDossier(selectedStock);
+    } else if (typeof window !== 'undefined' && window.print) {
       window.print();
     } else {
       Alert.alert('Print / PDF', 'Print dialog triggered.');
@@ -896,6 +921,31 @@ export const StockMarketScreen: React.FC<StockMarketScreenProps> = ({
                       </View>
 
                       <TouchableOpacity
+                        style={[
+                          styles.quickBuyBtn,
+                          {
+                            backgroundColor: isStockInComparison(stock.symbol) ? '#EDE9FE' : '#F1F5F9',
+                            borderWidth: 1,
+                            borderColor: isStockInComparison(stock.symbol) ? '#7C3AED' : '#CBD5E1',
+                          },
+                        ]}
+                        onPress={(e) => {
+                          e.stopPropagation();
+                          toggleCompareStock(stock);
+                        }}
+                      >
+                        <Text
+                          style={{
+                            fontSize: 11,
+                            fontWeight: '800',
+                            color: isStockInComparison(stock.symbol) ? '#7C3AED' : '#475569',
+                          }}
+                        >
+                          {isStockInComparison(stock.symbol) ? '✓ Comparing' : '⚖️ Compare'}
+                        </Text>
+                      </TouchableOpacity>
+
+                      <TouchableOpacity
                         style={styles.quickBuyBtn}
                         onPress={(e) => {
                           e.stopPropagation();
@@ -1117,6 +1167,46 @@ export const StockMarketScreen: React.FC<StockMarketScreenProps> = ({
       {/* TAB: MULTI-STOCK RELATIVE PERFORMANCE COMPARISON TOOL */}
       {activeTab === 'comparison_tool' && (
         <View style={{ gap: Spacing.md }}>
+          <GlassCard style={{ width: '100%' }} padding={16} glowColor="#7C3AED">
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10 }}>
+              <View style={{ flex: 1, minWidth: 260 }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                  <Text style={{ fontSize: 22 }}>⚖️</Text>
+                  <Text style={{ fontSize: 16, fontWeight: '900', color: '#0F172A' }}>
+                    INTERACTIVE SIDE-BY-SIDE STOCK COMPARISON
+                  </Text>
+                </View>
+                <Text style={{ fontSize: 12, color: '#64748B', marginTop: 2 }}>
+                  Compare up to 3 stocks side-by-side across 7 research dimensions (Valuation, DCF Fair Value, AI Scores, ROE, Margins, Fraud Radar, and Dividends) with full PDF export.
+                </Text>
+              </View>
+
+              <TouchableOpacity
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: 8,
+                  backgroundColor: '#7C3AED',
+                  paddingHorizontal: 16,
+                  paddingVertical: 10,
+                  borderRadius: Radius.sm,
+                }}
+                onPress={() => {
+                  if (compareStocks.length === 0) {
+                    setCompareStocks([DSE_STOCK_UNIVERSE[0], DSE_STOCK_UNIVERSE[1]]);
+                  }
+                  setIsCompareModalOpen(true);
+                }}
+                activeOpacity={0.8}
+              >
+                <Ionicons name="git-compare-outline" size={18} color="#FFFFFF" />
+                <Text style={{ fontSize: 13, fontWeight: '900', color: '#FFFFFF' }}>
+                  Open Side-by-Side Comparison Modal
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </GlassCard>
+
           <StockComparisonGraph />
         </View>
       )}
@@ -1685,6 +1775,21 @@ export const StockMarketScreen: React.FC<StockMarketScreenProps> = ({
 
                     <TouchableOpacity
                       style={styles.headerActionBtn}
+                      onPress={() => {
+                        setCompareStocks((prev) => {
+                          const exists = prev.some((s) => s.symbol === selectedStock.symbol);
+                          return exists ? prev : [...prev, selectedStock];
+                        });
+                        setIsCompareModalOpen(true);
+                      }}
+                      activeOpacity={0.8}
+                    >
+                      <Ionicons name="git-compare-outline" size={16} color="#7C3AED" />
+                      <Text style={[styles.headerActionText, { color: '#7C3AED' }]}>Compare</Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                      style={styles.headerActionBtn}
                       onPress={handleShareReport}
                       activeOpacity={0.8}
                     >
@@ -1813,6 +1918,29 @@ export const StockMarketScreen: React.FC<StockMarketScreenProps> = ({
                         >
                           <Ionicons name="print-outline" size={14} color="#FFFFFF" />
                           <Text style={{ fontSize: 12, fontWeight: '800', color: '#FFFFFF' }}>🖨️ Print / PDF Dossier</Text>
+                        </TouchableOpacity>
+
+                        <TouchableOpacity
+                          style={{
+                            flexDirection: 'row',
+                            alignItems: 'center',
+                            gap: 6,
+                            paddingHorizontal: 12,
+                            paddingVertical: 7,
+                            backgroundColor: '#7C3AED',
+                            borderRadius: Radius.sm,
+                          }}
+                          onPress={() => {
+                            setCompareStocks((prev) => {
+                              const exists = prev.some((s) => s.symbol === selectedStock.symbol);
+                              return exists ? prev : [...prev, selectedStock];
+                            });
+                            setIsCompareModalOpen(true);
+                          }}
+                          activeOpacity={0.8}
+                        >
+                          <Ionicons name="git-compare-outline" size={14} color="#FFFFFF" />
+                          <Text style={{ fontSize: 12, fontWeight: '800', color: '#FFFFFF' }}>⚖️ Compare with Peer</Text>
                         </TouchableOpacity>
 
                         <TouchableOpacity
@@ -3027,6 +3155,81 @@ export const StockMarketScreen: React.FC<StockMarketScreenProps> = ({
           </View>
         </View>
       </Modal>
+
+      {/* 5. Floating Comparison Dock */}
+      {compareStocks.length > 0 && !isCompareModalOpen && (
+        <View
+          style={{
+            position: 'absolute',
+            bottom: 24,
+            left: 20,
+            right: 20,
+            backgroundColor: '#0F172A',
+            borderRadius: Radius.md,
+            paddingHorizontal: 16,
+            paddingVertical: 12,
+            flexDirection: 'row',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            shadowColor: '#000',
+            shadowOffset: { width: 0, height: 4 },
+            shadowOpacity: 0.3,
+            shadowRadius: 12,
+            elevation: 10,
+            zIndex: 9999,
+          }}
+        >
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1 }}>
+            <Text style={{ fontSize: 20 }}>⚖️</Text>
+            <View style={{ flex: 1 }}>
+              <Text style={{ fontSize: 13, fontWeight: '900', color: '#FFFFFF' }}>
+                Comparing ({compareStocks.length}/3): {compareStocks.map((s) => s.symbol).join(' vs ')}
+              </Text>
+              <Text style={{ fontSize: 11, color: '#94A3B8' }}>
+                Tap to evaluate side-by-side or download comparative PDF report
+              </Text>
+            </View>
+          </View>
+
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+            <TouchableOpacity
+              style={{
+                backgroundColor: '#16A34A',
+                paddingHorizontal: 14,
+                paddingVertical: 8,
+                borderRadius: Radius.sm,
+              }}
+              onPress={() => setIsCompareModalOpen(true)}
+              activeOpacity={0.8}
+            >
+              <Text style={{ fontSize: 12, fontWeight: '900', color: '#FFFFFF' }}>
+                Open Comparison ({compareStocks.length}) →
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={{
+                backgroundColor: '#334155',
+                paddingHorizontal: 10,
+                paddingVertical: 8,
+                borderRadius: Radius.sm,
+              }}
+              onPress={() => setCompareStocks([])}
+              activeOpacity={0.8}
+            >
+              <Text style={{ fontSize: 12, fontWeight: '700', color: '#CBD5E1' }}>Clear</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      )}
+
+      {/* 6. Side-by-Side Stock Comparison Modal */}
+      <StockComparisonModal
+        visible={isCompareModalOpen}
+        onClose={() => setIsCompareModalOpen(false)}
+        initialStocks={compareStocks}
+        onSelectStockDetail={(s) => setSelectedStock(s)}
+      />
     </ScrollView>
   );
 };
