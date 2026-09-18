@@ -12,6 +12,8 @@
  * - Persistent caching for instant zero-latency loading
  */
 
+import { StockLearningEngine } from '../finance/stockLearningEngine';
+
 export type MarketExchange = 'ALL' | 'DSE' | 'CSE' | 'GLOBAL';
 
 export interface MarketSessionInfo {
@@ -1032,7 +1034,20 @@ class LiveStockFeedService {
       hour12: true,
     });
 
-    // Attempt live fetch for US / Global tickers via Yahoo Finance
+    // 1. Fetch live USD/BDT interbank forex rate from Yahoo Finance
+    let liveUsdBdtRate = 119.5;
+    try {
+      const fxRes = await fetch('https://query1.finance.yahoo.com/v8/finance/chart/BDT=X?interval=1d&range=2d');
+      if (fxRes.ok) {
+        const fxData = await fxRes.json();
+        const fxMeta = fxData?.chart?.result?.[0]?.meta;
+        if (fxMeta && fxMeta.regularMarketPrice) {
+          liveUsdBdtRate = Math.round(fxMeta.regularMarketPrice * 100) / 100;
+        }
+      }
+    } catch (e) {}
+
+    // 2. Fetch live quotes for US / Global tickers via Yahoo Finance
     const updated = await Promise.all(
       this.cachedStocks.map(async (stock) => {
         if (stock.exchange === 'GLOBAL' && stock.symbol !== 'USD/BDT') {
@@ -1048,14 +1063,13 @@ class LiveStockFeedService {
                 const prevClose = meta.chartPreviousClose || meta.previousClose || usdPrice;
                 const change = usdPrice - prevClose;
                 const changePct = prevClose > 0 ? (change / prevClose) * 100 : 0;
-                const bdtRate = 119.5; // current USD/BDT interbank rate
 
                 return {
                   ...stock,
-                  ltp: Math.round(usdPrice * bdtRate * 10) / 10,
-                  change: Math.round(change * bdtRate * 10) / 10,
+                  ltp: Math.round(usdPrice * liveUsdBdtRate * 10) / 10,
+                  change: Math.round(change * liveUsdBdtRate * 10) / 10,
                   changePercent: Math.round(changePct * 100) / 100,
-                  updatedAt: `Live (${timestamp})`,
+                  updatedAt: `Live Internet (${timestamp})`,
                   isLiveQuote: true,
                 };
               }
@@ -1063,6 +1077,13 @@ class LiveStockFeedService {
           } catch (e) {
             // Yahoo fetch error; retain current
           }
+        } else if (stock.symbol === 'USD/BDT') {
+          return {
+            ...stock,
+            ltp: liveUsdBdtRate,
+            updatedAt: `Live FX (${timestamp})`,
+            isLiveQuote: true,
+          };
         }
 
         // For DSE / CSE:
@@ -1087,6 +1108,39 @@ class LiveStockFeedService {
         }
       })
     );
+
+    // 3. Autonomous AI Self-Learning Cycle:
+    // Evaluate past predictions against actual realized market prices & recalibrate weights
+    try {
+      StockLearningEngine.evaluatePredictionsAndLearn(
+        updated.map((s) => ({ symbol: s.symbol, ltp: s.ltp }))
+      );
+
+      // Re-generate predictions and update AI scores with learned weights
+      for (const s of updated) {
+        const pred = StockLearningEngine.generatePrediction(s.symbol, s.ltp, {
+          peRatio: s.peRatio,
+          eps: s.eps,
+          nav: s.nav,
+          dcfIntrinsicValue: s.dcfIntrinsicValue,
+          marginOfSafetyPercent: s.marginOfSafetyPercent,
+          changePercent: s.changePercent,
+          sector: s.sector,
+        });
+
+        if (pred.recommendation === 'STRONG BUY') s.recommendation = 'STRONG BUY';
+        else if (pred.recommendation === 'BUY') s.recommendation = 'BUY';
+        else if (pred.recommendation === 'AVOID') s.recommendation = 'REDUCE';
+        else s.recommendation = 'HOLD';
+
+        s.totalAiScore = pred.confidenceScorePercent;
+
+        // Log prediction into journal for continuous tracking
+        StockLearningEngine.logPrediction(pred);
+      }
+    } catch (e) {
+      console.warn('Stock learning cycle error:', e);
+    }
 
     this.cachedStocks = updated;
     this.lastRefreshedAt = `${new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })} at ${timestamp}`;

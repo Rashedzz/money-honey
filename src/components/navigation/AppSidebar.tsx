@@ -108,6 +108,31 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
 
   return (
     <View style={[styles.sidebar, isCollapsed && styles.sidebarCollapsed]}>
+      {Platform.OS === 'web' && (
+        // @ts-ignore
+        <style dangerouslySetInnerHTML={{
+          __html: `
+            .sidebar-scrollbar-container::-webkit-scrollbar {
+              width: 6px;
+            }
+            .sidebar-scrollbar-container::-webkit-scrollbar-track {
+              background: rgba(15, 23, 42, 0.4);
+            }
+            .sidebar-scrollbar-container::-webkit-scrollbar-thumb {
+              background: #0284C7;
+              border-radius: 4px;
+            }
+            .sidebar-scrollbar-container::-webkit-scrollbar-thumb:hover {
+              background: #38BDF8;
+            }
+            .sidebar-scrollbar-container {
+              scrollbar-width: thin;
+              scrollbar-color: #0284C7 rgba(15, 23, 42, 0.4);
+            }
+          `,
+        }} />
+      )}
+
       {/* 1. Brand Header */}
       <View style={[styles.brandHeader, isCollapsed && styles.brandHeaderCollapsed]}>
         {!isCollapsed ? (
@@ -189,11 +214,14 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
         </View>
       </View>
 
-      {/* 4. Scrollable Navigation (No horizontal scroll, strictly vertical) */}
+      {/* 4. Scrollable Navigation (Enhanced with desktop & PWA visible scrollbar) */}
       <ScrollView
-        showsVerticalScrollIndicator={false}
+        showsVerticalScrollIndicator={true}
         style={styles.menuList}
         contentContainerStyle={styles.menuListContent}
+        // @ts-ignore
+        className="sidebar-scrollbar-container"
+        dataSet={{ class: 'sidebar-scrollbar-container' }}
       >
         {/* WORKSPACES */}
         <View style={styles.navGroup}>
@@ -662,10 +690,18 @@ const styles = StyleSheet.create({
   menuList: {
     flex: 1,
     paddingHorizontal: 10,
-    overflow: 'hidden',
+    ...Platform.select({
+      web: {
+        overflowY: 'auto',
+        overflowX: 'hidden',
+      } as any,
+      default: {
+        overflow: 'hidden',
+      },
+    }),
   },
   menuListContent: {
-    paddingBottom: 20,
+    paddingBottom: 110, // Generous padding so lower menus (Physical Assets, Debt/Loans, Settings, Profile) are always reachable
   },
   navGroup: {
     marginBottom: 6,

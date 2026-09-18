@@ -60,6 +60,12 @@ export const ForecastAccuracyView: React.FC<ForecastAccuracyViewProps> = ({ symb
           <Text style={styles.subtitle}>
             Walk-forward empirical verification of AI Forecasted Price vs Actual Realized DSE Market Price
           </Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 4 }}>
+            <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: '#16A34A' }} />
+            <Text style={{ fontSize: 10, fontWeight: '700', color: '#16A34A' }}>
+              Self-Learning Engine • Online Error Backpropagation Active
+            </Text>
+          </View>
         </View>
 
         {/* Date Range Selector */}
