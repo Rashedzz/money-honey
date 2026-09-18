@@ -58,6 +58,7 @@ import { QuickenIncomeVsExpenseChart } from '../../src/components/quicken/Quicke
 import { QuickenBillsScheduleStrip } from '../../src/components/quicken/QuickenBillsScheduleStrip';
 import { QuickenRegisterScreen } from '../../src/components/quicken/QuickenRegisterScreen';
 import { CategoryManager } from '../../src/services/categoryManager';
+import { VoiceInputModal } from '../../src/components/voice/VoiceInputModal';
 import AccountsScreen, { getStoredBankAccounts, BankAccountItem } from './accounts';
 import LoansScreen from './loans';
 import { useAutoCloudSync } from '../../src/hooks/useAutoCloudSync';
@@ -65,6 +66,7 @@ import {
   TransactionManager,
   subscribeToBalanceUpdates,
 } from '../../src/services/transactionManager';
+import { AccountRecoveryService } from '../../src/services/accountRecoveryService';
 
 // Math Engines
 import { AssetItem, evaluateAssets } from '../../src/finance/assetEvaluation';
@@ -103,7 +105,7 @@ export default function MasterDashboardScreen() {
   const { stocks, summary: stockSummary, addStock, updateStockPrice, deleteStock } = useStocks();
 
   const [activeTab, setActiveTab] = useState<SidebarTabType>('dashboard');
-  const [selectedRegisterAccountId, setSelectedRegisterAccountId] = useState<string>('all');
+  const [selectedRegisterAccountId, setSelectedRegisterAccountId] = useState<string | null>(null);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [birthDate, setBirthDateState] = useState<string>(() =>
@@ -116,7 +118,15 @@ export default function MasterDashboardScreen() {
   };
 
   const { syncStatus, lastSyncedAt, isSyncing, syncNow } = useAutoCloudSync(user?.id || 'rashed01');
-  const [bankAccounts, setBankAccounts] = useState<BankAccountItem[]>(() => getStoredBankAccounts());
+  const [bankAccounts, setBankAccounts] = useState<BankAccountItem[]>(() => {
+    const raw = getStoredBankAccounts();
+    const total = raw.reduce((sum, a) => sum + (a.currentBalance || 0), 0);
+    if (raw.length <= 1 || total === 0) {
+      const recovered = AccountRecoveryService.recoverAccounts(false);
+      return recovered.accounts;
+    }
+    return raw;
+  });
 
   // Master State - Clean slate without dummy data, persisted to local device storage
   const [assets, setAssetsState] = useState<AssetItem[]>(() => getStoredData('mh_user_assets', []));
@@ -200,6 +210,7 @@ export default function MasterDashboardScreen() {
   // Modals
   const [entryModalVisible, setEntryModalVisible] = useState(false);
   const [modalInitialType, setModalInitialType] = useState<EntryType>('stock');
+  const [voiceModalVisible, setVoiceModalVisible] = useState(false);
   const [qrModalVisible, setQrModalVisible] = useState(false);
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
   const [firebaseModalVisible, setFirebaseModalVisible] = useState(false);
@@ -448,6 +459,7 @@ export default function MasterDashboardScreen() {
             userProfile={user || { name: 'Rashed Zaman', avatar: '👨‍💼', id: 'rashed01' }}
             isOnline={isOnline}
             pendingNotifCount={pendingNotifCount}
+            onOpenVoiceInput={() => setVoiceModalVisible(true)}
           />
         )}
 
@@ -538,6 +550,31 @@ export default function MasterDashboardScreen() {
                 </Text>
               </TouchableOpacity>
 
+              {/* Voice Data Input Button */}
+              <TouchableOpacity
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: 5,
+                  paddingHorizontal: 12,
+                  paddingVertical: 7,
+                  backgroundColor: '#8B5CF6',
+                  borderRadius: Radius.full,
+                  shadowColor: '#8B5CF6',
+                  shadowOffset: { width: 0, height: 2 },
+                  shadowOpacity: 0.25,
+                  shadowRadius: 4,
+                  elevation: 3,
+                }}
+                onPress={() => setVoiceModalVisible(true)}
+                activeOpacity={0.8}
+              >
+                <Ionicons name="mic" size={15} color="#FFFFFF" />
+                <Text style={{ fontSize: 12, fontWeight: '900', color: '#FFFFFF' }}>
+                  🎙️ Voice
+                </Text>
+              </TouchableOpacity>
+
               {/* Notification Center Bell with Badge & Audio Chime */}
               <TouchableOpacity
                 style={{
@@ -598,7 +635,7 @@ export default function MasterDashboardScreen() {
           {/* Screen Routing */}
           {activeTab === 'register' && (
             <QuickenRegisterScreen
-              initialAccountId={selectedRegisterAccountId}
+              initialAccountId={selectedRegisterAccountId || undefined}
               onOpenNewTransaction={() => openModal('expense')}
               onOpenCategorySetup={() => setActiveTab('categories')}
             />
@@ -1028,6 +1065,7 @@ export default function MasterDashboardScreen() {
         onClose={() => setEntryModalVisible(false)}
         onSave={handleUniversalSave}
         onOpenCategorySetup={() => setActiveTab('categories')}
+        onOpenVoiceInput={() => setVoiceModalVisible(true)}
       />
 
       {/* PWA Phone Install Modal */}
@@ -1058,6 +1096,18 @@ export default function MasterDashboardScreen() {
         onClose={() => setNotificationModalVisible(false)}
         onNavigateToSchedules={() => setActiveTab('schedules')}
         onNavigateToSanchaypatra={() => setActiveTab('paper_assets')}
+      />
+
+      {/* AI Voice Data Input Modal */}
+      <VoiceInputModal
+        visible={voiceModalVisible}
+        onClose={() => setVoiceModalVisible(false)}
+        accounts={bankAccounts}
+        onSaved={() => {
+          setBankAccounts(TransactionManager.getAccountsWithCash());
+          setExpensesState(TransactionManager.getStoredExpenses());
+          setIncomesState(TransactionManager.getStoredIncomes());
+        }}
       />
     </SafeAreaView>
   );

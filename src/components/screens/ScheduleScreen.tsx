@@ -750,6 +750,21 @@ export const ScheduleScreen: React.FC = () => {
                   ৳ {sanchaySummary.total3YearNetYield.toLocaleString('en-IN')}
                 </Text>
               </View>
+              <View style={[styles.sanchayKpi, { borderColor: '#16A34A', backgroundColor: '#F0FDF4' }]}>
+                <Text style={[styles.sanchayKpiLabel, { color: '#166534', fontWeight: '800' }]}>
+                  📅 NEXT UPCOMING / DUE DEPOSIT
+                </Text>
+                <Text style={[styles.sanchayKpiVal, { color: '#15803D', fontSize: 16 }]}>
+                  {sanchaySummary.nextDueCoupon ? sanchaySummary.nextDueCoupon.couponDate : 'All Settled'}
+                </Text>
+                <Text style={{ fontSize: 11, fontWeight: '700', color: sanchaySummary.nextDueCoupon && sanchaySummary.nextDueCoupon.daysRemaining <= 0 ? '#DC2626' : '#15803D', marginTop: 2 }}>
+                  {sanchaySummary.nextDueCoupon
+                    ? sanchaySummary.nextDueCoupon.daysRemaining <= 0
+                      ? sanchaySummary.nextDueCoupon.daysRemaining === 0 ? '🚨 Due Today' : `🚨 Due Now (${Math.abs(sanchaySummary.nextDueCoupon.daysRemaining)}d ago)`
+                      : `⏱️ ${sanchaySummary.nextDueCoupon.daysRemaining} Days Left`
+                    : 'All Deposited'}
+                </Text>
+              </View>
             </View>
           </View>
 
@@ -788,6 +803,142 @@ export const ScheduleScreen: React.FC = () => {
               </TouchableOpacity>
             </View>
           </View>
+
+          {/* Upcoming & Due Deposit Dates Timeline Panel */}
+          {sanchaySummary.allCertNextPayouts && sanchaySummary.allCertNextPayouts.length > 0 && (
+            <View
+              style={{
+                backgroundColor: '#FFFFFF',
+                borderRadius: Radius.md,
+                borderWidth: 1,
+                borderColor: '#BAE6FD',
+                padding: 16,
+                gap: 12,
+                ...Platform.select({
+                  web: { boxShadow: '0 4px 12px rgba(2, 132, 199, 0.08)' } as any,
+                  default: { elevation: 2 },
+                }),
+              }}
+            >
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                  <View style={{ width: 32, height: 32, borderRadius: 8, backgroundColor: '#E0F2FE', justifyContent: 'center', alignItems: 'center' }}>
+                    <Ionicons name="calendar" size={18} color="#0284C7" />
+                  </View>
+                  <View>
+                    <Text style={{ fontSize: 15, fontWeight: '800', color: '#0F172A' }}>
+                      📅 আসন্ন ও চলতি সঞ্চয়পত্র জমার সময়সূচি (Upcoming & Due Deposit Schedule)
+                    </Text>
+                    <Text style={{ fontSize: 12, color: '#64748B' }}>
+                      ৯টি সার্টিফিকেটের পরবর্তী বা চলতি মুনাফা জমার তারিখ ও স্থিতি • সোনালী ব্যাংক পিএলসি
+                    </Text>
+                  </View>
+                </View>
+
+                {sanchaySummary.overdueCount > 0 && (
+                  <View style={{ backgroundColor: '#FEE2E2', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12, borderWidth: 1, borderColor: '#FCA5A5' }}>
+                    <Text style={{ fontSize: 11, fontWeight: '800', color: '#DC2626' }}>
+                      🚨 {sanchaySummary.overdueCount} টি মুনাফা জমা দেওয়ার জন্য প্রস্তুত
+                    </Text>
+                  </View>
+                )}
+              </View>
+
+              {/* Responsive Grid of All 9 Certificate Deposit Dates */}
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>
+                {sanchaySummary.allCertNextPayouts.map((payout) => (
+                  <View
+                    key={payout.certificateNumber}
+                    style={{
+                      flex: 1,
+                      minWidth: 260,
+                      backgroundColor: payout.isDueNow ? '#FEF2F2' : '#F8FAFC',
+                      borderRadius: Radius.sm,
+                      borderWidth: 1,
+                      borderColor: payout.isDueNow ? '#FECACA' : '#E2E8F0',
+                      padding: 12,
+                      justifyContent: 'space-between',
+                      gap: 8,
+                    }}
+                  >
+                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                      <View>
+                        <Text style={{ fontSize: 12, fontWeight: '800', color: '#0F172A' }}>
+                          #{payout.certificateNumber}
+                        </Text>
+                        <Text style={{ fontSize: 11, color: '#64748B' }}>
+                          মূলধন: ৳ {payout.principalAmount.toLocaleString('en-IN')} (Q{payout.quarterNumber}/12)
+                        </Text>
+                      </View>
+                      <View
+                        style={{
+                          paddingHorizontal: 8,
+                          paddingVertical: 3,
+                          borderRadius: 8,
+                          backgroundColor: payout.isConfirmed
+                            ? '#DCFCE7'
+                            : payout.isDueNow
+                            ? '#FEE2E2'
+                            : '#E0F2FE',
+                        }}
+                      >
+                        <Text
+                          style={{
+                            fontSize: 10,
+                            fontWeight: '800',
+                            color: payout.isConfirmed
+                              ? '#16A34A'
+                              : payout.isDueNow
+                              ? '#DC2626'
+                              : '#0284C7',
+                          }}
+                        >
+                          {payout.statusLabel}
+                        </Text>
+                      </View>
+                    </View>
+
+                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', borderTopWidth: 1, borderTopColor: '#F1F5F9', paddingTop: 6 }}>
+                      <View>
+                        <Text style={{ fontSize: 10, fontWeight: '700', color: '#94A3B8' }}>
+                          জমার তারিখ (DEPOSIT DATE)
+                        </Text>
+                        <Text style={{ fontSize: 13, fontWeight: '900', color: payout.isDueNow ? '#DC2626' : '#0F172A' }}>
+                          📅 {payout.nextCouponDate}
+                        </Text>
+                      </View>
+                      <View style={{ alignItems: 'flex-end' }}>
+                        <Text style={{ fontSize: 13, fontWeight: '900', color: '#16A34A' }}>
+                          +৳ {payout.quarterlyNet.toLocaleString('en-IN')}
+                        </Text>
+                        {!payout.isConfirmed && (
+                          <TouchableOpacity
+                            onPress={() => handleDepositSanchaypatra(payout.nextCouponId)}
+                            style={{
+                              marginTop: 4,
+                              backgroundColor: payout.isDueNow ? '#DC2626' : '#16A34A',
+                              paddingHorizontal: 8,
+                              paddingVertical: 3,
+                              borderRadius: 6,
+                              flexDirection: 'row',
+                              alignItems: 'center',
+                              gap: 4,
+                            }}
+                            activeOpacity={0.8}
+                          >
+                            <Ionicons name="checkmark-circle" size={11} color="#FFFFFF" />
+                            <Text style={{ fontSize: 10, fontWeight: '800', color: '#FFFFFF' }}>
+                              {payout.isDueNow ? 'Deposit Now' : 'Deposit'}
+                            </Text>
+                          </TouchableOpacity>
+                        )}
+                      </View>
+                    </View>
+                  </View>
+                ))}
+              </View>
+            </View>
+          )}
 
           {/* Sanchaypatra Certificates Payout Timeline */}
           <View style={styles.listContainer}>
@@ -833,48 +984,70 @@ export const ScheduleScreen: React.FC = () => {
                         </View>
                       </View>
 
-                      {/* Next Deposit Date & Countdown */}
-                      <View style={styles.cardFooterRow}>
-                        <View style={styles.badgeRow}>
-                          {nextCoupon ? (
+                      {/* Prominent Next Deposit Date & Status Banner */}
+                      <View
+                        style={{
+                          marginTop: 10,
+                          padding: 10,
+                          borderRadius: Radius.sm,
+                          backgroundColor: nextCoupon ? (nextCoupon.daysRemaining <= 0 ? '#FEF2F2' : '#F0FDF4') : '#F8FAFC',
+                          borderWidth: 1,
+                          borderColor: nextCoupon ? (nextCoupon.daysRemaining <= 0 ? '#FECACA' : '#BBF7D0') : '#E2E8F0',
+                          flexDirection: 'row',
+                          justifyContent: 'space-between',
+                          alignItems: 'center',
+                          flexWrap: 'wrap',
+                          gap: 8,
+                        }}
+                      >
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                          <Ionicons
+                            name={!nextCoupon ? 'checkmark-circle' : nextCoupon.daysRemaining <= 0 ? 'alert-circle' : 'calendar'}
+                            size={18}
+                            color={!nextCoupon ? '#16A34A' : nextCoupon.daysRemaining <= 0 ? '#DC2626' : '#15803D'}
+                          />
+                          <View>
+                            <Text style={{ fontSize: 11, fontWeight: '700', color: '#64748B' }}>
+                              {nextCoupon ? '📅 আসন্ন বা চলতি জমার তারিখ (NEXT PROFIT DEPOSIT)' : 'সকল কিস্তি সম্পন্ন'}
+                            </Text>
+                            <Text style={{ fontSize: 14, fontWeight: '900', color: nextCoupon ? (nextCoupon.daysRemaining <= 0 ? '#DC2626' : '#15803D') : '#0F172A' }}>
+                              {nextCoupon ? nextCoupon.couponDate : 'All 12 Quarters Settled'}
+                            </Text>
+                          </View>
+                        </View>
+
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                          {nextCoupon && (
                             <View
                               style={[
                                 styles.dueBadge,
                                 nextCoupon.daysRemaining <= 0 && { backgroundColor: '#FEE2E2', borderColor: '#FCA5A5' },
-                                nextCoupon.daysRemaining > 0 && nextCoupon.daysRemaining <= 15 && { backgroundColor: '#FEF3C7', borderColor: '#FCD34D' },
+                                nextCoupon.daysRemaining > 0 && { backgroundColor: '#DCFCE7', borderColor: '#86EFAC' },
                               ]}
                             >
-                              <Ionicons
-                                name={nextCoupon.daysRemaining <= 0 ? 'alert-circle' : 'time-outline'}
-                                size={14}
-                                color={nextCoupon.daysRemaining <= 0 ? '#DC2626' : '#B45309'}
-                              />
                               <Text
                                 style={[
                                   styles.dueBadgeText,
                                   nextCoupon.daysRemaining <= 0 && { color: '#DC2626', fontWeight: '800' },
-                                  nextCoupon.daysRemaining > 0 && { color: '#B45309', fontWeight: '800' },
+                                  nextCoupon.daysRemaining > 0 && { color: '#15803D', fontWeight: '800' },
                                 ]}
                               >
                                 {nextCoupon.daysRemaining <= 0
-                                  ? `Due: ${nextCoupon.couponDate} (${Math.abs(nextCoupon.daysRemaining)}d ago)`
-                                  : `Next Payout: ${nextCoupon.couponDate} (${nextCoupon.daysRemaining} days left)`}
-                              </Text>
-                            </View>
-                          ) : (
-                            <View style={[styles.dueBadge, { backgroundColor: '#DCFCE7', borderColor: '#86EFAC' }]}>
-                              <Ionicons name="checkmark-done" size={14} color="#16A34A" />
-                              <Text style={[styles.dueBadgeText, { color: '#16A34A', fontWeight: '800' }]}>
-                                All Coupons Settled
+                                  ? nextCoupon.daysRemaining === 0 ? '🚨 Due Today' : `🚨 Overdue (${Math.abs(nextCoupon.daysRemaining)}d)`
+                                  : `⏱️ In ${nextCoupon.daysRemaining} days`}
                               </Text>
                             </View>
                           )}
 
                           <View style={styles.autoDebitPill}>
                             <Ionicons name="business" size={12} color="#0284C7" />
-                            <Text style={styles.autoDebitText}>{item.linkedBankName}</Text>
+                            <Text style={styles.autoDebitText}>{item.linkedBankName} (A/C: {item.linkedAccountNo})</Text>
                           </View>
                         </View>
+                      </View>
+
+                      {/* Card Footer Row & Actions */}
+                      <View style={[styles.cardFooterRow, { marginTop: 8 }]}>
 
                         {/* Action Buttons */}
                         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>

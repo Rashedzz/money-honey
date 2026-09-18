@@ -101,7 +101,56 @@ export class FirebaseCloudSync {
         const parsed = JSON.parse(stringified);
         const localKey = STORAGE_MAP[dataType];
         if (typeof window !== 'undefined' && window.localStorage) {
-          window.localStorage.setItem(localKey, JSON.stringify(parsed));
+          if (dataType === 'bank_accounts') {
+            const rawLocal = window.localStorage.getItem(localKey);
+            let localAccounts = rawLocal ? JSON.parse(rawLocal) : [];
+            const localTotal = Array.isArray(localAccounts)
+              ? localAccounts.reduce((sum: number, a: any) => sum + (a.currentBalance || 0), 0)
+              : 0;
+
+            const remoteAccounts = Array.isArray(parsed) ? parsed : [];
+            const remoteTotal = remoteAccounts.reduce((sum: number, a: any) => sum + (a.currentBalance || 0), 0);
+
+            // If local has positive balances and remote is empty or 0, NEVER overwrite!
+            if (localTotal > 0 && remoteTotal === 0) {
+              this.pushCategory('bank_accounts', localAccounts, userId);
+              return { success: true, data: localAccounts };
+            }
+
+            // Non-destructive merge
+            const mergedMap = new Map<string, any>();
+            if (Array.isArray(localAccounts)) {
+              localAccounts.forEach((a: any) => mergedMap.set(a.id, a));
+            }
+            remoteAccounts.forEach((r: any) => {
+              if (!r.id) return;
+              const loc = mergedMap.get(r.id);
+              if (!loc) {
+                mergedMap.set(r.id, r);
+              } else {
+                mergedMap.set(r.id, {
+                  ...loc,
+                  ...r,
+                  currentBalance:
+                    loc.currentBalance > 0 && (!r.currentBalance || r.currentBalance === 0)
+                      ? loc.currentBalance
+                      : r.currentBalance || loc.currentBalance || 0,
+                });
+              }
+            });
+
+            const merged = Array.from(mergedMap.values());
+            window.localStorage.setItem(localKey, JSON.stringify(merged));
+            window.localStorage.setItem('mh_user_bank_accounts_vault_backup', JSON.stringify(merged));
+
+            try {
+              window.dispatchEvent(new CustomEvent('mh_balance_updated'));
+            } catch (e) {}
+
+            return { success: true, data: merged };
+          } else {
+            window.localStorage.setItem(localKey, JSON.stringify(parsed));
+          }
         }
         return { success: true, data: parsed };
       }

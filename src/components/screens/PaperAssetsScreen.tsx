@@ -846,34 +846,50 @@ export const PaperAssetsScreen: React.FC = () => {
                 <Text style={[styles.th, { width: 40 }]}>SL</Text>
                 <Text style={[styles.th, { width: 160 }]}>SANCHAYPATRA NAME & CERT NO</Text>
                 <Text style={[styles.th, { width: 110 }]}>CAPITAL (৳)</Text>
+                <Text style={[styles.th, { width: 130 }]}>NEXT PROFIT DUE</Text>
                 <Text style={[styles.th, { width: 100 }]}>CLOSING DATE</Text>
                 <Text style={[styles.th, { width: 80 }]}>DAYS LEFT</Text>
                 <Text style={[styles.th, { width: 110 }]}>MONTHLY PROFIT</Text>
               </View>
 
-              {sanchaypatras.map((item, idx) => (
-                <View key={item.id} style={styles.tableRow}>
-                  <Text style={[styles.td, { width: 40, fontWeight: '800' }]}>{idx + 1}</Text>
-                  <View style={{ width: 160, paddingRight: 8 }}>
-                    <Text style={[styles.td, { fontWeight: '800' }]} numberOfLines={1}>{item.name}</Text>
-                    <Text style={{ fontSize: 11, color: '#64748B' }} numberOfLines={1}>#{item.certificateNumber}</Text>
-                  </View>
-                  <Text style={[styles.td, { width: 110, fontWeight: '800', color: '#0F172A' }]}>
-                    ৳ {item.amount.toLocaleString('en-IN')}
-                  </Text>
-                  <Text style={[styles.td, { width: 100 }]}>{item.maturityDate}</Text>
-                  <View style={{ width: 80 }}>
-                    <View style={[styles.daysBadge, item.closingDaysRemaining <= 30 && styles.daysBadgeUrgent]}>
-                      <Text style={[styles.daysBadgeText, item.closingDaysRemaining <= 30 && { color: '#EF4444' }]}>
-                        {item.closingDaysRemaining}d
-                      </Text>
+              {sanchaypatras.map((item, idx) => {
+                const nextC = scheduleItems.find(
+                  (c) => c.certificateNumber === item.certificateNumber && c.status === 'PENDING'
+                );
+                return (
+                  <View key={item.id} style={styles.tableRow}>
+                    <Text style={[styles.td, { width: 40, fontWeight: '800' }]}>{idx + 1}</Text>
+                    <View style={{ width: 160, paddingRight: 8 }}>
+                      <Text style={[styles.td, { fontWeight: '800' }]} numberOfLines={1}>{item.name}</Text>
+                      <Text style={{ fontSize: 11, color: '#64748B' }} numberOfLines={1}>#{item.certificateNumber}</Text>
                     </View>
+                    <Text style={[styles.td, { width: 110, fontWeight: '800', color: '#0F172A' }]}>
+                      ৳ {item.amount.toLocaleString('en-IN')}
+                    </Text>
+                    <View style={{ width: 130 }}>
+                      <Text style={[styles.td, { fontWeight: '800', color: nextC && nextC.daysRemaining <= 0 ? '#DC2626' : '#15803D' }]}>
+                        {nextC ? `📅 ${nextC.couponDate}` : 'All Settled'}
+                      </Text>
+                      {nextC && (
+                        <Text style={{ fontSize: 10, fontWeight: '700', color: nextC.daysRemaining <= 0 ? '#DC2626' : '#64748B' }}>
+                          {nextC.daysRemaining <= 0 ? '🚨 Due Now' : `⏱️ ${nextC.daysRemaining}d left`}
+                        </Text>
+                      )}
+                    </View>
+                    <Text style={[styles.td, { width: 100 }]}>{item.maturityDate}</Text>
+                    <View style={{ width: 80 }}>
+                      <View style={[styles.daysBadge, item.closingDaysRemaining <= 30 && styles.daysBadgeUrgent]}>
+                        <Text style={[styles.daysBadgeText, item.closingDaysRemaining <= 30 && { color: '#EF4444' }]}>
+                          {item.closingDaysRemaining}d
+                        </Text>
+                      </View>
+                    </View>
+                    <Text style={[styles.td, { width: 110, fontWeight: '800', color: '#16A34A' }]}>
+                      +৳ {item.monthlyProfit.toLocaleString('en-IN')}
+                    </Text>
                   </View>
-                  <Text style={[styles.td, { width: 110, fontWeight: '800', color: '#16A34A' }]}>
-                    +৳ {item.monthlyProfit.toLocaleString('en-IN')}
-                  </Text>
-                </View>
-              ))}
+                );
+              })}
             </View>
           </ScrollView>
         </GlassCard>
@@ -971,61 +987,141 @@ export const PaperAssetsScreen: React.FC = () => {
               </View>
 
               {/* Sanchaypatra Specific Profit, Tax, and Schedule Action */}
-              {asset.type === 'Sanchaypatra' && (
-                <View style={styles.sanchaypatraProfitBreakdown}>
-                  <View style={styles.breakdownHeaderRow}>
-                    <Text style={styles.breakdownHeaderTitle}>ত্রৈমাসিক মুনাফা ও উৎস কর কর্তন (Quarterly Payout)</Text>
-                    <Text style={styles.breakdownHeaderSub}>
-                      ১ম নগদায়ন: {asset.firstCouponDate || asset.activationDate}
-                    </Text>
-                  </View>
-
-                  <View style={styles.breakdownPillGrid}>
-                    <View style={styles.breakdownPillItem}>
-                      <Text style={styles.breakdownPillLabel}>গ্রস মুনাফা (Gross)</Text>
-                      <Text style={styles.breakdownPillValGross}>
-                        ৳ {(asset.grossProfitPerInterval || 0).toLocaleString('en-IN')}
-                      </Text>
-                    </View>
-                    <View style={styles.breakdownPillItem}>
-                      <Text style={styles.breakdownPillLabel}>১০% কর কর্তন (Tax)</Text>
-                      <Text style={styles.breakdownPillValTax}>
-                        -৳ {(asset.sourceTaxDeductedPerInterval || 0).toLocaleString('en-IN')}
-                      </Text>
-                    </View>
-                    <View style={[styles.breakdownPillItem, styles.breakdownPillItemHighlight]}>
-                      <Text style={styles.breakdownPillLabelNet}>নিট প্রাপ্তি (Net)</Text>
-                      <Text style={styles.breakdownPillValNet}>
-                        +৳ {(asset.netProfitPerInterval || 0).toLocaleString('en-IN')}
-                      </Text>
-                    </View>
-                  </View>
-
-                  <View style={styles.breakdownFooterRow}>
-                    <Text style={styles.breakdownFooterText}>
-                      বার্ষিক নিট লাভ:{' '}
-                      <Text style={{ color: '#16A34A', fontWeight: '800' }}>
-                        ৳ {((asset.netProfitPerInterval || 0) * 4).toLocaleString('en-IN')}
-                      </Text>{' '}
-                      (১২ কিস্তিতে মোট ৳{' '}
-                      {((asset.netProfitPerInterval || 0) * 12).toLocaleString('en-IN')})
-                    </Text>
-
-                    <TouchableOpacity
-                      style={styles.cardViewScheduleBtn}
-                      onPress={() => {
-                        setSelectedScheduleCert(asset.certificateNumber);
-                        reloadSchedule();
-                        setShowEarningsSchedule(true);
+              {asset.type === 'Sanchaypatra' && (() => {
+                const nextCoupon = scheduleItems.find(
+                  (c) => c.certificateNumber === asset.certificateNumber && c.status === 'PENDING'
+                );
+                return (
+                  <View style={styles.sanchaypatraProfitBreakdown}>
+                    {/* Next Profit Deposit Date Banner */}
+                    <View
+                      style={{
+                        backgroundColor: nextCoupon ? (nextCoupon.daysRemaining <= 0 ? '#FEF2F2' : '#F0FDF4') : '#F8FAFC',
+                        borderRadius: 8,
+                        borderWidth: 1,
+                        borderColor: nextCoupon ? (nextCoupon.daysRemaining <= 0 ? '#FECACA' : '#BBF7D0') : '#E2E8F0',
+                        padding: 10,
+                        marginBottom: 10,
+                        flexDirection: 'row',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        flexWrap: 'wrap',
+                        gap: 8,
                       }}
-                      activeOpacity={0.8}
                     >
-                      <Ionicons name="calendar-outline" size={13} color="#0284C7" />
-                      <Text style={styles.cardViewScheduleBtnText}>১২ কিস্তির শিডিউল</Text>
-                    </TouchableOpacity>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                        <Ionicons
+                          name={!nextCoupon ? 'checkmark-circle' : nextCoupon.daysRemaining <= 0 ? 'alert-circle' : 'calendar'}
+                          size={16}
+                          color={!nextCoupon ? '#16A34A' : nextCoupon.daysRemaining <= 0 ? '#DC2626' : '#15803D'}
+                        />
+                        <View>
+                          <Text style={{ fontSize: 10, fontWeight: '700', color: '#64748B' }}>
+                            পরবর্তী বা চলতি জমার তারিখ (NEXT PROFIT DEPOSIT)
+                          </Text>
+                          <Text style={{ fontSize: 13, fontWeight: '900', color: nextCoupon ? (nextCoupon.daysRemaining <= 0 ? '#DC2626' : '#15803D') : '#0F172A' }}>
+                            {nextCoupon ? `📅 ${nextCoupon.couponDate} (Q${nextCoupon.quarterNumber}/12)` : 'All 12 Quarters Settled'}
+                          </Text>
+                        </View>
+                      </View>
+
+                      {nextCoupon && (
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                          <View
+                            style={{
+                              paddingHorizontal: 8,
+                              paddingVertical: 3,
+                              borderRadius: 6,
+                              backgroundColor: nextCoupon.daysRemaining <= 0 ? '#FEE2E2' : '#DCFCE7',
+                            }}
+                          >
+                            <Text
+                              style={{
+                                fontSize: 10,
+                                fontWeight: '800',
+                                color: nextCoupon.daysRemaining <= 0 ? '#DC2626' : '#15803D',
+                              }}
+                            >
+                              {nextCoupon.daysRemaining <= 0
+                                ? nextCoupon.daysRemaining === 0 ? 'Due Today' : `Overdue (${Math.abs(nextCoupon.daysRemaining)}d)`
+                                : `${nextCoupon.daysRemaining} days left`}
+                            </Text>
+                          </View>
+
+                          <TouchableOpacity
+                            onPress={() => handleConfirmDeposit(nextCoupon)}
+                            style={{
+                              backgroundColor: nextCoupon.daysRemaining <= 0 ? '#DC2626' : '#16A34A',
+                              paddingHorizontal: 8,
+                              paddingVertical: 4,
+                              borderRadius: 6,
+                              flexDirection: 'row',
+                              alignItems: 'center',
+                              gap: 4,
+                            }}
+                            activeOpacity={0.8}
+                          >
+                            <Ionicons name="checkmark-circle" size={12} color="#FFFFFF" />
+                            <Text style={{ fontSize: 10, fontWeight: '800', color: '#FFFFFF' }}>Deposit Now</Text>
+                          </TouchableOpacity>
+                        </View>
+                      )}
+                    </View>
+
+                    <View style={styles.breakdownHeaderRow}>
+                      <Text style={styles.breakdownHeaderTitle}>ত্রৈমাসিক মুনাফা ও উৎস কর কর্তন (Quarterly Payout)</Text>
+                      <Text style={styles.breakdownHeaderSub}>
+                        ১ম নগদায়ন: {asset.firstCouponDate || asset.activationDate}
+                      </Text>
+                    </View>
+
+                    <View style={styles.breakdownPillGrid}>
+                      <View style={styles.breakdownPillItem}>
+                        <Text style={styles.breakdownPillLabel}>গ্রস মুনাফা (Gross)</Text>
+                        <Text style={styles.breakdownPillValGross}>
+                          ৳ {(asset.grossProfitPerInterval || 0).toLocaleString('en-IN')}
+                        </Text>
+                      </View>
+                      <View style={styles.breakdownPillItem}>
+                        <Text style={styles.breakdownPillLabel}>১০% কর কর্তন (Tax)</Text>
+                        <Text style={styles.breakdownPillValTax}>
+                          -৳ {(asset.sourceTaxDeductedPerInterval || 0).toLocaleString('en-IN')}
+                        </Text>
+                      </View>
+                      <View style={[styles.breakdownPillItem, styles.breakdownPillItemHighlight]}>
+                        <Text style={styles.breakdownPillLabelNet}>নিট প্রাপ্তি (Net)</Text>
+                        <Text style={styles.breakdownPillValNet}>
+                          +৳ {(asset.netProfitPerInterval || 0).toLocaleString('en-IN')}
+                        </Text>
+                      </View>
+                    </View>
+
+                    <View style={styles.breakdownFooterRow}>
+                      <Text style={styles.breakdownFooterText}>
+                        বার্ষিক নিট লাভ:{' '}
+                        <Text style={{ color: '#16A34A', fontWeight: '800' }}>
+                          ৳ {((asset.netProfitPerInterval || 0) * 4).toLocaleString('en-IN')}
+                        </Text>{' '}
+                        (১২ কিস্তিতে মোট ৳{' '}
+                        {((asset.netProfitPerInterval || 0) * 12).toLocaleString('en-IN')})
+                      </Text>
+
+                      <TouchableOpacity
+                        style={styles.cardViewScheduleBtn}
+                        onPress={() => {
+                          setSelectedScheduleCert(asset.certificateNumber);
+                          reloadSchedule();
+                          setShowEarningsSchedule(true);
+                        }}
+                        activeOpacity={0.8}
+                      >
+                        <Ionicons name="calendar-outline" size={13} color="#0284C7" />
+                        <Text style={styles.cardViewScheduleBtnText}>১২ কিস্তির শিডিউল</Text>
+                      </TouchableOpacity>
+                    </View>
                   </View>
-                </View>
-              )}
+                );
+              })()}
 
               {/* Linked Bank Account Pill */}
               <View style={styles.cardFooter}>

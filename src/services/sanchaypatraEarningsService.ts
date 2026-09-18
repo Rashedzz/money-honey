@@ -45,6 +45,45 @@ export interface SanchaypatraCouponScheduleItem {
   isRead?: boolean;
 }
 
+export interface SanchaypatraCertNextPayout {
+  certificateNumber: string;
+  schemeName: string;
+  principalAmount: number;
+  quarterlyNet: number;
+  quarterlyGross: number;
+  quarterlyTax: number;
+  linkedBankName: string;
+  linkedAccountNo: string;
+  nextCouponDate: string;
+  daysRemaining: number;
+  isDueNow: boolean;
+  statusLabel: string;
+  nextCouponId: string;
+  quarterNumber: number;
+  isConfirmed: boolean;
+}
+
+export interface SanchaypatraPortfolioSummary {
+  totalCapital: number;
+  quarterlyGrossProfit: number;
+  quarterlyTaxDeduction: number;
+  quarterlyNetProfit: number;
+  annualGrossProfit: number;
+  annualTaxDeduction: number;
+  annualNetProfit: number;
+  total3YearGrossYield: number;
+  total3YearNetYield: number;
+  totalCouponsCount: number;
+  confirmedCouponsCount: number;
+  confirmedTotalNetDeposited: number;
+  pendingCouponsCount: number;
+  nextDueCoupon: SanchaypatraCouponScheduleItem | null;
+  nextUpcomingCoupon: SanchaypatraCouponScheduleItem | null;
+  overdueCount: number;
+  upcomingScheduleList: SanchaypatraCouponScheduleItem[];
+  allCertNextPayouts: SanchaypatraCertNextPayout[];
+}
+
 export const SANCHAYPATRA_MASTER_PORTFOLIO: SanchaypatraMasterRecord[] = [
   {
     certificateNumber: '2025-0134852',
@@ -440,22 +479,7 @@ export class SanchaypatraEarningsService {
   /**
    * Calculates executive aggregate statistics for the entire 9-certificate portfolio
    */
-  public static getPortfolioSummary(): {
-    totalCapital: number;
-    quarterlyGrossProfit: number;
-    quarterlyTaxDeduction: number;
-    quarterlyNetProfit: number;
-    annualGrossProfit: number;
-    annualTaxDeduction: number;
-    annualNetProfit: number;
-    total3YearGrossYield: number;
-    total3YearNetYield: number;
-    totalCouponsCount: number;
-    confirmedCouponsCount: number;
-    confirmedTotalNetDeposited: number;
-    pendingCouponsCount: number;
-    nextDueCoupon: SanchaypatraCouponScheduleItem | null;
-  } {
+  public static getPortfolioSummary(): SanchaypatraPortfolioSummary {
     const all = this.getAllScheduleItems();
     
     let totalCapital = 0;
@@ -481,9 +505,14 @@ export class SanchaypatraEarningsService {
 
     const allPending = all.filter((c) => c.status === 'PENDING');
     const activePending = allPending.filter((c) => !c.isRead);
-    // Find next nearest due coupon from active unread coupons
-    const upcoming = activePending.filter((c) => c.daysRemaining >= 0);
-    const nextDueCoupon = upcoming.length > 0 ? upcoming[0] : (activePending[0] || (allPending.length > 0 ? allPending[0] : null));
+    
+    // Prioritize due now or overdue coupons first so users immediately see actionable deposits
+    const overdueDue = activePending.filter((c) => c.daysRemaining <= 0);
+    const upcoming = activePending.filter((c) => c.daysRemaining > 0);
+    const nextDueCoupon = overdueDue.length > 0 ? overdueDue[0] : (upcoming[0] || (activePending[0] || (allPending[0] || null)));
+    const nextUpcomingCoupon = upcoming.length > 0 ? upcoming[0] : null;
+    const upcomingScheduleList = activePending.slice(0, 5);
+    const allCertNextPayouts = this.getNextDepositDatesByCertificate();
 
     return {
       totalCapital,
@@ -500,6 +529,56 @@ export class SanchaypatraEarningsService {
       confirmedTotalNetDeposited,
       pendingCouponsCount: activePending.length,
       nextDueCoupon,
+      nextUpcomingCoupon,
+      overdueCount: overdueDue.length,
+      upcomingScheduleList,
+      allCertNextPayouts,
     };
+  }
+
+  /**
+   * Retrieves the exact next upcoming or due deposit date for every one of the 9 registered certificates
+   */
+  public static getNextDepositDatesByCertificate(): SanchaypatraCertNextPayout[] {
+    const all = this.getAllScheduleItems();
+    const result: SanchaypatraCertNextPayout[] = [];
+
+    for (const master of SANCHAYPATRA_MASTER_PORTFOLIO) {
+      const certCoupons = all.filter((c) => c.certificateNumber === master.certificateNumber);
+      const pendingCoupon = certCoupons.find((c) => c.status === 'PENDING');
+      const targetCoupon = pendingCoupon || certCoupons[certCoupons.length - 1];
+
+      if (targetCoupon) {
+        const isDueNow = targetCoupon.daysRemaining <= 0 && targetCoupon.status === 'PENDING';
+        const statusLabel =
+          targetCoupon.status === 'CONFIRMED_DEPOSITED'
+            ? '✓ All Settled'
+            : targetCoupon.daysRemaining === 0
+            ? '🚨 Due Today'
+            : targetCoupon.daysRemaining < 0
+            ? `🚨 Overdue (${Math.abs(targetCoupon.daysRemaining)}d)`
+            : `⏱️ In ${targetCoupon.daysRemaining} days`;
+
+        result.push({
+          certificateNumber: master.certificateNumber,
+          schemeName: master.schemeName,
+          principalAmount: master.principalAmount,
+          quarterlyNet: master.quarterlyNet,
+          quarterlyGross: master.quarterlyGross,
+          quarterlyTax: master.quarterlyTax,
+          linkedBankName: master.linkedBankName,
+          linkedAccountNo: master.linkedAccountNo,
+          nextCouponDate: targetCoupon.couponDate,
+          daysRemaining: targetCoupon.daysRemaining,
+          isDueNow,
+          statusLabel,
+          nextCouponId: targetCoupon.id,
+          quarterNumber: targetCoupon.quarterNumber,
+          isConfirmed: targetCoupon.status === 'CONFIRMED_DEPOSITED',
+        });
+      }
+    }
+
+    return result.sort((a, b) => a.nextCouponDate.localeCompare(b.nextCouponDate));
   }
 }

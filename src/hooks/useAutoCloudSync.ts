@@ -71,12 +71,18 @@ export function useAutoCloudSync(
     return () => clearTimeout(timer);
   }, [performSync]);
 
-  // Sync on App Foreground / Window Focus (Cross-Device Refresh)
+  // Sync on App Foreground / Window Focus (Cross-Device Refresh - Throttled to once every 60s)
+  const lastFocusSyncRef = useRef<number>(0);
+
   useEffect(() => {
     // 1. Web Window Focus
     if (Platform.OS === 'web' && typeof window !== 'undefined') {
       const handleWindowFocus = () => {
-        performSync();
+        const now = Date.now();
+        if (now - lastFocusSyncRef.current > 60000) {
+          lastFocusSyncRef.current = now;
+          performSync();
+        }
       };
       window.addEventListener('focus', handleWindowFocus);
       return () => {
@@ -87,7 +93,11 @@ export function useAutoCloudSync(
     // 2. Native Mobile AppState Change
     const subscription = AppState.addEventListener('change', (nextState: AppStateStatus) => {
       if (nextState === 'active') {
-        performSync();
+        const now = Date.now();
+        if (now - lastFocusSyncRef.current > 60000) {
+          lastFocusSyncRef.current = now;
+          performSync();
+        }
       }
     });
 

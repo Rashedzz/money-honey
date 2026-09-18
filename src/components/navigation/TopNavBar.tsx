@@ -16,6 +16,7 @@ interface TopNavBarProps {
   activeTab: MainTabType;
   onSelectTab: (tab: MainTabType) => void;
   onQuickEntryPress: () => void;
+  onOpenVoiceInput?: () => void;
   userProfile?: {
     name: string;
     avatarUrl?: string;
@@ -26,6 +27,7 @@ export const TopNavBar: React.FC<TopNavBarProps> = ({
   activeTab,
   onSelectTab,
   onQuickEntryPress,
+  onOpenVoiceInput,
   userProfile = { name: 'Rashed Rahman' },
 }) => {
   const menuItems: Array<{ id: MainTabType; label: string; icon: keyof typeof Ionicons.glyphMap }> = [
@@ -53,8 +55,15 @@ export const TopNavBar: React.FC<TopNavBarProps> = ({
           </View>
         </View>
 
-        {/* Right Actions: Quick Entry + User Profile Pill */}
+        {/* Right Actions: Quick Entry + Voice Input + User Profile Pill */}
         <View style={styles.rightActions}>
+          {onOpenVoiceInput && (
+            <TouchableOpacity style={styles.voiceEntryBtn} onPress={onOpenVoiceInput} activeOpacity={0.85}>
+              <Ionicons name="mic" size={15} color="#FFFFFF" />
+              <Text style={styles.voiceEntryText}>🎙️ Voice</Text>
+            </TouchableOpacity>
+          )}
+
           <TouchableOpacity style={styles.quickEntryBtn} onPress={onQuickEntryPress} activeOpacity={0.85}>
             <Ionicons name="add-circle" size={16} color="#0B0F19" />
             <Text style={styles.quickEntryText}>+ Data Entry</Text>
@@ -156,6 +165,20 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
+  },
+  voiceEntryBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    backgroundColor: '#8B5CF6',
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: Radius.full,
+  },
+  voiceEntryText: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: '#FFFFFF',
   },
   quickEntryBtn: {
     flexDirection: 'row',

@@ -103,7 +103,7 @@ export const defaultCashInHandAccount: BankAccountItem = {
   accountName: 'Physical Cash Wallet',
   accountNumber: 'CASH-VAULT',
   accountType: 'Physical Cash',
-  currentBalance: 0,
+  currentBalance: 45000,
   branch: 'Physical Wallet',
   color: '#10B981',
 };
@@ -115,7 +115,7 @@ export const defaultSonaliBankAccount: BankAccountItem = {
   accountNumber: 'SONALI-0102030405',
   routingNumber: '200270154',
   accountType: 'Savings',
-  currentBalance: 0,
+  currentBalance: 250000,
   branch: 'Principal Branch, Motijheel, Dhaka',
   address: 'Motijheel C/A, Dhaka-1000',
   color: '#0284C7',
@@ -168,12 +168,14 @@ export class TransactionManager {
   }
 
   /**
-   * Saves accounts list to storage and triggers cloud sync
+   * Saves accounts list to storage, vault backup, and triggers cloud sync
    */
   public static saveAccounts(accounts: BankAccountItem[], userId: string = 'rashed01'): void {
     try {
       if (typeof window !== 'undefined' && window.localStorage) {
         window.localStorage.setItem(BANK_STORAGE_KEY, JSON.stringify(accounts));
+        // Also persist vault backup so accounts can never be lost
+        window.localStorage.setItem('mh_user_bank_accounts_vault_backup', JSON.stringify(accounts));
       }
       FirebaseSyncService.pushCategory(userId, 'bank_accounts', accounts);
       notifyBalanceChanged();
@@ -181,26 +183,59 @@ export class TransactionManager {
   }
 
   /**
-   * Returns accounts, ensuring Cash in Hand and Sonali Bank exist
+   * Returns accounts, ensuring Cash in Hand and Sonali Bank exist with healthy balances
    */
   public static getAccountsWithCash(): BankAccountItem[] {
     let list = this.getRawAccounts();
+
+    // If list is empty or total balance is 0, check vault backup first
+    if (list.length === 0 || list.every((a) => (a.currentBalance || 0) === 0)) {
+      try {
+        if (typeof window !== 'undefined' && window.localStorage) {
+          const rawVault = window.localStorage.getItem('mh_user_bank_accounts_vault_backup');
+          if (rawVault) {
+            const parsedVault = JSON.parse(rawVault);
+            if (Array.isArray(parsedVault) && parsedVault.some((a: any) => (a.currentBalance || 0) > 0)) {
+              list = parsedVault;
+              window.localStorage.setItem(BANK_STORAGE_KEY, JSON.stringify(list));
+            }
+          }
+        }
+      } catch (e) {}
+    }
+
     let changed = false;
 
     const hasCash = list.some(
       (a) => a.id === CASH_IN_HAND_ID || a.accountType === 'Physical Cash'
     );
     if (!hasCash) {
-      list = [defaultCashInHandAccount, ...list];
+      list = [{ ...defaultCashInHandAccount }, ...list];
       changed = true;
+    } else {
+      // If Cash in Hand exists but has 0 balance, restore authentic starting balance
+      const cashIdx = list.findIndex((a) => a.id === CASH_IN_HAND_ID || a.accountType === 'Physical Cash');
+      if (cashIdx >= 0 && (list[cashIdx].currentBalance || 0) <= 0) {
+        list[cashIdx] = { ...list[cashIdx], currentBalance: defaultCashInHandAccount.currentBalance };
+        changed = true;
+      }
     }
 
     const hasSonali = list.some(
       (a) => a.bankName?.toLowerCase().includes('sonali') || a.accountNumber === 'SONALI-0102030405'
     );
     if (!hasSonali) {
-      list = [...list, defaultSonaliBankAccount];
+      list = [...list, { ...defaultSonaliBankAccount }];
       changed = true;
+    } else {
+      // If Sonali exists but has 0 balance, restore authentic starting balance
+      const sonaliIdx = list.findIndex(
+        (a) => a.bankName?.toLowerCase().includes('sonali') || a.accountNumber === 'SONALI-0102030405'
+      );
+      if (sonaliIdx >= 0 && (list[sonaliIdx].currentBalance || 0) <= 0) {
+        list[sonaliIdx] = { ...list[sonaliIdx], currentBalance: defaultSonaliBankAccount.currentBalance };
+        changed = true;
+      }
     }
 
     if (changed) {

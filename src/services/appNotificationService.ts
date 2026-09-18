@@ -21,6 +21,7 @@ export interface AppNotificationItem {
   daysRemaining: number;
   urgency: 'critical' | 'warning' | 'normal' | 'info';
   couponId?: string;
+  couponIds?: string[];
   scheduleId?: string;
   targetAccount?: string;
 }
@@ -64,15 +65,21 @@ export class AppNotificationService {
   /**
    * Dismisses a single notification and persists dismissal
    */
-  public static dismissNotification(notificationId: string, couponId?: string): void {
+  public static dismissNotification(notificationId: string, couponId?: string, couponIds?: string[]): void {
     const existing = new Set(this.getDismissedIds());
     existing.add(notificationId);
     this.saveDismissedIds(Array.from(existing));
 
-    // If it's a sanchaypatra coupon notification, also mark coupon as read in Sanchaypatra service
-    const targetCouponId = couponId || (notificationId.startsWith('notif_sp_') ? notificationId.replace('notif_sp_', '') : null);
-    if (targetCouponId) {
-      SanchaypatraEarningsService.markCouponAsRead(targetCouponId);
+    // If it's a sanchaypatra coupon notification, also mark coupons as read in Sanchaypatra service
+    if (couponIds && couponIds.length > 0) {
+      for (const cid of couponIds) {
+        SanchaypatraEarningsService.markCouponAsRead(cid);
+      }
+    } else {
+      const targetCouponId = couponId || (notificationId.startsWith('notif_sp_') ? notificationId.replace('notif_sp_', '') : null);
+      if (targetCouponId) {
+        SanchaypatraEarningsService.markCouponAsRead(targetCouponId);
+      }
     }
 
     this.broadcastUpdate();
@@ -96,7 +103,11 @@ export class AppNotificationService {
 
     for (const item of active) {
       existingDismissed.add(item.id);
-      if (item.couponId) {
+      if (item.couponIds && item.couponIds.length > 0) {
+        for (const cid of item.couponIds) {
+          SanchaypatraEarningsService.markCouponAsRead(cid);
+        }
+      } else if (item.couponId) {
         SanchaypatraEarningsService.markCouponAsRead(item.couponId);
       }
     }
@@ -110,6 +121,11 @@ export class AppNotificationService {
   /**
    * Retrieves all active, unread, and non-dismissed financial alerts.
    * Single source of truth for both NotificationCenterModal and header badge counts.
+   * Prevents ballooning by:
+   * 1. Limiting Sanchaypatra to only the next relevant pending coupon per certificate.
+   * 2. Only alerting within a high-signal window (-30 days overdue to +14 days upcoming).
+   * 3. Grouping multiple certificates sharing the same payout date into 1 consolidated alert.
+   * 4. Enforcing strict active windows for recurring salaries and bills.
    */
   public static getActiveNotifications(): AppNotificationItem[] {
     const items: AppNotificationItem[] = [];
@@ -123,36 +139,85 @@ export class AppNotificationService {
 
     // 1. Sanchaypatra Coupons
     try {
-      const coupons = SanchaypatraEarningsService.getAllScheduleItems();
-      // Strictly filter: must be PENDING, NOT isRead, NOT dismissed, and within 60 days
-      const pendingCoupons = coupons.filter(
-        (c) =>
-          c.status === 'PENDING' &&
-          !c.isRead &&
-          !dismissedSet.has(`notif_sp_${c.id}`) &&
-          c.daysRemaining <= 60
-      );
+      const allCoupons = SanchaypatraEarningsService.getAllScheduleItems();
 
-      for (const c of pendingCoupons) {
-        const isPastDue = c.daysRemaining < 0;
-        const isToday = c.daysRemaining === 0;
+      // Step A: Find the single earliest unread pending coupon for each certificate
+      const earliestPendingByCert = new Map<string, typeof allCoupons[0]>();
+      for (const c of allCoupons) {
+        if (c.status !== 'PENDING' || c.isRead || dismissedSet.has(`notif_sp_${c.id}`)) {
+          continue;
+        }
+        if (!earliestPendingByCert.has(c.certificateNumber)) {
+          earliestPendingByCert.set(c.certificateNumber, c);
+        }
+      }
 
-        items.push({
-          id: `notif_sp_${c.id}`,
-          type: 'sanchaypatra',
-          title: `সঞ্চয়পত্র ৩-মাস মুনাফা #${c.certificateNumber}`,
-          message: isToday
-            ? `আজকে মুনাফা প্রদানের তারিখ! নিট ৳${c.netAmount.toLocaleString('en-IN')} সোনালী ব্যাংকে জমা করার জন্য প্রস্তুত।`
-            : isPastDue
-            ? `${Math.abs(c.daysRemaining)} দিন পূর্বে মুনাফা তোলার তারিখ অতিক্রম হয়েছে। নিট ৳${c.netAmount.toLocaleString('en-IN')} সোনালী ব্যাংকে জমা করুন বা Mark as Read করুন।`
-            : `আর ${c.daysRemaining} দিন বাকি। সোনালী ব্যাংক পিএলসি অ্যাকাউন্টে নিট ৳${c.netAmount.toLocaleString('en-IN')} জমা হবে।`,
-          amount: c.netAmount,
-          dateStr: c.couponDate,
-          daysRemaining: c.daysRemaining,
-          urgency: isToday || isPastDue ? 'critical' : c.daysRemaining <= 7 ? 'warning' : 'normal',
-          couponId: c.id,
-          targetAccount: c.linkedBankName || 'Sonali Bank PLC',
-        });
+      // Step B: Filter to relevant actionable notification window:
+      // - Overdue within recent 30 days or due today: daysRemaining <= 0 && daysRemaining >= -30
+      // - Upcoming within 14 days: daysRemaining > 0 && daysRemaining <= 14
+      const activePendingCoupons: typeof allCoupons = [];
+      for (const c of earliestPendingByCert.values()) {
+        if (c.daysRemaining >= -30 && c.daysRemaining <= 14) {
+          activePendingCoupons.push(c);
+        }
+      }
+
+      // Step C: Group coupons that share the same couponDate to avoid clutter
+      const groupedByDate = new Map<string, typeof allCoupons>();
+      for (const c of activePendingCoupons) {
+        const list = groupedByDate.get(c.couponDate) || [];
+        list.push(c);
+        groupedByDate.set(c.couponDate, list);
+      }
+
+      for (const [dateStr, group] of groupedByDate.entries()) {
+        const first = group[0];
+        const isPastDue = first.daysRemaining < 0;
+        const isToday = first.daysRemaining === 0;
+        const totalNet = group.reduce((sum, item) => sum + item.netAmount, 0);
+        const couponIds = group.map((item) => item.id);
+
+        if (group.length === 1) {
+          items.push({
+            id: `notif_sp_${first.id}`,
+            type: 'sanchaypatra',
+            title: `সঞ্চয়পত্র ৩-মাস মুনাফা #${first.certificateNumber}`,
+            message: isToday
+              ? `আজকে মুনাফা প্রদানের তারিখ! নিট ৳${first.netAmount.toLocaleString('en-IN')} সোনালী ব্যাংকে জমা করার জন্য প্রস্তুত।`
+              : isPastDue
+              ? `${Math.abs(first.daysRemaining)} দিন পূর্বে মুনাফা তোলার তারিখ অতিক্রম হয়েছে (${first.couponDate})। নিট ৳${first.netAmount.toLocaleString('en-IN')} সোনালী ব্যাংকে জমা করুন।`
+              : `আর ${first.daysRemaining} দিন বাকি (${first.couponDate})। সোনালী ব্যাংক পিএলসি অ্যাকাউন্টে নিট ৳${first.netAmount.toLocaleString('en-IN')} জমা হবে।`,
+            amount: first.netAmount,
+            dateStr: first.couponDate,
+            daysRemaining: first.daysRemaining,
+            urgency: isToday || isPastDue ? 'critical' : first.daysRemaining <= 5 ? 'warning' : 'normal',
+            couponId: first.id,
+            couponIds,
+            targetAccount: first.linkedBankName || 'Sonali Bank PLC',
+          });
+        } else {
+          // Grouped notification for multiple certificates due on the same date
+          const groupNotifId = `notif_sp_grp_${dateStr}`;
+          if (dismissedSet.has(groupNotifId)) continue;
+
+          items.push({
+            id: groupNotifId,
+            type: 'sanchaypatra',
+            title: `সঞ্চয়পত্র মুনাফা (${group.length}টি সার্টিফিকেট)`,
+            message: isToday
+              ? `আজকে মুনাফা প্রদানের তারিখ! মোট নিট ৳${totalNet.toLocaleString('en-IN')} (${group.length}টি সার্টিফিকেট) সোনালী ব্যাংকে জমা করার জন্য প্রস্তুত।`
+              : isPastDue
+              ? `${Math.abs(first.daysRemaining)} দিন পূর্বে (${dateStr}) ${group.length}টি সার্টিফিকেটের মুনাফা তোলার তারিখ হয়েছে। মোট নিট ৳${totalNet.toLocaleString('en-IN')} সোনালী ব্যাংকে জমা করুন।`
+              : `আর ${first.daysRemaining} দিন বাকি (${dateStr})। ${group.length}টি সার্টিফিকেটের মোট নিট ৳${totalNet.toLocaleString('en-IN')} সোনালী ব্যাংকে জমা হবে।`,
+            amount: totalNet,
+            dateStr,
+            daysRemaining: first.daysRemaining,
+            urgency: isToday || isPastDue ? 'critical' : first.daysRemaining <= 5 ? 'warning' : 'normal',
+            couponId: first.id,
+            couponIds,
+            targetAccount: first.linkedBankName || 'Sonali Bank PLC',
+          });
+        }
       }
     } catch (e) {}
 
@@ -166,7 +231,6 @@ export class AppNotificationService {
         // Check if already paid for the current month
         const isPaidThisMonth = s.lastPaidDate && s.lastPaidDate.startsWith(currentMonthKey);
         if (isPaidThisMonth) {
-          // Already deposited/paid this month; do not alert
           continue;
         }
 
@@ -181,15 +245,15 @@ export class AppNotificationService {
             (s.category && s.category.toLowerCase().includes('salary'));
 
           // Incomes typically follow 5th to 10th window or s.dueDay
-          const startWindow = 5;
-          const endWindow = 10;
+          const startWindow = s.dueDay ? Math.max(1, s.dueDay - 2) : 5;
+          const endWindow = s.dueDay ? s.dueDay + 3 : 10;
 
           if (currentDay >= startWindow && currentDay <= endWindow) {
             items.push({
               id: notifId,
               type: 'salary',
               title: `💰 ${s.title} (Deposit Window Active)`,
-              message: `Monthly deposit window active (5th–10th). Credit ৳${s.amount.toLocaleString('en-IN')} into ${s.linkedAccount || 'designated account'}.`,
+              message: `Monthly deposit window active. Credit ৳${s.amount.toLocaleString('en-IN')} into ${s.linkedAccount || 'designated account'}.`,
               amount: s.amount,
               daysRemaining: 0,
               urgency: 'critical',
@@ -198,12 +262,12 @@ export class AppNotificationService {
             });
           } else if (currentDay < startWindow) {
             const daysToWindow = startWindow - currentDay;
-            if (daysToWindow <= 10) {
+            if (daysToWindow <= 3) {
               items.push({
                 id: notifId,
                 type: 'salary',
                 title: `🗓️ ${s.title} Countdown`,
-                message: `${daysToWindow} days until the 5th–10th monthly deposit cycle begins. Planned: ৳${s.amount.toLocaleString('en-IN')}.`,
+                message: `${daysToWindow} days until deposit cycle begins. Planned: ৳${s.amount.toLocaleString('en-IN')}.`,
                 amount: s.amount,
                 daysRemaining: daysToWindow,
                 urgency: 'normal',
@@ -212,19 +276,21 @@ export class AppNotificationService {
               });
             }
           } else {
-            // Past 10th of the month and not yet deposited
+            // Past end window and not yet deposited - only alert for up to 7 days
             const daysOverdue = currentDay - endWindow;
-            items.push({
-              id: notifId,
-              type: 'salary',
-              title: `⚠️ ${s.title} (Pending Deposit)`,
-              message: `Monthly cycle (5th–10th) elapsed ${daysOverdue} days ago. Confirm deposit of ৳${s.amount.toLocaleString('en-IN')}.`,
-              amount: s.amount,
-              daysRemaining: -daysOverdue,
-              urgency: 'warning',
-              scheduleId: s.id,
-              targetAccount: s.linkedAccount || (isSalary ? 'Bank' : 'Cash in Hand'),
-            });
+            if (daysOverdue <= 7) {
+              items.push({
+                id: notifId,
+                type: 'salary',
+                title: `⚠️ ${s.title} (Pending Deposit)`,
+                message: `Monthly cycle elapsed ${daysOverdue} days ago. Confirm deposit of ৳${s.amount.toLocaleString('en-IN')}.`,
+                amount: s.amount,
+                daysRemaining: -daysOverdue,
+                urgency: 'warning',
+                scheduleId: s.id,
+                targetAccount: s.linkedAccount || (isSalary ? 'Bank' : 'Cash in Hand'),
+              });
+            }
           }
         } else if (s.flowType === 'expense') {
           // Bills & Recurring Outflows
@@ -236,8 +302,8 @@ export class AppNotificationService {
           const dueDay = s.dueDay || 1;
           const diff = dueDay - currentDay;
 
-          if (diff < 0) {
-            // Overdue
+          if (diff < 0 && diff >= -7) {
+            // Overdue within 7 days
             items.push({
               id: notifId,
               type: 'bill',
@@ -262,8 +328,8 @@ export class AppNotificationService {
               scheduleId: s.id,
               targetAccount: s.linkedAccount || 'Linked Account',
             });
-          } else if (diff <= 5) {
-            // Approaching within 5 days
+          } else if (diff > 0 && diff <= 3) {
+            // Approaching within 3 days
             items.push({
               id: notifId,
               type: 'bill',

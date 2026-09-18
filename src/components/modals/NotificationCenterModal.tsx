@@ -83,14 +83,30 @@ export const NotificationCenterModal: React.FC<NotificationCenterModalProps> = (
     SoundService.playDepositSuccessSound();
   };
 
-  const handleDepositSanchaypatraCoupon = (couponId: string) => {
-    const result = SanchaypatraEarningsService.confirmAndDepositToSonaliBank(couponId);
-    if (result.success) {
+  const handleDepositSanchaypatraCoupon = (couponId: string, couponIds?: string[]) => {
+    const ids = couponIds && couponIds.length > 0 ? couponIds : [couponId];
+    let count = 0;
+    let lastMsg = '';
+
+    for (const cid of ids) {
+      const result = SanchaypatraEarningsService.confirmAndDepositToSonaliBank(cid);
+      if (result.success) {
+        count++;
+        lastMsg = result.message;
+      }
+    }
+
+    if (count > 0) {
       SoundService.playDepositSuccessSound();
-      Alert.alert('✅ Deposit Confirmed', result.message);
+      Alert.alert(
+        '✅ Deposit Confirmed',
+        ids.length > 1
+          ? `${count} Sanchaypatra coupon profits successfully credited to Sonali Bank PLC!`
+          : lastMsg
+      );
       loadNotifications();
     } else {
-      Alert.alert('Notice', result.message);
+      Alert.alert('Notice', 'Coupon already confirmed or could not be deposited.');
     }
   };
 
@@ -160,13 +176,19 @@ export const NotificationCenterModal: React.FC<NotificationCenterModalProps> = (
     );
   };
 
-  const handleMarkCouponRead = (couponId: string) => {
-    AppNotificationService.dismissNotification(`notif_sp_${couponId}`, couponId);
+  const handleMarkCouponRead = (couponId: string, couponIds?: string[]) => {
+    if (couponIds && couponIds.length > 0) {
+      for (const cid of couponIds) {
+        AppNotificationService.dismissNotification(`notif_sp_${cid}`, cid);
+      }
+    } else {
+      AppNotificationService.dismissNotification(`notif_sp_${couponId}`, couponId);
+    }
     loadNotifications();
   };
 
   const handleDismissNotification = (notif: AppNotificationItem) => {
-    AppNotificationService.dismissNotification(notif.id, notif.couponId);
+    AppNotificationService.dismissNotification(notif.id, notif.couponId, notif.couponIds);
     loadNotifications();
   };
 
@@ -319,7 +341,7 @@ export const NotificationCenterModal: React.FC<NotificationCenterModalProps> = (
                         {notif.couponId && (
                           <TouchableOpacity
                             style={styles.depositActionBtn}
-                            onPress={() => handleDepositSanchaypatraCoupon(notif.couponId!)}
+                            onPress={() => handleDepositSanchaypatraCoupon(notif.couponId!, notif.couponIds)}
                             activeOpacity={0.8}
                           >
                             <Ionicons name="checkmark-circle" size={14} color="#FFFFFF" />
@@ -330,7 +352,7 @@ export const NotificationCenterModal: React.FC<NotificationCenterModalProps> = (
                         {notif.couponId && (
                           <TouchableOpacity
                             style={styles.markReadOutlineBtn}
-                            onPress={() => handleMarkCouponRead(notif.couponId!)}
+                            onPress={() => handleMarkCouponRead(notif.couponId!, notif.couponIds)}
                             activeOpacity={0.8}
                           >
                             <Ionicons name="checkmark-done" size={13} color="#475569" />

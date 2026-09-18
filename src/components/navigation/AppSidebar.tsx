@@ -51,6 +51,7 @@ interface AppSidebarProps {
   };
   isOnline?: boolean;
   pendingNotifCount?: number;
+  onOpenVoiceInput?: () => void;
 }
 
 export const AppSidebar: React.FC<AppSidebarProps> = ({
@@ -72,6 +73,7 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
   userProfile = { id: 'rashed01', name: 'Rashed Zaman', avatar: '👨‍💼' },
   isOnline = true,
   pendingNotifCount = 0,
+  onOpenVoiceInput,
 }) => {
   const [hoveredItem, setHoveredItem] = useState<string | null>(null);
   const [bankingExpanded, setBankingExpanded] = useState(true);
@@ -157,16 +159,34 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
         </View>
       )}
 
-      {/* 3. New Transaction Quick Action */}
+      {/* 3. New Transaction & Voice Data Input Quick Action */}
       <View style={styles.quickEntryWrapper}>
-        <TouchableOpacity
-          style={[styles.quickEntryBtn, isCollapsed && styles.quickEntryBtnCollapsed]}
-          onPress={onQuickEntryPress}
-          activeOpacity={0.85}
-        >
-          <Ionicons name="add-circle" size={17} color="#FFFFFF" />
-          {!isCollapsed && <Text style={styles.quickEntryText}>+ New Transaction</Text>}
-        </TouchableOpacity>
+        <View style={{ flexDirection: 'row', gap: 6, width: '100%' }}>
+          <TouchableOpacity
+            style={[styles.quickEntryBtn, { flex: 1 }, isCollapsed && styles.quickEntryBtnCollapsed]}
+            onPress={onQuickEntryPress}
+            activeOpacity={0.85}
+          >
+            <Ionicons name="add-circle" size={17} color="#FFFFFF" />
+            {!isCollapsed && <Text style={styles.quickEntryText}>+ New Entry</Text>}
+          </TouchableOpacity>
+
+          {onOpenVoiceInput && (
+            <TouchableOpacity
+              style={[
+                styles.voiceQuickBtn,
+                isCollapsed && styles.voiceQuickBtnCollapsed,
+              ]}
+              onPress={onOpenVoiceInput}
+              activeOpacity={0.85}
+              // @ts-ignore
+              title="Voice Data Input"
+            >
+              <Ionicons name="mic" size={17} color="#FFFFFF" />
+              {!isCollapsed && <Text style={styles.voiceQuickText}>Voice</Text>}
+            </TouchableOpacity>
+          )}
+        </View>
       </View>
 
       {/* 4. Scrollable Navigation (No horizontal scroll, strictly vertical) */}
@@ -613,6 +633,29 @@ const styles = StyleSheet.create({
   },
   quickEntryText: {
     fontSize: 14,
+    fontWeight: '800',
+    color: '#FFFFFF',
+  },
+  voiceQuickBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 4,
+    backgroundColor: '#8B5CF6',
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderRadius: Radius.md,
+    shadowColor: '#8B5CF6',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+  },
+  voiceQuickBtnCollapsed: {
+    paddingHorizontal: 8,
+    justifyContent: 'center',
+  },
+  voiceQuickText: {
+    fontSize: 13,
     fontWeight: '800',
     color: '#FFFFFF',
   },

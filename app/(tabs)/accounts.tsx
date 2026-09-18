@@ -22,6 +22,7 @@ import {
   CASH_IN_HAND_ID,
   subscribeToBalanceUpdates,
 } from '../../src/services/transactionManager';
+import { AccountRecoveryService } from '../../src/services/accountRecoveryService';
 import { UniversalEntryModal, EntryType } from '../../src/components/modals/UniversalEntryModal';
 import { AccountStatementView } from '../../src/components/accounts/AccountStatementView';
 
@@ -37,9 +38,15 @@ export const saveStoredBankAccounts = (list: BankAccountItem[]) => {
 
 export default function AccountsScreen() {
   const { user } = useAuth();
-  const [accounts, setAccounts] = useState<BankAccountItem[]>(() =>
-    TransactionManager.getAccountsWithCash()
-  );
+  const [accounts, setAccounts] = useState<BankAccountItem[]>(() => {
+    const raw = TransactionManager.getAccountsWithCash();
+    const total = raw.reduce((sum, a) => sum + (a.currentBalance || 0), 0);
+    if (raw.length <= 1 || total === 0) {
+      const recovered = AccountRecoveryService.recoverAccounts(false);
+      return recovered.accounts;
+    }
+    return raw;
+  });
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingAccount, setEditingAccount] = useState<BankAccountItem | null>(null);
   const [expandedStatementAccountId, setExpandedStatementAccountId] = useState<string | null>(null);
@@ -67,10 +74,18 @@ export default function AccountsScreen() {
   const [securityError, setSecurityError] = useState('');
 
   useEffect(() => {
-    setAccounts(getStoredBankAccounts());
-    const unsub = subscribeToBalanceUpdates(() => {
-      setAccounts(getStoredBankAccounts());
-    });
+    const checkAndLoad = () => {
+      const current = getStoredBankAccounts();
+      const total = current.reduce((sum, a) => sum + (a.currentBalance || 0), 0);
+      if (current.length <= 1 || total === 0) {
+        const recovered = AccountRecoveryService.recoverAccounts(false, user?.id || 'rashed01');
+        setAccounts(recovered.accounts);
+      } else {
+        setAccounts(current);
+      }
+    };
+    checkAndLoad();
+    const unsub = subscribeToBalanceUpdates(checkAndLoad);
 
     // Restore draft if user minimized app while filling
     const draft = FormDraftManager.loadDraft('account_form', {
@@ -286,6 +301,15 @@ export default function AccountsScreen() {
     setSecurityModalTarget(null);
   };
 
+  const handleRecoverAccounts = () => {
+    const res = AccountRecoveryService.recoverAccounts(true, user?.id || 'rashed01');
+    setAccounts(res.accounts);
+    Alert.alert(
+      res.success ? '🛡️ Vault Accounts Retrieved' : 'Vault Notice',
+      res.message
+    );
+  };
+
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       {/* Total Liquid Balance Hero Card */}
@@ -301,19 +325,30 @@ export default function AccountsScreen() {
             </Text>
           </View>
 
-          <TouchableOpacity
-            style={styles.addBtn}
-            onPress={() => {
-              if (showAddForm) resetForm();
-              else setShowAddForm(true);
-            }}
-            activeOpacity={0.85}
-          >
-            <Ionicons name={showAddForm ? 'close' : 'add-circle'} size={18} color="#FFFFFF" />
-            <Text style={styles.addBtnText}>
-              {showAddForm ? 'Cancel' : '+ Add Bank Account'}
-            </Text>
-          </TouchableOpacity>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+            <TouchableOpacity
+              style={[styles.addBtn, { backgroundColor: '#334155' }]}
+              onPress={handleRecoverAccounts}
+              activeOpacity={0.85}
+            >
+              <Ionicons name="shield-checkmark" size={16} color="#38BDF8" />
+              <Text style={styles.addBtnText}>🛡️ Recover Data</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.addBtn}
+              onPress={() => {
+                if (showAddForm) resetForm();
+                else setShowAddForm(true);
+              }}
+              activeOpacity={0.85}
+            >
+              <Ionicons name={showAddForm ? 'close' : 'add-circle'} size={18} color="#FFFFFF" />
+              <Text style={styles.addBtnText}>
+                {showAddForm ? 'Cancel' : '+ Add Bank Account'}
+              </Text>
+            </TouchableOpacity>
+          </View>
         </View>
       </GlassCard>
 

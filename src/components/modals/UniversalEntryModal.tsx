@@ -37,6 +37,7 @@ interface UniversalEntryModalProps {
   onClose: () => void;
   onSave: (type: EntryType, data: any) => void;
   onOpenCategorySetup?: () => void;
+  onOpenVoiceInput?: () => void;
 }
 
 export const UniversalEntryModal: React.FC<UniversalEntryModalProps> = ({
@@ -45,6 +46,7 @@ export const UniversalEntryModal: React.FC<UniversalEntryModalProps> = ({
   onClose,
   onSave,
   onOpenCategorySetup,
+  onOpenVoiceInput,
 }) => {
   const [selectedType, setSelectedType] = useState<EntryType>(initialType);
 
@@ -324,9 +326,25 @@ export const UniversalEntryModal: React.FC<UniversalEntryModalProps> = ({
               </View>
             </View>
 
-            <TouchableOpacity onPress={onClose} style={styles.closeBtn}>
-              <Ionicons name="close" size={18} color={Colors.textSecondary} />
-            </TouchableOpacity>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+              {onOpenVoiceInput && (
+                <TouchableOpacity
+                  onPress={() => {
+                    onClose();
+                    onOpenVoiceInput();
+                  }}
+                  style={styles.headerVoiceBtn}
+                  activeOpacity={0.8}
+                >
+                  <Ionicons name="mic" size={15} color="#FFFFFF" />
+                  <Text style={styles.headerVoiceBtnText}>Voice</Text>
+                </TouchableOpacity>
+              )}
+
+              <TouchableOpacity onPress={onClose} style={styles.closeBtn}>
+                <Ionicons name="close" size={18} color={Colors.textSecondary} />
+              </TouchableOpacity>
+            </View>
           </View>
 
           {/* Categorized Type Selector Tabs - Structured, no stretching */}
@@ -1377,6 +1395,20 @@ const styles = StyleSheet.create({
     color: '#0284C7',
     fontWeight: '600',
     marginTop: 1,
+  },
+  headerVoiceBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#8B5CF6',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: Radius.full,
+  },
+  headerVoiceBtnText: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: '#FFFFFF',
   },
   closeBtn: {
     padding: 8,
