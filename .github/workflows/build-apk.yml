@@ -51,8 +51,8 @@ jobs:
         uses: softprops/action-gh-release@v2
         if: success()
         with:
-          tag_name: v1.0.0
-          name: "Money-Honey Android Release v1.0.0"
+          tag_name: ${{ github.ref_name }}
+          name: "Money-Honey Android Release ${{ github.ref_name }}"
           body: "Official standalone release APK for Money-Honey Android mobile application. Direct installer for mobile devices."
           files: android/app/build/outputs/apk/release/*.apk
           token: ${{ secrets.GITHUB_TOKEN }}
