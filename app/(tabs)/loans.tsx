@@ -387,10 +387,10 @@ export default function LoansScreen() {
           <Ionicons
             name="card-outline"
             size={18}
-            color={activeScreenTab === 'my_loans' ? '#FFFFFF' : '#0284C7'}
+            color={activeScreenTab === 'my_loans' ? '#FFFFFF' : '#475569'}
           />
           <Text style={[styles.topTabText, activeScreenTab === 'my_loans' && styles.topTabTextActive]}>
-            📋 My Active Loans & Debts ({loans.length})
+            My Active Loans & Debts ({loans.length})
           </Text>
         </TouchableOpacity>
 
@@ -402,10 +402,10 @@ export default function LoansScreen() {
           <Ionicons
             name="git-compare-outline"
             size={18}
-            color={activeScreenTab === 'compare_loans' ? '#FFFFFF' : '#0284C7'}
+            color={activeScreenTab === 'compare_loans' ? '#FFFFFF' : '#475569'}
           />
           <Text style={[styles.topTabText, activeScreenTab === 'compare_loans' && styles.topTabTextActive]}>
-            ⚖️ Bank Loan Comparisons & EMI Simulator
+            Bank Loan Comparisons & EMI Simulator
           </Text>
         </TouchableOpacity>
       </View>
@@ -420,7 +420,7 @@ export default function LoansScreen() {
             <View style={styles.summaryRow}>
               <View>
                 <Text style={styles.summaryLabel}>TOTAL OUTSTANDING DEBT & LIABILITIES</Text>
-                <Text style={[styles.summaryAmount, { color: Colors.danger }]}>
+                <Text style={styles.summaryAmount}>
                   ৳ {totalOutstanding.toLocaleString('en-IN')}
                 </Text>
                 <Text style={styles.summarySub}>
@@ -429,7 +429,7 @@ export default function LoansScreen() {
               </View>
 
               <TouchableOpacity
-                style={[styles.addBtn, { backgroundColor: Colors.danger }]}
+                style={styles.addBtn}
                 onPress={() => {
                   if (showAddForm) resetForm();
                   else setShowAddForm(true);
@@ -626,7 +626,7 @@ export default function LoansScreen() {
                   <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
                     <Text style={styles.inputLabel}>MONTHLY EMI (৳) *</Text>
                     <TouchableOpacity onPress={() => setManualEmiOverride(!manualEmiOverride)}>
-                      <Text style={{ fontSize: 10, color: '#0284C7', fontWeight: '700' }}>
+                      <Text style={{ fontSize: 10, color: '#475569', fontWeight: '700' }}>
                         {manualEmiOverride ? 'Auto-Calc' : 'Manual'}
                       </Text>
                     </TouchableOpacity>
@@ -703,11 +703,11 @@ export default function LoansScreen() {
                 </TouchableOpacity>
 
                 <TouchableOpacity
-                  style={[styles.formActionBtn, { backgroundColor: '#DC2626', flex: 2 }]}
+                  style={[styles.formActionBtn, { backgroundColor: '#0F172A', flex: 2 }]}
                   onPress={handleSaveLoan}
                 >
                   <Text style={{ fontWeight: '800', color: '#FFFFFF' }}>
-                    {editingLoan ? '💾 Update Loan Details' : '✓ Save Actual Loan to Portfolio'}
+                    {editingLoan ? 'Update Loan Details' : 'Save Actual Loan to Portfolio'}
                   </Text>
                 </TouchableOpacity>
               </View>
@@ -730,19 +730,19 @@ export default function LoansScreen() {
               </Text>
               <View style={{ flexDirection: 'row', gap: 12, marginTop: 16 }}>
                 <TouchableOpacity
-                  style={[styles.addBtn, { backgroundColor: '#DC2626' }]}
+                  style={styles.addBtn}
                   onPress={() => setShowAddForm(true)}
                 >
-                  <Ionicons name="add-circle" size={18} color="#FFF" />
+                  <Ionicons name="add" size={18} color="#FFF" />
                   <Text style={styles.addBtnText}>+ Add Actual Loan</Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity
-                  style={[styles.addBtn, { backgroundColor: '#0284C7' }]}
+                  style={[styles.addBtn, { backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#E2E8F0' }]}
                   onPress={() => setActiveScreenTab('compare_loans')}
                 >
-                  <Ionicons name="git-compare-outline" size={18} color="#FFF" />
-                  <Text style={styles.addBtnText}>Compare Bank Loans</Text>
+                  <Ionicons name="git-compare-outline" size={18} color="#475569" />
+                  <Text style={[styles.addBtnText, { color: '#334155' }]}>Compare Bank Loans</Text>
                 </TouchableOpacity>
               </View>
             </GlassCard>
@@ -775,7 +775,7 @@ export default function LoansScreen() {
                       </View>
                       <View style={{ flexDirection: 'row', gap: 8 }}>
                         <TouchableOpacity style={styles.iconBtn} onPress={() => handleOpenEdit(loan)}>
-                          <Ionicons name="pencil" size={15} color="#0284C7" />
+                          <Ionicons name="pencil" size={15} color="#475569" />
                         </TouchableOpacity>
                         <TouchableOpacity style={styles.iconBtn} onPress={() => handleDeleteLoan(loan.id)}>
                           <Ionicons name="trash-outline" size={15} color="#EF4444" />
@@ -838,11 +838,11 @@ export default function LoansScreen() {
       {activeScreenTab === 'compare_loans' && (
         <View style={{ gap: Spacing.md }}>
           {/* Comparison Control Panel */}
-          <GlassCard style={{ width: '100%' }} padding={20} glowColor="#0284C7">
+          <GlassCard style={{ width: '100%' }} padding={20}>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 10 }}>
               <View>
                 <Text style={{ fontSize: 18, fontWeight: '900', color: '#0F172A' }}>
-                  ⚖️ BANGLADESH BANK LOAN COMPARISON ENGINE
+                  BANGLADESH BANK LOAN COMPARISON ENGINE
                 </Text>
                 <Text style={{ fontSize: 13, color: '#64748B', marginTop: 2 }}>
                   Compare monthly EMIs, total interest, and effective costs across leading Bangladesh banks
@@ -1003,7 +1003,7 @@ export default function LoansScreen() {
                 onChangeText={setCustomBankRate}
               />
               <TouchableOpacity
-                style={[styles.addBtn, { backgroundColor: '#16A34A', paddingHorizontal: 16 }]}
+                style={[styles.addBtn, { backgroundColor: '#0F172A', paddingHorizontal: 16 }]}
                 onPress={handleAddCustomOffer}
               >
                 <Text style={styles.addBtnText}>+ Add to Comparison</Text>
@@ -1015,9 +1015,9 @@ export default function LoansScreen() {
           <GlassCard style={{ width: '100%' }} padding={18}>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
               <Text style={{ fontSize: 14, fontWeight: '900', color: '#0F172A' }}>
-                📅 12-MONTH AMORTIZATION PREVIEW FOR {activeOfferData.bankName.toUpperCase()}
+                12-MONTH AMORTIZATION PREVIEW FOR {activeOfferData.bankName.toUpperCase()}
               </Text>
-              <Text style={{ fontSize: 12, fontWeight: '700', color: '#0284C7' }}>
+              <Text style={{ fontSize: 12, fontWeight: '700', color: '#475569' }}>
                 Rate: {activeOfferData.ratePercent}% • Principal: ৳ {cmpP.toLocaleString('en-IN')}
               </Text>
             </View>
@@ -1082,20 +1082,21 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     borderRadius: Radius.full,
     backgroundColor: '#FFFFFF',
-    borderWidth: 1.5,
-    borderColor: '#BAE6FD',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
   },
   topTabBtnActive: {
-    backgroundColor: '#0284C7',
-    borderColor: '#0284C7',
+    backgroundColor: '#0F172A',
+    borderColor: '#0F172A',
   },
   topTabText: {
     fontSize: 13,
-    fontWeight: '800',
-    color: '#0284C7',
+    fontWeight: '700',
+    color: '#475569',
   },
   topTabTextActive: {
     color: '#FFFFFF',
+    fontWeight: '800',
   },
   summaryCard: {
     marginBottom: Spacing.md,
@@ -1111,7 +1112,7 @@ const styles = StyleSheet.create({
   summaryLabel: {
     fontSize: 12,
     fontWeight: '800',
-    color: '#EF4444',
+    color: '#DC2626',
     letterSpacing: 0.5,
   },
   summaryAmount: {
@@ -1129,6 +1130,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
+    backgroundColor: '#0F172A',
     paddingHorizontal: 16,
     paddingVertical: 10,
     borderRadius: Radius.full,
@@ -1219,8 +1221,8 @@ const styles = StyleSheet.create({
     borderColor: '#E2E8F0',
   },
   quickPillActive: {
-    backgroundColor: '#0284C7',
-    borderColor: '#0284C7',
+    backgroundColor: '#0F172A',
+    borderColor: '#0F172A',
   },
   quickPillText: {
     fontSize: 10,
@@ -1363,8 +1365,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#F0FDF4',
   },
   compareCardSelected: {
-    borderWidth: 2.5,
-    borderColor: '#0284C7',
+    borderWidth: 2,
+    borderColor: '#0F172A',
   },
   compareBankTitle: {
     fontSize: 14,
@@ -1393,7 +1395,7 @@ const styles = StyleSheet.create({
   compareRateText: {
     fontSize: 18,
     fontWeight: '900',
-    color: '#0284C7',
+    color: '#0F172A',
   },
   compareProcessingText: {
     fontSize: 11,

@@ -327,12 +327,12 @@ export default function AccountsScreen() {
 
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
             <TouchableOpacity
-              style={[styles.addBtn, { backgroundColor: '#334155' }]}
+              style={[styles.outlineBtn]}
               onPress={handleRecoverAccounts}
               activeOpacity={0.85}
             >
-              <Ionicons name="shield-checkmark" size={16} color="#38BDF8" />
-              <Text style={styles.addBtnText}>🛡️ Recover Data</Text>
+              <Ionicons name="shield-checkmark-outline" size={15} color="#475569" />
+              <Text style={styles.outlineBtnText}>Recover Data</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -343,7 +343,7 @@ export default function AccountsScreen() {
               }}
               activeOpacity={0.85}
             >
-              <Ionicons name={showAddForm ? 'close' : 'add-circle'} size={18} color="#FFFFFF" />
+              <Ionicons name={showAddForm ? 'close' : 'add'} size={18} color="#FFFFFF" />
               <Text style={styles.addBtnText}>
                 {showAddForm ? 'Cancel' : '+ Add Bank Account'}
               </Text>
@@ -355,51 +355,51 @@ export default function AccountsScreen() {
       {/* Quick Action Ribbon: Withdrawal, Transfer, Income, Expense */}
       <View style={styles.actionRibbon}>
         <TouchableOpacity
-          style={[styles.actionBtn, { backgroundColor: '#0284C7' }]}
+          style={styles.actionBtn}
           onPress={() => {
             setEntryModalType('withdrawal');
             setEntryModalVisible(true);
           }}
           activeOpacity={0.85}
         >
-          <Ionicons name="cash-outline" size={16} color="#FFFFFF" />
-          <Text style={styles.actionBtnText}>💸 Cash Withdrawal</Text>
+          <Ionicons name="cash-outline" size={16} color="#475569" />
+          <Text style={styles.actionBtnText}>Cash Withdrawal</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
-          style={[styles.actionBtn, { backgroundColor: '#8B5CF6' }]}
+          style={styles.actionBtn}
           onPress={() => {
             setEntryModalType('transfer');
             setEntryModalVisible(true);
           }}
           activeOpacity={0.85}
         >
-          <Ionicons name="swap-horizontal" size={16} color="#FFFFFF" />
-          <Text style={styles.actionBtnText}>🔁 Bank Transfer</Text>
+          <Ionicons name="swap-horizontal" size={16} color="#475569" />
+          <Text style={styles.actionBtnText}>Bank Transfer</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
-          style={[styles.actionBtn, { backgroundColor: '#16A34A' }]}
+          style={styles.actionBtn}
           onPress={() => {
             setEntryModalType('income');
             setEntryModalVisible(true);
           }}
           activeOpacity={0.85}
         >
-          <Ionicons name="wallet-outline" size={16} color="#FFFFFF" />
-          <Text style={styles.actionBtnText}>💰 Add Salary / Income</Text>
+          <Ionicons name="add-circle-outline" size={16} color="#16A34A" />
+          <Text style={styles.actionBtnText}>+ Add Income</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
-          style={[styles.actionBtn, { backgroundColor: '#EF4444' }]}
+          style={styles.actionBtn}
           onPress={() => {
             setEntryModalType('expense');
             setEntryModalVisible(true);
           }}
           activeOpacity={0.85}
         >
-          <Ionicons name="receipt-outline" size={16} color="#FFFFFF" />
-          <Text style={styles.actionBtnText}>🧾 Add Expense</Text>
+          <Ionicons name="remove-circle-outline" size={16} color="#DC2626" />
+          <Text style={styles.actionBtnText}>Record Expense</Text>
         </TouchableOpacity>
       </View>
 
@@ -704,7 +704,7 @@ export default function AccountsScreen() {
                     <Ionicons
                       name={expandedStatementAccountId === acc.id ? 'bar-chart' : 'analytics-outline'}
                       size={15}
-                      color={expandedStatementAccountId === acc.id ? '#FFFFFF' : '#0284C7'}
+                      color={expandedStatementAccountId === acc.id ? '#FFFFFF' : '#475569'}
                     />
                     <Text
                       style={[
@@ -714,13 +714,13 @@ export default function AccountsScreen() {
                     >
                       {expandedStatementAccountId === acc.id
                         ? 'Hide Cash Flow Graph & Statement'
-                        : '📊 Cash Flow Graph, Debits, Credits & Statement'}
+                        : 'Cash Flow Graph, Debits, Credits & Statement'}
                     </Text>
                   </View>
                   <Ionicons
                     name={expandedStatementAccountId === acc.id ? 'chevron-up' : 'chevron-down'}
                     size={16}
-                    color={expandedStatementAccountId === acc.id ? '#FFFFFF' : '#0284C7'}
+                    color={expandedStatementAccountId === acc.id ? '#FFFFFF' : '#475569'}
                   />
                 </TouchableOpacity>
 
@@ -857,7 +857,7 @@ const styles = StyleSheet.create({
   summaryLabel: {
     fontSize: 12,
     fontWeight: '800',
-    color: '#0284C7',
+    color: '#64748B',
     letterSpacing: 0.5,
   },
   summaryAmount: {
@@ -871,19 +871,35 @@ const styles = StyleSheet.create({
     color: '#64748B',
     marginTop: 2,
   },
+  outlineBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    paddingHorizontal: 14,
+    paddingVertical: 9,
+    borderRadius: Radius.full,
+  },
+  outlineBtnText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#475569',
+  },
   addBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    backgroundColor: '#16A34A',
+    backgroundColor: '#0F172A',
     paddingHorizontal: 18,
     paddingVertical: 10,
     borderRadius: Radius.full,
-    shadowColor: '#16A34A',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 6,
-    elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 2,
   },
   addBtnText: {
     fontSize: 14,
@@ -901,18 +917,21 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 6,
     paddingHorizontal: 14,
-    paddingVertical: 10,
-    borderRadius: Radius.md,
+    paddingVertical: 9,
+    borderRadius: Radius.full,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
-    elevation: 2,
+    shadowOpacity: 0.04,
+    shadowRadius: 2,
+    elevation: 1,
   },
   actionBtnText: {
-    fontSize: 13,
-    fontWeight: '800',
-    color: '#FFFFFF',
+    fontSize: 12.5,
+    fontWeight: '700',
+    color: '#334155',
   },
   formCard: {
     marginBottom: Spacing.md,
@@ -926,7 +945,7 @@ const styles = StyleSheet.create({
   inputLabel: {
     fontSize: 11,
     fontWeight: '800',
-    color: '#0284C7',
+    color: '#475569',
     marginTop: Spacing.xs,
     marginBottom: 4,
     letterSpacing: 0.5,
@@ -958,26 +977,26 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 6,
     borderRadius: Radius.full,
-    backgroundColor: '#F0F9FF',
+    backgroundColor: '#F8FAFC',
     borderWidth: 1,
-    borderColor: '#BAE6FD',
+    borderColor: '#E2E8F0',
   },
   typeOptionActive: {
-    backgroundColor: '#0284C7',
-    borderColor: '#0284C7',
+    backgroundColor: '#0F172A',
+    borderColor: '#0F172A',
   },
   typeOptionText: {
     fontSize: 12,
     fontWeight: '700',
-    color: '#334155',
+    color: '#475569',
   },
   typeOptionTextActive: {
     color: '#FFFFFF',
   },
   securityBox: {
-    backgroundColor: '#F0FDF4',
-    borderWidth: 1.5,
-    borderColor: '#BBF7D0',
+    backgroundColor: '#F8FAFC',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
     borderRadius: Radius.md,
     padding: 14,
     marginTop: Spacing.md,
@@ -985,7 +1004,7 @@ const styles = StyleSheet.create({
   securityBoxTitle: {
     fontSize: 12,
     fontWeight: '800',
-    color: '#16A34A',
+    color: '#0F172A',
     letterSpacing: 0.5,
   },
   submitBtn: {
@@ -993,7 +1012,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    backgroundColor: '#16A34A',
+    backgroundColor: '#0F172A',
     paddingVertical: 14,
     borderRadius: Radius.md,
     marginTop: Spacing.lg,
@@ -1006,7 +1025,7 @@ const styles = StyleSheet.create({
   sectionHeading: {
     fontSize: 13,
     fontWeight: '800',
-    color: '#0369A1',
+    color: '#0F172A',
     letterSpacing: 0.5,
   },
   accList: {
@@ -1063,12 +1082,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 2,
     borderRadius: Radius.full,
-    backgroundColor: 'rgba(2, 132, 199, 0.12)',
+    backgroundColor: '#F1F5F9',
   },
   typeBadgeText: {
     fontSize: 11,
     fontWeight: '800',
-    color: '#0284C7',
+    color: '#475569',
   },
   balanceContainer: {
     marginTop: 12,
@@ -1096,17 +1115,17 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
   },
   lakhsBadge: {
-    backgroundColor: '#E0F2FE',
+    backgroundColor: '#F1F5F9',
     paddingHorizontal: 8,
     paddingVertical: 2,
     borderRadius: 6,
     borderWidth: 1,
-    borderColor: '#BAE6FD',
+    borderColor: '#E2E8F0',
   },
   lakhsBadgeText: {
     fontSize: 12,
     fontWeight: '800',
-    color: '#0284C7',
+    color: '#475569',
   },
   balLabel: {
     fontSize: 11,
@@ -1173,7 +1192,7 @@ const styles = StyleSheet.create({
   viewCredBtnText: {
     fontSize: 12,
     fontWeight: '700',
-    color: '#0284C7',
+    color: '#0F172A',
     textDecorationLine: 'underline',
   },
   secModalOverlay: {
@@ -1229,11 +1248,11 @@ const styles = StyleSheet.create({
     width: 68,
     height: 68,
     borderRadius: 34,
-    backgroundColor: '#E0F2FE',
+    backgroundColor: '#F1F5F9',
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 2,
-    borderColor: '#BAE6FD',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
   },
   secErrorBanner: {
     flexDirection: 'row',
@@ -1259,15 +1278,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 10,
-    backgroundColor: '#16A34A',
+    backgroundColor: '#0F172A',
     width: '100%',
     paddingVertical: 14,
     borderRadius: Radius.md,
-    shadowColor: '#16A34A',
+    shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 6,
-    elevation: 3,
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
   },
   biometricPromptBtnText: {
     color: '#FFFFFF',
@@ -1302,7 +1321,7 @@ const styles = StyleSheet.create({
   quickOwnerBypassText: {
     fontSize: 12,
     fontWeight: '700',
-    color: '#0284C7',
+    color: '#0F172A',
     textDecorationLine: 'underline',
   },
   modalBtn: {
@@ -1315,22 +1334,22 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: '#F0F9FF',
+    backgroundColor: '#F8FAFC',
     paddingHorizontal: 12,
     paddingVertical: 10,
     borderRadius: Radius.md,
     marginTop: 12,
     borderWidth: 1,
-    borderColor: '#BAE6FD',
+    borderColor: '#E2E8F0',
   },
   statementToggleBtnActive: {
-    backgroundColor: '#0284C7',
-    borderColor: '#0284C7',
+    backgroundColor: '#0F172A',
+    borderColor: '#0F172A',
   },
   statementToggleText: {
     fontSize: 12,
     fontWeight: '700',
-    color: '#0284C7',
+    color: '#334155',
   },
   statementToggleTextActive: {
     color: '#FFFFFF',

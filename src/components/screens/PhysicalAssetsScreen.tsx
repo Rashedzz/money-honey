@@ -94,7 +94,7 @@ export const PhysicalAssetsScreen: React.FC<PhysicalAssetsScreenProps> = ({
       {/* Asset List Cards */}
       {filteredAssets.length === 0 ? (
         <GlassCard style={{ alignItems: 'center', padding: 32 }} padding={32}>
-          <Ionicons name="business-outline" size={44} color="#0284C7" />
+          <Ionicons name="business-outline" size={44} color="#475569" />
           <Text style={{ fontSize: 17, fontWeight: '800', color: '#0F172A', marginTop: 10 }}>
             No Physical Assets Recorded Yet
           </Text>
@@ -125,18 +125,18 @@ export const PhysicalAssetsScreen: React.FC<PhysicalAssetsScreenProps> = ({
                     styles.statusPill,
                     {
                       backgroundColor: isIdle
-                        ? 'rgba(245, 158, 11, 0.15)'
-                        : 'rgba(0, 245, 160, 0.15)',
+                        ? '#FEF3C7'
+                        : '#DCFCE7',
                     },
                   ]}
                 >
                   <Text
                     style={[
                       styles.statusPillText,
-                      { color: isIdle ? Colors.accent : Colors.primary },
+                      { color: isIdle ? '#B45309' : '#15803D' },
                     ]}
                   >
-                    {isIdle ? '⚠️ IDLE ASSET' : '⚡ CASH ACTIVE'}
+                    {isIdle ? 'IDLE ASSET' : 'RENTAL ACTIVE'}
                   </Text>
                 </View>
               </View>
@@ -193,7 +193,7 @@ export const PhysicalAssetsScreen: React.FC<PhysicalAssetsScreenProps> = ({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#E0F2FE',
+    backgroundColor: '#F8FAFC',
   },
   content: {
     padding: Spacing.lg,
@@ -214,7 +214,7 @@ const styles = StyleSheet.create({
   summaryLabel: {
     fontSize: 12,
     fontWeight: '800',
-    color: '#0284C7',
+    color: '#475569',
     letterSpacing: 0.5,
   },
   summaryAmount: {
@@ -239,13 +239,13 @@ const styles = StyleSheet.create({
   yieldVal: {
     fontSize: 20,
     fontWeight: '900',
-    color: '#0284C7',
+    color: '#0F172A',
     marginTop: 2,
   },
   yieldSub: {
     fontSize: 12,
-    color: '#6366F1',
-    fontWeight: '600',
+    color: '#16A34A',
+    fontWeight: '700',
     marginTop: 2,
   },
   strip: {
@@ -288,17 +288,17 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     borderRadius: Radius.full,
     backgroundColor: '#FFFFFF',
-    borderWidth: 1.5,
-    borderColor: '#BAE6FD',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
   },
   filterBtnActive: {
-    backgroundColor: '#0284C7',
-    borderColor: '#0284C7',
+    backgroundColor: '#0F172A',
+    borderColor: '#0F172A',
   },
   filterBtnText: {
     fontSize: 14,
     fontWeight: '700',
-    color: '#334155',
+    color: '#475569',
   },
   filterBtnTextActive: {
     color: '#FFFFFF',
@@ -328,14 +328,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 5,
     borderRadius: Radius.sm,
-    backgroundColor: '#E0F2FE',
+    backgroundColor: '#F1F5F9',
     borderWidth: 1,
-    borderColor: '#BAE6FD',
+    borderColor: '#E2E8F0',
   },
   idText: {
     fontSize: 13,
     fontWeight: '800',
-    color: '#0284C7',
+    color: '#475569',
   },
   assetName: {
     fontSize: 17,

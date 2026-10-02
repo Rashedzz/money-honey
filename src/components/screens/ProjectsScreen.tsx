@@ -414,37 +414,37 @@ export const ProjectsScreen: React.FC<ProjectsScreenProps> = ({ onBackToDashboar
               </TouchableOpacity>
 
               <TouchableOpacity style={styles.iconActionBtn} onPress={handleExportPdf} activeOpacity={0.8}>
-                <Ionicons name="document-text-outline" size={16} color="#0284C7" />
+                <Ionicons name="document-text-outline" size={16} color="#475569" />
                 <Text style={styles.iconActionText}>PDF</Text>
               </TouchableOpacity>
 
               <TouchableOpacity style={styles.iconActionBtn} onPress={handleShare} activeOpacity={0.8}>
-                <Ionicons name="share-social-outline" size={16} color="#16A34A" />
+                <Ionicons name="share-social-outline" size={16} color="#475569" />
                 <Text style={styles.iconActionText}>Share</Text>
               </TouchableOpacity>
 
               <TouchableOpacity
-                style={[styles.primaryActionBtn, { backgroundColor: '#16A34A' }]}
+                style={[styles.iconActionBtn, { borderColor: '#BBF7D0', backgroundColor: '#F0FDF4' }]}
                 onPress={() => handleOpenAddTx('INCOME')}
                 activeOpacity={0.85}
               >
-                <Ionicons name="add-circle" size={17} color="#FFFFFF" />
-                <Text style={styles.primaryActionText}>+ Income</Text>
+                <Ionicons name="add" size={16} color="#16A34A" />
+                <Text style={[styles.iconActionText, { color: '#15803D', fontWeight: '800' }]}>+ Income</Text>
               </TouchableOpacity>
 
               <TouchableOpacity
-                style={[styles.primaryActionBtn, { backgroundColor: '#EF4444' }]}
+                style={[styles.iconActionBtn, { borderColor: '#FECACA', backgroundColor: '#FEF2F2' }]}
                 onPress={() => handleOpenAddTx('EXPENSE')}
                 activeOpacity={0.85}
               >
-                <Ionicons name="remove-circle" size={17} color="#FFFFFF" />
-                <Text style={styles.primaryActionText}>+ Expense</Text>
+                <Ionicons name="remove" size={16} color="#DC2626" />
+                <Text style={[styles.iconActionText, { color: '#DC2626', fontWeight: '800' }]}>+ Expense</Text>
               </TouchableOpacity>
             </>
           ) : (
             <TouchableOpacity style={styles.primaryActionBtn} onPress={handleOpenNewProject} activeOpacity={0.85}>
-              <Ionicons name="add-circle" size={17} color="#FFFFFF" />
-              <Text style={styles.primaryActionText}>+ New Project</Text>
+              <Ionicons name="add" size={16} color="#FFFFFF" />
+              <Text style={styles.primaryActionText}>New Project</Text>
             </TouchableOpacity>
           )}
         </View>
@@ -576,7 +576,7 @@ export const ProjectsScreen: React.FC<ProjectsScreenProps> = ({ onBackToDashboar
                                 styles.progressBarFill,
                                 {
                                   width: `${Math.min(100, spentPct)}%`,
-                                  backgroundColor: spentPct > 100 ? '#EF4444' : spentPct > 80 ? '#F59E0B' : '#0284C7',
+                                  backgroundColor: spentPct > 100 ? '#DC2626' : spentPct > 80 ? '#D97706' : '#0F172A',
                                 },
                               ]}
                             />
@@ -591,7 +591,7 @@ export const ProjectsScreen: React.FC<ProjectsScreenProps> = ({ onBackToDashboar
                         </Text>
                         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
                           <Text style={styles.openDetailText}>Open Details</Text>
-                          <Ionicons name="arrow-forward" size={13} color="#0284C7" />
+                          <Ionicons name="arrow-forward" size={13} color="#0F172A" />
                         </View>
                       </View>
                     </TouchableOpacity>
@@ -630,7 +630,7 @@ export const ProjectsScreen: React.FC<ProjectsScreenProps> = ({ onBackToDashboar
             <View style={styles.kpiDivider} />
 
             <View style={styles.detailKpiItem}>
-              <Text style={[styles.detailKpiLabel, { color: '#0284C7' }]}>NET PROFIT / ROI</Text>
+              <Text style={[styles.detailKpiLabel, { color: '#0F172A' }]}>NET PROFIT / ROI</Text>
               <Text style={[styles.detailKpiVal, { color: netProjectProfit >= 0 ? '#16A34A' : '#EF4444' }]}>
                 {netProjectProfit >= 0 ? '+' : '−'}৳ {Math.abs(netProjectProfit).toLocaleString('en-IN')}
               </Text>
@@ -903,7 +903,7 @@ export const ProjectsScreen: React.FC<ProjectsScreenProps> = ({ onBackToDashboar
                 <Text style={[styles.modalActionText, { color: '#475569' }]}>Cancel</Text>
               </TouchableOpacity>
               <TouchableOpacity
-                style={[styles.modalActionBtn, { backgroundColor: '#0284C7', flex: 1 }]}
+                style={[styles.modalActionBtn, { backgroundColor: '#0F172A', flex: 1 }]}
                 onPress={handleSaveProject}
               >
                 <Text style={[styles.modalActionText, { color: '#FFFFFF', fontWeight: '800' }]}>Save Project</Text>
@@ -1080,14 +1080,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 2,
     borderRadius: Radius.full,
-    backgroundColor: '#EFF6FF',
+    backgroundColor: '#F1F5F9',
     borderWidth: 1,
-    borderColor: '#BFDBFE',
+    borderColor: '#E2E8F0',
   },
   badgePillText: {
     fontSize: 10,
     fontWeight: '800',
-    color: '#0284C7',
+    color: '#475569',
   },
   headerRightActions: {
     flexDirection: 'row',
@@ -1116,9 +1116,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 5,
     paddingHorizontal: 14,
-    paddingVertical: 7,
+    paddingVertical: 7.5,
     borderRadius: Radius.full,
-    backgroundColor: '#0284C7',
+    backgroundColor: '#0F172A',
   },
   primaryActionText: {
     fontSize: 12,
@@ -1210,7 +1210,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    backgroundColor: '#0284C7',
+    backgroundColor: '#0F172A',
     paddingHorizontal: 16,
     paddingVertical: 10,
     borderRadius: Radius.full,
@@ -1250,7 +1250,7 @@ const styles = StyleSheet.create({
   projectCardCode: {
     fontSize: 10.5,
     fontWeight: '800',
-    color: '#0284C7',
+    color: '#475569',
     letterSpacing: 0.5,
   },
   projectCardTitle: {
@@ -1347,7 +1347,7 @@ const styles = StyleSheet.create({
   openDetailText: {
     fontSize: 11,
     fontWeight: '700',
-    color: '#0284C7',
+    color: '#0F172A',
   },
   detailContent: {
     gap: Spacing.md,
@@ -1417,7 +1417,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#F1F5F9',
   },
   presetBtnActive: {
-    backgroundColor: '#0284C7',
+    backgroundColor: '#0F172A',
   },
   presetBtnText: {
     fontSize: 11,
@@ -1598,8 +1598,8 @@ const styles = StyleSheet.create({
     borderColor: '#E2E8F0',
   },
   catPillActive: {
-    backgroundColor: '#0284C7',
-    borderColor: '#0284C7',
+    backgroundColor: '#0F172A',
+    borderColor: '#0F172A',
   },
   catPillText: {
     fontSize: 11,
@@ -1618,8 +1618,8 @@ const styles = StyleSheet.create({
     borderColor: '#E2E8F0',
   },
   accountPillActive: {
-    backgroundColor: '#0284C7',
-    borderColor: '#0284C7',
+    backgroundColor: '#0F172A',
+    borderColor: '#0F172A',
   },
   accountPillText: {
     fontSize: 11,

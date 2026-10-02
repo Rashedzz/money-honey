@@ -154,8 +154,14 @@ export const IncomeExpenseDetailsScreen: React.FC<IncomeExpenseDetailsScreenProp
     return TransactionManager.getStoredIncomes();
   }, [refreshKey]);
 
+  const rawTransfers = useMemo(() => {
+    const _ = refreshKey;
+    return TransactionManager.getStoredTransfers();
+  }, [refreshKey]);
+
   // 3. Mathematical Opening Balances as of startDate
-  // OpeningBalance = CurrentBalance - (Sum of Incomes on or after startDate) + (Sum of Expenses on or after startDate)
+  // OpeningBalance = CurrentBalance - (Sum of Inflows >= startDate) + (Sum of Outflows >= startDate)
+  // Non-negative constraint: Cash in Hand and deposit accounts can never have a negative opening balance
   const openingBalances = useMemo(() => {
     const balances: Record<string, number> = {};
 
@@ -178,11 +184,22 @@ export const IncomeExpenseDetailsScreen: React.FC<IncomeExpenseDetailsScreenProp
         }
       });
 
-      balances[acc.id] = bal;
+      // Account for transfers & cash withdrawals on or after startDate
+      rawTransfers.forEach((trf) => {
+        if (trf.toAccountId === acc.id && trf.date >= startDate) {
+          bal -= (trf.amount || 0);
+        }
+        if (trf.fromAccountId === acc.id && trf.date >= startDate) {
+          bal += (trf.amount || 0) + (trf.fee || 0);
+        }
+      });
+
+      // Financial accuracy rule: Physical cash and deposit accounts cannot have negative opening balance
+      balances[acc.id] = Math.max(0, bal);
     });
 
     return balances;
-  }, [accounts, rawIncomes, rawExpenses, startDate]);
+  }, [accounts, rawIncomes, rawExpenses, rawTransfers, startDate]);
 
   const totalOpeningBalance = useMemo(() => {
     return Object.values(openingBalances).reduce((sum, b) => sum + b, 0);
@@ -409,15 +426,15 @@ export const IncomeExpenseDetailsScreen: React.FC<IncomeExpenseDetailsScreenProp
                 border-radius: 4px;
               }
               .cashbook-scroll-container::-webkit-scrollbar-thumb {
-                background: #0284C7;
+                background: #94A3B8;
                 border-radius: 4px;
               }
               .cashbook-scroll-container::-webkit-scrollbar-thumb:hover {
-                background: #0369A1;
+                background: #64748B;
               }
               .cashbook-scroll-container {
                 scrollbar-width: thin;
-                scrollbar-color: #0284C7 #F1F5F9;
+                scrollbar-color: #94A3B8 #F1F5F9;
               }
             `
           }} />
@@ -445,7 +462,7 @@ export const IncomeExpenseDetailsScreen: React.FC<IncomeExpenseDetailsScreenProp
 
         <View style={styles.headerRightActions}>
           <TouchableOpacity style={styles.iconActionBtn} onPress={handleExportCsv} activeOpacity={0.8}>
-            <Ionicons name="download-outline" size={16} color="#0284C7" />
+            <Ionicons name="download-outline" size={16} color="#475569" />
             <Text style={styles.iconActionText}>CSV Export</Text>
           </TouchableOpacity>
 
@@ -555,8 +572,8 @@ export const IncomeExpenseDetailsScreen: React.FC<IncomeExpenseDetailsScreenProp
             onPress={() => setShowEmptyDays(!showEmptyDays)}
             activeOpacity={0.8}
           >
-            <Ionicons name={showEmptyDays ? 'checkbox' : 'square-outline'} size={15} color={showEmptyDays ? '#0284C7' : '#64748B'} />
-            <Text style={[styles.emptyDaysText, showEmptyDays && { color: '#0284C7' }]}>Show All Days</Text>
+            <Ionicons name={showEmptyDays ? 'checkbox' : 'square-outline'} size={15} color={showEmptyDays ? '#0F172A' : '#64748B'} />
+            <Text style={[styles.emptyDaysText, showEmptyDays && { color: '#0F172A' }]}>Show All Days</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -580,16 +597,16 @@ export const IncomeExpenseDetailsScreen: React.FC<IncomeExpenseDetailsScreenProp
         <View style={styles.execDivider} />
 
         <View style={styles.execStat}>
-          <Text style={[styles.execLabel, { color: '#EF4444' }]}>TOTAL EXPENSES (−)</Text>
-          <Text style={[styles.execVal, { color: '#EF4444' }]}>−৳ {grandTotalExpenses.toLocaleString('en-IN')}</Text>
+          <Text style={[styles.execLabel, { color: '#DC2626' }]}>TOTAL EXPENSES (−)</Text>
+          <Text style={[styles.execVal, { color: '#DC2626' }]}>−৳ {grandTotalExpenses.toLocaleString('en-IN')}</Text>
           <Text style={styles.execSub}>{dailyMovements.reduce((c, m) => c + m.expenseItems.length, 0)} Transactions</Text>
         </View>
 
         <View style={styles.execDivider} />
 
         <View style={styles.execStat}>
-          <Text style={[styles.execLabel, { color: '#0284C7' }]}>TOTAL CLOSING BALANCE</Text>
-          <Text style={[styles.execVal, { color: '#0284C7' }]}>৳ {totalClosingBalance.toLocaleString('en-IN')}</Text>
+          <Text style={[styles.execLabel, { color: '#0F172A' }]}>TOTAL CLOSING BALANCE</Text>
+          <Text style={[styles.execVal, { color: '#0F172A' }]}>৳ {totalClosingBalance.toLocaleString('en-IN')}</Text>
           <Text style={styles.execSub}>Net: {grandTotalIncomes >= grandTotalExpenses ? '+' : '−'}৳ {Math.abs(grandTotalIncomes - grandTotalExpenses).toLocaleString('en-IN')}</Text>
         </View>
       </View>
@@ -599,7 +616,7 @@ export const IncomeExpenseDetailsScreen: React.FC<IncomeExpenseDetailsScreenProp
         <View style={styles.tableCard}>
           {isMobile && (
             <View style={styles.mobileHintBar}>
-              <Ionicons name="swap-horizontal" size={14} color="#0284C7" />
+              <Ionicons name="swap-horizontal" size={14} color="#475569" />
               <Text style={styles.mobileHintText}>
                 Swipe horizontally to view all bank columns & totals
               </Text>
@@ -851,13 +868,13 @@ export const IncomeExpenseDetailsScreen: React.FC<IncomeExpenseDetailsScreenProp
                   <>
                     {accounts.map((acc) => (
                       <View key={`close_inc_${acc.id}`} style={styles.dataCol}>
-                        <Text style={[styles.closingValText, { color: '#0284C7' }]}>
+                        <Text style={[styles.closingValText, { color: '#0F172A' }]}>
                           ৳ {(closingBalances[acc.id] || 0).toLocaleString('en-IN')}
                         </Text>
                       </View>
                     ))}
-                    <View style={[styles.dataCol, styles.totalCol, { backgroundColor: '#E0F2FE' }]}>
-                      <Text style={[styles.closingValText, { color: '#0369A1', fontWeight: '900' }]}>
+                    <View style={[styles.dataCol, styles.totalCol, { backgroundColor: '#F1F5F9' }]}>
+                      <Text style={[styles.closingValText, { color: '#0F172A', fontWeight: '900' }]}>
                         ৳ {totalClosingBalance.toLocaleString('en-IN')}
                       </Text>
                     </View>
@@ -869,13 +886,13 @@ export const IncomeExpenseDetailsScreen: React.FC<IncomeExpenseDetailsScreenProp
                   <>
                     {accounts.map((acc) => (
                       <View key={`close_exp_${acc.id}`} style={styles.dataCol}>
-                        <Text style={[styles.closingValText, { color: '#64748B' }]}>
+                        <Text style={[styles.closingValText, { color: '#475569' }]}>
                           ৳ {(closingBalances[acc.id] || 0).toLocaleString('en-IN')}
                         </Text>
                       </View>
                     ))}
-                    <View style={[styles.dataCol, styles.totalCol, { backgroundColor: '#E0F2FE' }]}>
-                      <Text style={[styles.closingValText, { color: '#0369A1', fontWeight: '900' }]}>
+                    <View style={[styles.dataCol, styles.totalCol, { backgroundColor: '#F1F5F9' }]}>
+                      <Text style={[styles.closingValText, { color: '#0F172A', fontWeight: '900' }]}>
                         ৳ {totalClosingBalance.toLocaleString('en-IN')}
                       </Text>
                     </View>
@@ -1099,14 +1116,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 2,
     borderRadius: Radius.full,
-    backgroundColor: '#EFF6FF',
+    backgroundColor: '#F1F5F9',
     borderWidth: 1,
-    borderColor: '#BFDBFE',
+    borderColor: '#E2E8F0',
   },
   badgePillText: {
     fontSize: 10,
     fontWeight: '800',
-    color: '#0284C7',
+    color: '#475569',
   },
   headerRightActions: {
     flexDirection: 'row',
@@ -1135,9 +1152,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 5,
     paddingHorizontal: 14,
-    paddingVertical: 7,
+    paddingVertical: 7.5,
     borderRadius: Radius.full,
-    backgroundColor: '#0284C7',
+    backgroundColor: '#0F172A',
   },
   primaryActionText: {
     fontSize: 12,
@@ -1173,8 +1190,8 @@ const styles = StyleSheet.create({
     borderColor: '#E2E8F0',
   },
   presetBtnActive: {
-    backgroundColor: '#0284C7',
-    borderColor: '#0284C7',
+    backgroundColor: '#0F172A',
+    borderColor: '#0F172A',
   },
   presetBtnText: {
     fontSize: 11.5,
@@ -1445,12 +1462,12 @@ const styles = StyleSheet.create({
   closingLabelText: {
     fontSize: 11,
     fontWeight: '900',
-    color: '#0369A1',
+    color: '#0F172A',
     letterSpacing: 0.5,
   },
   closingSubLabel: {
     fontSize: 10,
-    color: '#0284C7',
+    color: '#64748B',
   },
   closingValText: {
     fontSize: 13,
@@ -1563,14 +1580,14 @@ const styles = StyleSheet.create({
     gap: 6,
     paddingHorizontal: 12,
     paddingVertical: 7,
-    backgroundColor: '#F0F9FF',
+    backgroundColor: '#F8FAFC',
     borderBottomWidth: 1,
-    borderBottomColor: '#BAE6FD',
+    borderBottomColor: '#E2E8F0',
   },
   mobileHintText: {
     fontSize: 11,
     fontWeight: '700',
-    color: '#0284C7',
+    color: '#475569',
   },
   dateColSuperHeader: {
     width: 130,

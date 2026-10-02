@@ -709,7 +709,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    backgroundColor: '#0284C7',
+    backgroundColor: '#0F172A',
     paddingHorizontal: 14,
     paddingVertical: 10,
     borderRadius: Radius.md,
@@ -785,7 +785,7 @@ const styles = StyleSheet.create({
     borderRadius: Radius.sm,
   },
   tabSwitchBtnActive: {
-    backgroundColor: '#0284C7',
+    backgroundColor: '#0F172A',
   },
   tabSwitchText: {
     fontSize: 13,
@@ -826,21 +826,21 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    backgroundColor: 'rgba(56, 189, 248, 0.15)',
+    backgroundColor: '#1E293B',
     paddingHorizontal: 12,
     paddingVertical: 9,
     borderRadius: Radius.md,
     borderWidth: 1,
-    borderColor: '#38BDF8',
+    borderColor: 'rgba(255,255,255,0.08)',
   },
   filterChipActive: {
-    backgroundColor: '#0284C7',
-    borderColor: '#0284C7',
+    backgroundColor: '#0F172A',
+    borderColor: '#475569',
   },
   filterChipText: {
     fontSize: 12,
     fontWeight: '700',
-    color: '#38BDF8',
+    color: '#94A3B8',
   },
   filterChipTextActive: {
     color: '#FFFFFF',
@@ -1006,7 +1006,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   modalTypeBtnActive: {
-    backgroundColor: '#0284C7',
+    backgroundColor: '#0F172A',
   },
   modalTypeText: {
     fontSize: 11,
@@ -1040,9 +1040,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   iconPickCellActive: {
-    backgroundColor: '#0284C7',
+    backgroundColor: '#0F172A',
     borderWidth: 2,
-    borderColor: '#38BDF8',
+    borderColor: '#475569',
   },
   colorGrid: {
     flexDirection: 'row',
@@ -1094,7 +1094,7 @@ const styles = StyleSheet.create({
     borderRadius: Radius.sm,
   },
   modalSaveBtn: {
-    backgroundColor: '#0284C7',
+    backgroundColor: '#0F172A',
     paddingHorizontal: 20,
     paddingVertical: 10,
     borderRadius: Radius.sm,

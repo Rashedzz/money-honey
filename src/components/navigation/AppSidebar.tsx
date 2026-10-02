@@ -94,13 +94,13 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
     badge?: string;
   }> = [
     { id: 'dashboard', label: 'Dashboard', icon: 'grid-outline' },
-    { id: 'register', label: 'Quicken Register', icon: 'receipt-outline', badge: 'Live' },
-    { id: 'income_expense_details', label: 'Incomes - Expenses', icon: 'swap-horizontal-outline', badge: 'Cash Book' },
-    { id: 'projects', label: 'Projects Ledger', icon: 'briefcase-outline', badge: 'P&L' },
+    { id: 'register', label: 'Checkbook Register', icon: 'receipt-outline' },
+    { id: 'income_expense_details', label: 'Incomes & Expenses', icon: 'swap-horizontal-outline' },
+    { id: 'projects', label: 'Projects Ledger', icon: 'briefcase-outline' },
     { id: 'expenses', label: 'Spending & Budgets', icon: 'pie-chart-outline' },
-    { id: 'reports', label: 'Financial Statements', icon: 'document-text-outline', badge: 'IFRS' },
+    { id: 'reports', label: 'Financial Statements', icon: 'document-text-outline' },
     { id: 'categories', label: 'Category & Budgets', icon: 'pricetags-outline' },
-    { id: 'stocks', label: 'Stock Equities', icon: 'trending-up-outline', badge: 'DSE' },
+    { id: 'stocks', label: 'Stock Equities', icon: 'trending-up-outline' },
     {
       id: 'schedules',
       label: 'Bills & Schedules',
@@ -117,21 +117,21 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
         <style dangerouslySetInnerHTML={{
           __html: `
             .sidebar-scrollbar-container::-webkit-scrollbar {
-              width: 6px;
+              width: 5px;
             }
             .sidebar-scrollbar-container::-webkit-scrollbar-track {
-              background: rgba(15, 23, 42, 0.4);
+              background: rgba(15, 23, 42, 0.3);
             }
             .sidebar-scrollbar-container::-webkit-scrollbar-thumb {
-              background: #0284C7;
+              background: #334155;
               border-radius: 4px;
             }
             .sidebar-scrollbar-container::-webkit-scrollbar-thumb:hover {
-              background: #38BDF8;
+              background: #475569;
             }
             .sidebar-scrollbar-container {
               scrollbar-width: thin;
-              scrollbar-color: #0284C7 rgba(15, 23, 42, 0.4);
+              scrollbar-color: #334155 rgba(15, 23, 42, 0.3);
             }
           `,
         }} />
@@ -141,14 +141,14 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
       <View style={[styles.brandHeader, isCollapsed && styles.brandHeaderCollapsed]}>
         {!isCollapsed ? (
           <View style={styles.brandRow}>
-            <DynamicMoneyTree size={36} />
+            <DynamicMoneyTree size={34} />
             <View style={styles.brandTextCol}>
               <Text style={styles.brandTitle} numberOfLines={1}>Money-Honey</Text>
-              <Text style={styles.brandTag} numberOfLines={1}>Quicken Deluxe Suite</Text>
+              <Text style={styles.brandTag} numberOfLines={1}>Personal Wealth Suite</Text>
             </View>
           </View>
         ) : (
-          <DynamicMoneyTree size={32} />
+          <DynamicMoneyTree size={30} />
         )}
 
         <TouchableOpacity
@@ -164,16 +164,10 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
         </TouchableOpacity>
       </View>
 
-      {/* 2. Quicken Net Worth Mini Card (Zero Horizontal Overflow) */}
+      {/* 2. Quicken Net Worth Mini Card */}
       {!isCollapsed && (
         <View style={styles.netWorthWidget}>
-          <View style={styles.netWorthHeader}>
-            <Text style={styles.netWorthLabel}>CONSOLIDATED NET WORTH</Text>
-            <View style={styles.liveIndicator}>
-              <View style={styles.liveDot} />
-              <Text style={styles.liveText}>LIVE</Text>
-            </View>
-          </View>
+          <Text style={styles.netWorthLabel}>CONSOLIDATED NET WORTH</Text>
           <Text style={styles.netWorthAmount} numberOfLines={1}>
             ৳ {netWorth.toLocaleString('en-IN')}
           </Text>
@@ -188,7 +182,7 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
         </View>
       )}
 
-      {/* 3. New Transaction & Voice Data Input Quick Action */}
+      {/* 3. New Entry & Voice Quick Actions */}
       <View style={styles.quickEntryWrapper}>
         <View style={{ flexDirection: 'row', gap: 6, width: '100%' }}>
           <TouchableOpacity
@@ -196,8 +190,8 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
             onPress={onQuickEntryPress}
             activeOpacity={0.85}
           >
-            <Ionicons name="add-circle" size={17} color="#FFFFFF" />
-            {!isCollapsed && <Text style={styles.quickEntryText}>+ New Entry</Text>}
+            <Ionicons name="add" size={17} color="#FFFFFF" />
+            {!isCollapsed && <Text style={styles.quickEntryText}>New Entry</Text>}
           </TouchableOpacity>
 
           {onOpenVoiceInput && (
@@ -211,7 +205,7 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
               // @ts-ignore
               title="Voice Data Input"
             >
-              <Ionicons name="mic" size={17} color="#FFFFFF" />
+              <Ionicons name="mic-outline" size={17} color="#94A3B8" />
               {!isCollapsed && <Text style={styles.voiceQuickText}>Voice</Text>}
             </TouchableOpacity>
           )}
@@ -569,63 +563,42 @@ const styles = StyleSheet.create({
   },
   brandTag: {
     fontSize: 11,
-    color: '#38BDF8',
-    fontWeight: '700',
-    letterSpacing: 0.5,
+    color: '#94A3B8',
+    fontWeight: '600',
+    letterSpacing: 0.4,
     marginTop: 1,
   },
   collapseBtn: {
     width: 28,
     height: 28,
     borderRadius: 6,
-    backgroundColor: '#111D38',
+    backgroundColor: '#1E293B',
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.1)',
+    borderColor: 'rgba(255, 255, 255, 0.08)',
   },
   netWorthWidget: {
     marginHorizontal: 12,
     marginVertical: 4,
-    backgroundColor: '#111D38',
+    backgroundColor: '#1E293B',
     borderRadius: Radius.md,
     padding: 10,
     borderWidth: 1,
     borderColor: 'rgba(255, 255, 255, 0.08)',
   },
-  netWorthHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
   netWorthLabel: {
-    fontSize: 11,
+    fontSize: 10.5,
     fontWeight: '800',
     color: '#94A3B8',
     letterSpacing: 0.6,
   },
-  liveIndicator: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  liveDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: '#10B981',
-  },
-  liveText: {
-    fontSize: 10,
-    fontWeight: '800',
-    color: '#10B981',
-  },
   netWorthAmount: {
-    fontSize: 20,
+    fontSize: 19,
     fontWeight: '900',
     color: '#FFFFFF',
     marginTop: 2,
-    letterSpacing: -0.5,
+    letterSpacing: -0.3,
   },
   netWorthBreakdown: {
     flexDirection: 'row',
@@ -633,14 +606,14 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   assetsText: {
-    fontSize: 11.5,
-    color: '#10B981',
-    fontWeight: '700',
+    fontSize: 11,
+    color: '#CBD5E1',
+    fontWeight: '600',
   },
   debtText: {
-    fontSize: 11.5,
-    color: '#EF4444',
-    fontWeight: '700',
+    fontSize: 11,
+    color: '#94A3B8',
+    fontWeight: '600',
   },
   quickEntryWrapper: {
     paddingHorizontal: 12,
@@ -651,20 +624,21 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 6,
-    backgroundColor: '#0284C7',
-    paddingVertical: 10,
+    backgroundColor: '#2563EB',
+    paddingVertical: 8.5,
     borderRadius: Radius.md,
-    shadowColor: '#0284C7',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
+    shadowColor: '#2563EB',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.2,
+    shadowRadius: 3,
+    elevation: 2,
   },
   quickEntryBtnCollapsed: {
     paddingHorizontal: 0,
     justifyContent: 'center',
   },
   quickEntryText: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '800',
     color: '#FFFFFF',
   },
@@ -673,23 +647,21 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 4,
-    backgroundColor: '#8B5CF6',
-    paddingVertical: 10,
+    backgroundColor: '#1E293B',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
+    paddingVertical: 8.5,
     paddingHorizontal: 12,
     borderRadius: Radius.md,
-    shadowColor: '#8B5CF6',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
   },
   voiceQuickBtnCollapsed: {
     paddingHorizontal: 8,
     justifyContent: 'center',
   },
   voiceQuickText: {
-    fontSize: 13,
-    fontWeight: '800',
-    color: '#FFFFFF',
+    fontSize: 12.5,
+    fontWeight: '700',
+    color: '#94A3B8',
   },
   menuList: {
     flex: 1,
@@ -711,7 +683,7 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   groupHeaderTitle: {
-    fontSize: 11,
+    fontSize: 10.5,
     fontWeight: '800',
     color: '#64748B',
     letterSpacing: 0.6,
@@ -722,10 +694,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
-    paddingVertical: 8,
+    paddingVertical: 7.5,
     paddingHorizontal: 10,
     borderRadius: Radius.md,
-    marginVertical: 1.5,
+    marginVertical: 1,
     position: 'relative',
   },
   navItemCollapsed: {
@@ -733,19 +705,19 @@ const styles = StyleSheet.create({
     paddingHorizontal: 0,
   },
   navItemActive: {
-    backgroundColor: 'rgba(2, 132, 199, 0.18)',
+    backgroundColor: 'rgba(37, 99, 235, 0.2)',
   },
   navItemHovered: {
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    backgroundColor: 'rgba(255, 255, 255, 0.04)',
   },
   activeBar: {
     position: 'absolute',
     left: 0,
     top: 6,
     bottom: 6,
-    width: 3.5,
-    backgroundColor: '#38BDF8',
-    borderRadius: 2,
+    width: 3,
+    backgroundColor: '#3B82F6',
+    borderRadius: 1.5,
   },
   labelRow: {
     flex: 1,

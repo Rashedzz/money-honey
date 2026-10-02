@@ -151,62 +151,62 @@ export const ExpensesScreen: React.FC<ExpensesScreenProps> = ({ onOpenCategorySe
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      {/* 1. Quick Action Header Ribbon */}
+      {/* 1. Quick Action Executive Toolbar */}
       <View style={styles.actionRibbon}>
         <TouchableOpacity
-          style={[styles.actionBtn, { backgroundColor: '#EF4444' }]}
+          style={styles.primaryActionBtn}
           onPress={() => openEntry('expense')}
           activeOpacity={0.85}
         >
-          <Ionicons name="receipt" size={16} color="#FFFFFF" />
-          <Text style={styles.actionBtnText}>+ Record Expense</Text>
+          <Ionicons name="add" size={16} color="#FFFFFF" />
+          <Text style={styles.primaryActionBtnText}>Record Expense</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.secondaryActionBtn}
+          onPress={() => openEntry('income')}
+          activeOpacity={0.85}
+        >
+          <Ionicons name="wallet-outline" size={15} color="#475569" />
+          <Text style={styles.secondaryActionBtnText}>+ Add Income</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.secondaryActionBtn}
+          onPress={() => openEntry('transfer')}
+          activeOpacity={0.85}
+        >
+          <Ionicons name="swap-horizontal-outline" size={15} color="#475569" />
+          <Text style={styles.secondaryActionBtnText}>Bank Transfer</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.secondaryActionBtn}
+          onPress={() => openEntry('withdrawal')}
+          activeOpacity={0.85}
+        >
+          <Ionicons name="cash-outline" size={15} color="#475569" />
+          <Text style={styles.secondaryActionBtnText}>Cash Withdrawal</Text>
         </TouchableOpacity>
 
         {onOpenCategorySetup && (
           <TouchableOpacity
-            style={[styles.actionBtn, { backgroundColor: '#0F172A', borderWidth: 1, borderColor: '#38BDF8' }]}
+            style={styles.secondaryActionBtn}
             onPress={onOpenCategorySetup}
             activeOpacity={0.85}
           >
-            <Ionicons name="pricetags-outline" size={16} color="#38BDF8" />
-            <Text style={[styles.actionBtnText, { color: '#38BDF8' }]}>🏷️ Category & Budgets</Text>
+            <Ionicons name="pricetags-outline" size={15} color="#475569" />
+            <Text style={styles.secondaryActionBtnText}>Category & Budgets</Text>
           </TouchableOpacity>
         )}
-
-        <TouchableOpacity
-          style={[styles.actionBtn, { backgroundColor: '#0284C7' }]}
-          onPress={() => openEntry('withdrawal')}
-          activeOpacity={0.85}
-        >
-          <Ionicons name="cash-outline" size={16} color="#FFFFFF" />
-          <Text style={styles.actionBtnText}>💸 Cash Withdrawal</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={[styles.actionBtn, { backgroundColor: '#8B5CF6' }]}
-          onPress={() => openEntry('transfer')}
-          activeOpacity={0.85}
-        >
-          <Ionicons name="swap-horizontal" size={16} color="#FFFFFF" />
-          <Text style={styles.actionBtnText}>🔁 Bank Transfer</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={[styles.actionBtn, { backgroundColor: '#16A34A' }]}
-          onPress={() => openEntry('income')}
-          activeOpacity={0.85}
-        >
-          <Ionicons name="wallet-outline" size={16} color="#FFFFFF" />
-          <Text style={styles.actionBtnText}>💰 Add Salary / Income</Text>
-        </TouchableOpacity>
       </View>
 
       {/* 2. Executive Outflow Summary Card */}
-      <GlassCard style={styles.summaryCard} padding={20} glowColor={Colors.danger}>
+      <View style={styles.summaryCard}>
         <View style={styles.summaryTop}>
           <View>
             <Text style={styles.summaryLabel}>TOTAL RECORDED CASH OUTFLOW</Text>
-            <Text style={[styles.summaryAmount, { color: Colors.danger }]}>
+            <Text style={styles.summaryAmount}>
               ৳ {totalExpense.toLocaleString('en-IN')}
             </Text>
             <Text style={styles.summarySub}>
@@ -218,8 +218,8 @@ export const ExpensesScreen: React.FC<ExpensesScreenProps> = ({ onOpenCategorySe
         {/* 4-Sector Outflow Strip */}
         <View style={styles.strip}>
           <View style={styles.stripCol}>
-            <Text style={styles.stripLabel}>🏢 ASSET COSTS</Text>
-            <Text style={[styles.stripVal, { color: Colors.secondary }]}>
+            <Text style={styles.stripLabel}>ASSET COSTS</Text>
+            <Text style={styles.stripVal}>
               ৳ {assetExpensesTotal.toLocaleString('en-IN')}
             </Text>
             <Text style={styles.stripPct}>
@@ -228,8 +228,8 @@ export const ExpensesScreen: React.FC<ExpensesScreenProps> = ({ onOpenCategorySe
           </View>
           <View style={styles.vLine} />
           <View style={styles.stripCol}>
-            <Text style={styles.stripLabel}>🏠 HOUSEHOLD</Text>
-            <Text style={[styles.stripVal, { color: Colors.accent }]}>
+            <Text style={styles.stripLabel}>HOUSEHOLD</Text>
+            <Text style={styles.stripVal}>
               ৳ {householdTotal.toLocaleString('en-IN')}
             </Text>
             <Text style={styles.stripPct}>
@@ -238,8 +238,8 @@ export const ExpensesScreen: React.FC<ExpensesScreenProps> = ({ onOpenCategorySe
           </View>
           <View style={styles.vLine} />
           <View style={styles.stripCol}>
-            <Text style={styles.stripLabel}>💳 DEBT EMIs</Text>
-            <Text style={[styles.stripVal, { color: Colors.danger }]}>
+            <Text style={styles.stripLabel}>DEBT EMIs</Text>
+            <Text style={styles.stripVal}>
               ৳ {emiTotal.toLocaleString('en-IN')}
             </Text>
             <Text style={styles.stripPct}>
@@ -248,8 +248,8 @@ export const ExpensesScreen: React.FC<ExpensesScreenProps> = ({ onOpenCategorySe
           </View>
           <View style={styles.vLine} />
           <View style={styles.stripCol}>
-            <Text style={styles.stripLabel}>🛍️ PERSONAL</Text>
-            <Text style={[styles.stripVal, { color: '#0284C7' }]}>
+            <Text style={styles.stripLabel}>PERSONAL & OTHER</Text>
+            <Text style={styles.stripVal}>
               ৳ {personalTotal.toLocaleString('en-IN')}
             </Text>
             <Text style={styles.stripPct}>
@@ -257,7 +257,7 @@ export const ExpensesScreen: React.FC<ExpensesScreenProps> = ({ onOpenCategorySe
             </Text>
           </View>
         </View>
-      </GlassCard>
+      </View>
 
       {/* 3. Search & Filter Bar */}
       <View style={styles.searchFilterContainer}>
@@ -512,26 +512,77 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     color: '#FFFFFF',
   },
+  primaryActionBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: '#0F172A',
+    paddingHorizontal: 14,
+    paddingVertical: 9,
+    borderRadius: Radius.md,
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.12,
+    shadowRadius: 3,
+    elevation: 2,
+  },
+  primaryActionBtnText: {
+    fontSize: 12.5,
+    fontWeight: '800',
+    color: '#FFFFFF',
+  },
+  secondaryActionBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    paddingHorizontal: 13,
+    paddingVertical: 8.5,
+    borderRadius: Radius.md,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.03,
+    shadowRadius: 2,
+    elevation: 1,
+  },
+  secondaryActionBtnText: {
+    fontSize: 12.5,
+    fontWeight: '700',
+    color: '#334155',
+  },
   summaryCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: Radius.lg,
+    padding: Spacing.lg,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
     marginBottom: Spacing.md,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.04,
+    shadowRadius: 3,
+    elevation: 1,
   },
   summaryTop: {
     marginBottom: Spacing.md,
   },
   summaryLabel: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '800',
-    color: '#EF4444',
-    letterSpacing: 0.5,
+    color: '#64748B',
+    letterSpacing: 0.8,
   },
   summaryAmount: {
-    fontSize: 30,
+    fontSize: 28,
     fontWeight: '900',
     color: '#0F172A',
-    marginTop: 2,
+    marginTop: 3,
+    letterSpacing: -0.5,
   },
   summarySub: {
-    fontSize: 13,
+    fontSize: 12,
     color: '#64748B',
     marginTop: 2,
   },
@@ -541,7 +592,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingTop: Spacing.md,
     borderTopWidth: 1,
-    borderTopColor: '#E2E8F0',
+    borderTopColor: '#F1F5F9',
   },
   stripCol: {
     flex: 1,
@@ -549,13 +600,14 @@ const styles = StyleSheet.create({
   },
   vLine: {
     width: 1,
-    height: 36,
-    backgroundColor: '#E2E8F0',
+    height: 32,
+    backgroundColor: '#F1F5F9',
   },
   stripLabel: {
     fontSize: 10,
     fontWeight: '700',
     color: '#64748B',
+    letterSpacing: 0.5,
   },
   stripVal: {
     fontSize: 13,
@@ -577,16 +629,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 8,
     backgroundColor: '#FFFFFF',
-    borderWidth: 1.5,
-    borderColor: '#BAE6FD',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
     borderRadius: Radius.md,
     paddingHorizontal: 12,
-    paddingVertical: 10,
+    paddingVertical: 9,
     marginBottom: 8,
   },
   searchInput: {
     flex: 1,
-    fontSize: 14,
+    fontSize: 13.5,
     color: '#0F172A',
   },
   filterRow: {
@@ -596,20 +648,20 @@ const styles = StyleSheet.create({
   },
   filterBtn: {
     paddingHorizontal: 12,
-    paddingVertical: 7,
+    paddingVertical: 6,
     borderRadius: Radius.full,
     backgroundColor: '#FFFFFF',
-    borderWidth: 1.5,
-    borderColor: '#BAE6FD',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
   },
   filterBtnActive: {
-    backgroundColor: '#EF4444',
-    borderColor: '#EF4444',
+    backgroundColor: '#0F172A',
+    borderColor: '#0F172A',
   },
   filterBtnText: {
     fontSize: 12,
     fontWeight: '700',
-    color: '#334155',
+    color: '#475569',
   },
   filterBtnTextActive: {
     color: '#FFFFFF',
@@ -619,26 +671,26 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    paddingHorizontal: 12,
-    paddingVertical: 7,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
     borderRadius: Radius.full,
-    backgroundColor: '#FEF2F2',
-    borderWidth: 1.5,
-    borderColor: '#FECACA',
+    backgroundColor: '#F8FAFC',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
     marginLeft: 'auto',
   },
   clearAllBtnText: {
-    fontSize: 12,
+    fontSize: 11.5,
     fontWeight: '700',
-    color: '#EF4444',
+    color: '#64748B',
   },
   categoryBudgetCard: {
     marginTop: 12,
     backgroundColor: '#FFFFFF',
     padding: 14,
     borderRadius: 10,
-    borderWidth: 1.5,
-    borderColor: '#BAE6FD',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
   },
   categoryBudgetTop: {
     flexDirection: 'row',
@@ -704,16 +756,16 @@ const styles = StyleSheet.create({
     color: '#0F172A',
   },
   assetBadge: {
-    backgroundColor: '#F0F9FF',
+    backgroundColor: '#F1F5F9',
     paddingHorizontal: 8,
     paddingVertical: 2,
     borderRadius: Radius.sm,
     borderWidth: 1,
-    borderColor: '#BAE6FD',
+    borderColor: '#E2E8F0',
   },
   assetBadgeText: {
     fontSize: 11,
-    color: '#0284C7',
+    color: '#475569',
     fontWeight: '700',
   },
   badgeRow: {
@@ -724,32 +776,32 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   categoryBadge: {
-    backgroundColor: '#FEF2F2',
+    backgroundColor: '#F1F5F9',
     paddingHorizontal: 8,
     paddingVertical: 2,
     borderRadius: Radius.sm,
     borderWidth: 1,
-    borderColor: '#FECACA',
+    borderColor: '#E2E8F0',
   },
   categoryBadgeText: {
     fontSize: 11,
-    color: '#DC2626',
+    color: '#475569',
     fontWeight: '700',
   },
   sourceBadge: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    backgroundColor: '#F0F9FF',
+    backgroundColor: '#F1F5F9',
     paddingHorizontal: 8,
     paddingVertical: 2,
     borderRadius: Radius.sm,
     borderWidth: 1,
-    borderColor: '#BAE6FD',
+    borderColor: '#E2E8F0',
   },
   sourceBadgeText: {
     fontSize: 11,
-    color: '#0284C7',
+    color: '#334155',
     fontWeight: '700',
   },
   dateText: {

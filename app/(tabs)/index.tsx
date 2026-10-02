@@ -471,6 +471,7 @@ export default function MasterDashboardScreen() {
             </View>
 
             <View style={styles.topActions}>
+              {/* User Account / Profile Pill */}
               <TouchableOpacity
                 style={[styles.authHeaderBtn, !isDesktop && { paddingHorizontal: 8, paddingVertical: 5 }]}
                 onPress={openAuthModal}
@@ -482,7 +483,7 @@ export default function MasterDashboardScreen() {
                     style={{ width: 22, height: 22, borderRadius: 11, marginRight: !isDesktop ? 0 : 6 }}
                   />
                 ) : (
-                  <Ionicons name="person-circle-outline" size={18} color="#0F172A" />
+                  <Ionicons name="person-circle-outline" size={18} color="#334155" />
                 )}
                 {isDesktop && (
                   <Text style={styles.authHeaderBtnText}>
@@ -491,92 +492,50 @@ export default function MasterDashboardScreen() {
                 )}
               </TouchableOpacity>
 
-              {/* Desktop Only Secondary Cloud/Install Action Buttons */}
+              {/* Cloud Sync Status Indicator */}
+              <TouchableOpacity
+                style={styles.syncStatusPill}
+                onPress={syncNow}
+                activeOpacity={0.8}
+              >
+                <View
+                  style={[
+                    styles.syncDot,
+                    { backgroundColor: syncStatus === 'synced' ? '#16A34A' : syncStatus === 'syncing' ? '#F59E0B' : '#94A3B8' },
+                  ]}
+                />
+                {isDesktop && (
+                  <Text style={styles.syncStatusText}>
+                    {isSyncing ? 'Syncing...' : lastSyncedAt ? 'Cloud Synced' : 'Sync'}
+                  </Text>
+                )}
+              </TouchableOpacity>
+
+              {/* Desktop Install App Button */}
               {isDesktop && (
-                <>
-                  <TouchableOpacity
-                    style={styles.pwaHeaderBtn}
-                    onPress={() => setQrModalVisible(true)}
-                    activeOpacity={0.8}
-                  >
-                    <Ionicons name="phone-portrait-outline" size={15} color="#0284C7" />
-                    <Text style={styles.pwaHeaderBtnText}>📲 Install App / PWA</Text>
-                  </TouchableOpacity>
-
-                  <TouchableOpacity
-                    style={styles.firebaseHeaderBtn}
-                    onPress={() => setFirebaseModalVisible(true)}
-                    activeOpacity={0.8}
-                  >
-                    <Ionicons name="flame" size={16} color="#EA580C" />
-                    <Text style={styles.firebaseHeaderBtnText}>🔥 Firebase</Text>
-                  </TouchableOpacity>
-
-                  <TouchableOpacity
-                    style={{
-                      flexDirection: 'row',
-                      alignItems: 'center',
-                      gap: 5,
-                      paddingHorizontal: 10,
-                      paddingVertical: 6,
-                      borderRadius: Radius.full,
-                      backgroundColor: syncStatus === 'synced' ? '#F0FDF4' : syncStatus === 'syncing' ? '#FEF3C7' : '#F8FAFC',
-                      borderWidth: 1,
-                      borderColor: syncStatus === 'synced' ? '#BBF7D0' : '#CBD5E1',
-                    }}
-                    onPress={syncNow}
-                    activeOpacity={0.8}
-                  >
-                    <Ionicons
-                      name={isSyncing ? 'sync' : 'cloud-done'}
-                      size={14}
-                      color={syncStatus === 'synced' ? '#16A34A' : '#D97706'}
-                    />
-                    <Text style={{ fontSize: 11, fontWeight: '800', color: syncStatus === 'synced' ? '#16A34A' : '#475569' }}>
-                      {isSyncing ? 'Syncing...' : lastSyncedAt ? 'Cloud Synced' : 'Sync Now'}
-                    </Text>
-                  </TouchableOpacity>
-                </>
+                <TouchableOpacity
+                  style={styles.utilityOutlineBtn}
+                  onPress={() => setQrModalVisible(true)}
+                  activeOpacity={0.8}
+                >
+                  <Ionicons name="phone-portrait-outline" size={15} color="#475569" />
+                  <Text style={styles.utilityOutlineBtnText}>Install App</Text>
+                </TouchableOpacity>
               )}
 
               {/* Voice Data Input Button */}
               <TouchableOpacity
-                style={{
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  gap: 4,
-                  paddingHorizontal: isDesktop ? 12 : 8,
-                  paddingVertical: isDesktop ? 7 : 6,
-                  backgroundColor: '#8B5CF6',
-                  borderRadius: Radius.full,
-                  shadowColor: '#8B5CF6',
-                  shadowOffset: { width: 0, height: 2 },
-                  shadowOpacity: 0.25,
-                  shadowRadius: 4,
-                  elevation: 3,
-                }}
+                style={styles.utilityOutlineBtn}
                 onPress={() => setVoiceModalVisible(true)}
                 activeOpacity={0.8}
               >
-                <Ionicons name="mic" size={15} color="#FFFFFF" />
-                <Text style={{ fontSize: 12, fontWeight: '900', color: '#FFFFFF' }}>
-                  {isDesktop ? '🎙️ Voice' : 'Voice'}
-                </Text>
+                <Ionicons name="mic-outline" size={15} color="#475569" />
+                {isDesktop && <Text style={styles.utilityOutlineBtnText}>Voice</Text>}
               </TouchableOpacity>
 
-              {/* Notification Center Bell with Badge & Audio Chime */}
+              {/* Notification Center Alerts Bell */}
               <TouchableOpacity
-                style={{
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  gap: 4,
-                  paddingHorizontal: isDesktop ? 12 : 8,
-                  paddingVertical: isDesktop ? 7 : 6,
-                  backgroundColor: pendingNotifCount > 0 ? '#FFFBEB' : '#FFFFFF',
-                  borderRadius: Radius.full,
-                  borderWidth: 1.5,
-                  borderColor: pendingNotifCount > 0 ? '#F59E0B' : '#BAE6FD',
-                }}
+                style={styles.utilityOutlineBtn}
                 onPress={() => {
                   SoundService.playNotificationChime();
                   setNotificationModalVisible(true);
@@ -585,40 +544,25 @@ export default function MasterDashboardScreen() {
               >
                 <Ionicons
                   name={pendingNotifCount > 0 ? 'notifications' : 'notifications-outline'}
-                  size={16}
-                  color={pendingNotifCount > 0 ? '#D97706' : '#0284C7'}
+                  size={15}
+                  color={pendingNotifCount > 0 ? '#0F172A' : '#475569'}
                 />
-                {isDesktop && (
-                  <Text style={{ fontSize: 12, fontWeight: '800', color: pendingNotifCount > 0 ? '#B45309' : '#0F172A' }}>
-                    Alerts
-                  </Text>
-                )}
+                {isDesktop && <Text style={styles.utilityOutlineBtnText}>Alerts</Text>}
                 {pendingNotifCount > 0 && (
-                  <View
-                    style={{
-                      backgroundColor: '#EF4444',
-                      borderRadius: 10,
-                      minWidth: 18,
-                      height: 18,
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      paddingHorizontal: 4,
-                    }}
-                  >
-                    <Text style={{ fontSize: 10, fontWeight: '900', color: '#FFFFFF' }}>
-                      {pendingNotifCount}
-                    </Text>
+                  <View style={styles.notifBadge}>
+                    <Text style={styles.notifBadgeText}>{pendingNotifCount}</Text>
                   </View>
                 )}
               </TouchableOpacity>
 
+              {/* Primary Action Button: Executive Deep Slate/Navy */}
               <TouchableOpacity
-                style={[styles.quickEntryHeaderBtn, !isDesktop && { paddingHorizontal: 10, paddingVertical: 6 }]}
+                style={styles.primaryExecutiveBtn}
                 onPress={() => openModal('stock')}
                 activeOpacity={0.85}
               >
-                <Ionicons name="add-circle" size={16} color="#FFFFFF" />
-                <Text style={styles.quickEntryHeaderBtnText}>{isDesktop ? '+ Data Entry' : '+ Entry'}</Text>
+                <Ionicons name="add" size={17} color="#FFFFFF" />
+                <Text style={styles.primaryExecutiveBtnText}>{isDesktop ? '+ Data Entry' : '+ Entry'}</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -695,56 +639,56 @@ export default function MasterDashboardScreen() {
               {/* 2. Executive Quick Navigation Ribbon */}
               <View style={styles.actionRibbon}>
                 <TouchableOpacity
-                  style={[styles.actionPill, { borderColor: '#0284C7', backgroundColor: '#F0F9FF' }]}
+                  style={styles.actionPill}
                   onPress={() => setActiveTab('income_expense_details')}
                   activeOpacity={0.8}
                 >
-                  <Ionicons name="swap-horizontal-outline" size={15} color="#0284C7" />
-                  <Text style={[styles.actionPillText, { color: '#0284C7', fontWeight: '800' }]}>
-                    📖 Incomes - Expenses Details
+                  <Ionicons name="swap-horizontal-outline" size={15} color="#475569" />
+                  <Text style={styles.actionPillText}>
+                    Incomes − Expenses Details
                   </Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity
-                  style={[styles.actionPill, { borderColor: '#8B5CF6', backgroundColor: '#F5F3FF' }]}
+                  style={styles.actionPill}
                   onPress={() => setActiveTab('projects')}
                   activeOpacity={0.8}
                 >
-                  <Ionicons name="briefcase-outline" size={15} color="#8B5CF6" />
-                  <Text style={[styles.actionPillText, { color: '#8B5CF6', fontWeight: '800' }]}>
-                    📁 Projects Ledger & P&L
+                  <Ionicons name="briefcase-outline" size={15} color="#475569" />
+                  <Text style={styles.actionPillText}>
+                    Projects Ledger & P&L
                   </Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity
-                  style={[styles.actionPill, { borderColor: '#0EA5E9', backgroundColor: '#F0F9FF' }]}
+                  style={styles.actionPill}
                   onPress={() => setActiveTab('register')}
                   activeOpacity={0.8}
                 >
-                  <Ionicons name="receipt-outline" size={15} color="#0284C7" />
-                  <Text style={[styles.actionPillText, { color: '#0284C7', fontWeight: '800' }]}>
-                    📝 Quicken Register
+                  <Ionicons name="receipt-outline" size={15} color="#475569" />
+                  <Text style={styles.actionPillText}>
+                    Account Register
                   </Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity
-                  style={[styles.actionPill, { borderColor: '#10B981', backgroundColor: '#F0FDF4' }]}
+                  style={styles.actionPill}
                   onPress={() => setActiveTab('reports')}
                   activeOpacity={0.8}
                 >
-                  <Ionicons name="document-text-outline" size={15} color="#16A34A" />
-                  <Text style={[styles.actionPillText, { color: '#16A34A', fontWeight: '800' }]}>
-                    📊 Statements
+                  <Ionicons name="document-text-outline" size={15} color="#475569" />
+                  <Text style={styles.actionPillText}>
+                    Statements & Reports
                   </Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity
-                  style={[styles.actionPill, { borderColor: '#F59E0B', backgroundColor: '#FFFBEB' }]}
+                  style={[styles.actionPill, { backgroundColor: '#0F172A', borderColor: '#0F172A' }]}
                   onPress={() => openModal('expense')}
                   activeOpacity={0.8}
                 >
-                  <Ionicons name="add-circle-outline" size={15} color="#D97706" />
-                  <Text style={[styles.actionPillText, { color: '#D97706', fontWeight: '800' }]}>
+                  <Ionicons name="add-circle-outline" size={15} color="#FFFFFF" />
+                  <Text style={[styles.actionPillText, { color: '#FFFFFF', fontWeight: '800' }]}>
                     + Quick Record
                   </Text>
                 </TouchableOpacity>
@@ -893,7 +837,7 @@ export default function MasterDashboardScreen() {
                 <View style={[styles.gridCol, isDesktop && styles.colHalf]}>
                   <View style={styles.whiteCard}>
                     <View style={styles.cardHeaderRow}>
-                      <Ionicons name="wallet-outline" size={16} color="#0284C7" />
+                      <Ionicons name="wallet-outline" size={16} color="#475569" />
                       <Text style={styles.cardLabel}>LIQUID CAPITAL & ACTIVE BANK ACCOUNTS</Text>
                     </View>
                     {liquidSegments.length === 0 ? (
@@ -902,10 +846,10 @@ export default function MasterDashboardScreen() {
                           No bank accounts recorded. Click "+ Bank Account" above.
                         </Text>
                         <TouchableOpacity
-                          style={{ marginTop: 10, paddingHorizontal: 12, paddingVertical: 6, backgroundColor: '#0284C7', borderRadius: 6 }}
+                          style={{ marginTop: 10, paddingHorizontal: 14, paddingVertical: 8, backgroundColor: '#0F172A', borderRadius: Radius.full }}
                           onPress={() => openModal('bank')}
                         >
-                          <Text style={{ color: '#FFFFFF', fontSize: 12, fontWeight: '700' }}>+ Add Bank Account</Text>
+                          <Text style={{ color: '#FFFFFF', fontSize: 12, fontWeight: '800' }}>+ Add Bank Account</Text>
                         </TouchableOpacity>
                       </View>
                     ) : (
@@ -917,7 +861,7 @@ export default function MasterDashboardScreen() {
                           size={140}
                         />
                         <View style={{ marginTop: 4, alignItems: 'center' }}>
-                          <Text style={{ fontSize: 12, fontWeight: '700', color: '#0284C7' }}>
+                          <Text style={{ fontSize: 12, fontWeight: '700', color: '#475569' }}>
                             (৳ {(totalCashInHand / 100000).toFixed(2)} Lakhs)
                           </Text>
                         </View>
@@ -927,7 +871,7 @@ export default function MasterDashboardScreen() {
                             {bankAccounts.slice(0, 4).map((b) => (
                               <View key={b.id} style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 4 }}>
                                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                                  <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: b.color || '#0284C7' }} />
+                                  <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: b.color || '#334155' }} />
                                   <Text style={{ fontSize: 12, fontWeight: '700', color: '#0F172A' }}>{b.bankName}</Text>
                                   <Text style={{ fontSize: 11, color: '#64748B' }}>({b.accountNumber ? b.accountNumber.slice(-4) : '****'})</Text>
                                 </View>
@@ -938,7 +882,7 @@ export default function MasterDashboardScreen() {
                             ))}
                             {bankAccounts.length > 4 && (
                               <TouchableOpacity onPress={() => setActiveTab('accounts')} style={{ marginTop: 4 }}>
-                                <Text style={{ fontSize: 11, color: '#0284C7', fontWeight: '700', textAlign: 'right' }}>
+                                <Text style={{ fontSize: 11, color: '#0F172A', fontWeight: '700', textAlign: 'right' }}>
                                   View all {bankAccounts.length} accounts →
                                 </Text>
                               </TouchableOpacity>
@@ -1156,64 +1100,81 @@ const styles = StyleSheet.create({
     borderColor: '#E2E8F0',
   },
   authHeaderBtnText: {
-    fontSize: 13,
-    fontWeight: '800',
-    color: '#0F172A',
+    fontSize: 12.5,
+    fontWeight: '700',
+    color: '#1E293B',
   },
-  pwaHeaderBtn: {
+  syncStatusPill: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    paddingHorizontal: 14,
+    paddingHorizontal: 10,
     paddingVertical: 7,
     borderRadius: Radius.full,
-    backgroundColor: '#0284C7',
+    backgroundColor: '#FFFFFF',
     borderWidth: 1,
-    borderColor: '#0284C7',
-    shadowColor: '#0284C7',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
+    borderColor: '#E2E8F0',
   },
-  pwaHeaderBtnText: {
-    fontSize: 12,
-    fontWeight: '800',
-    color: '#FFFFFF',
+  syncDot: {
+    width: 7,
+    height: 7,
+    borderRadius: 3.5,
   },
-  firebaseHeaderBtn: {
+  syncStatusText: {
+    fontSize: 11.5,
+    fontWeight: '700',
+    color: '#475569',
+  },
+  utilityOutlineBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: 5,
     paddingHorizontal: 12,
     paddingVertical: 7,
     borderRadius: Radius.full,
-    backgroundColor: '#FFF7ED',
+    backgroundColor: '#FFFFFF',
     borderWidth: 1,
-    borderColor: '#FED7AA',
+    borderColor: '#E2E8F0',
   },
-  firebaseHeaderBtnText: {
+  utilityOutlineBtnText: {
     fontSize: 12,
-    fontWeight: '800',
-    color: '#EA580C',
+    fontWeight: '700',
+    color: '#334155',
   },
-  quickEntryHeaderBtn: {
+  notifBadge: {
+    backgroundColor: '#0F172A',
+    borderRadius: 9,
+    minWidth: 18,
+    height: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 4,
+    marginLeft: 2,
+  },
+  notifBadgeText: {
+    fontSize: 10,
+    fontWeight: '900',
+    color: '#FFFFFF',
+  },
+  primaryExecutiveBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-    backgroundColor: '#16A34A',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
+    gap: 5,
+    backgroundColor: '#0F172A',
+    paddingHorizontal: 15,
+    paddingVertical: 7.5,
     borderRadius: Radius.full,
-    shadowColor: '#16A34A',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 6,
-    elevation: 3,
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.12,
+    shadowRadius: 3,
+    elevation: 2,
   },
-  quickEntryHeaderBtnText: {
-    fontSize: 14,
+  primaryExecutiveBtnText: {
+    fontSize: 12.5,
     fontWeight: '800',
     color: '#FFFFFF',
+    letterSpacing: 0.2,
   },
   scrollArea: {
     flex: 1,
