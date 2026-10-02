@@ -30,8 +30,6 @@ import { FlowBreakdownBar } from '../../src/components/visuals/FlowBreakdownBar'
 import { HealthStatusMeter } from '../../src/components/visuals/HealthStatusMeter';
 import { ProjectionComparisonCard } from '../../src/components/visuals/ProjectionComparisonCard';
 import { ScheduleTimeline, ScheduleEvent } from '../../src/components/visuals/ScheduleTimeline';
-import { WealthVelocityCard } from '../../src/components/visuals/WealthVelocityCard';
-import { FinancialConsultantToolsCard } from '../../src/components/visuals/FinancialConsultantToolsCard';
 import { NetWorthMeter } from '../../src/components/dashboard/NetWorthMeter';
 import { CountdownCard } from '../../src/components/dashboard/CountdownCard';
 import { EMIReminderCard } from '../../src/components/dashboard/EMIReminderCard';
@@ -51,6 +49,8 @@ import { ExpensesScreen } from '../../src/components/screens/ExpensesScreen';
 import { SettingsScreen } from '../../src/components/screens/SettingsScreen';
 import { ScheduleScreen } from '../../src/components/screens/ScheduleScreen';
 import { FinancialStatementsScreen } from '../../src/components/screens/FinancialStatementsScreen';
+import { IncomeExpenseDetailsScreen } from '../../src/components/screens/IncomeExpenseDetailsScreen';
+import { ProjectsScreen } from '../../src/components/screens/ProjectsScreen';
 import { CategorySetupScreen } from '../../src/components/screens/CategorySetupScreen';
 import { QuickenBudgetPacingMeter } from '../../src/components/quicken/QuickenBudgetPacingMeter';
 import { QuickenSpendingWheel } from '../../src/components/quicken/QuickenSpendingWheel';
@@ -75,8 +75,6 @@ import {
   BirthdayEvent,
   calculateInsuranceSummary,
 } from '../../src/finance/insuranceBirthday';
-import { calculateWealthVelocity } from '../../src/finance/wealthVelocity';
-import { calculateFinancialPlanningSuite } from '../../src/finance/financialPlanningTools';
 
 // Local storage helpers for local device persistence
 const getStoredData = <T,>(key: string, fallback: T): T => {
@@ -323,23 +321,6 @@ export default function MasterDashboardScreen() {
     assetSummary.totalAssetValuation -
     totalLoans;
 
-  const wealthVelocity = calculateWealthVelocity(
-    birthDate,
-    totalCurrentIncome,
-    totalCurrentExpense,
-    consolidatedNetWorth
-  );
-
-  const planningSuite = calculateFinancialPlanningSuite(
-    totalCurrentIncome,
-    totalCurrentExpense,
-    totalCashInHand,
-    totalLoans,
-    assetSummary.totalAssetValuation + stockSummary.currentValue,
-    insuranceSummary.totalLifeCoverage,
-    wealthVelocity.ageYears
-  );
-
   const handleUniversalSave = (type: EntryType, data: any) => {
     const currentUid = user?.id || 'rashed01';
     if (type === 'asset') {
@@ -418,6 +399,8 @@ export default function MasterDashboardScreen() {
   const pageTitles: Record<SidebarTabType, string> = {
     dashboard: 'Executive Wealth Dashboard',
     register: 'Quicken Checkbook Register & Ledger',
+    income_expense_details: 'Incomes - Expenses Cash Book (Date Range)',
+    projects: 'Projects P&L & Balance Ledger',
     reports: 'Financial Statements & Audit Ledgers (IFRS / GAAP)',
     categories: 'Category & Budget Setup (Intuit Management)',
     stocks: 'Stock Market Equities (DSE / CSE & Global)',
@@ -489,75 +472,81 @@ export default function MasterDashboardScreen() {
 
             <View style={styles.topActions}>
               <TouchableOpacity
-                style={styles.authHeaderBtn}
+                style={[styles.authHeaderBtn, !isDesktop && { paddingHorizontal: 8, paddingVertical: 5 }]}
                 onPress={openAuthModal}
                 activeOpacity={0.8}
               >
                 {user?.photoUri ? (
                   <Image
                     source={{ uri: user.photoUri }}
-                    style={{ width: 22, height: 22, borderRadius: 11, marginRight: 6 }}
+                    style={{ width: 22, height: 22, borderRadius: 11, marginRight: !isDesktop ? 0 : 6 }}
                   />
                 ) : (
                   <Ionicons name="person-circle-outline" size={18} color="#0F172A" />
                 )}
-                <Text style={styles.authHeaderBtnText}>
-                  @{user?.id || 'rashed01'}
-                </Text>
+                {isDesktop && (
+                  <Text style={styles.authHeaderBtnText}>
+                    @{user?.id || 'rashed01'}
+                  </Text>
+                )}
               </TouchableOpacity>
 
-              {/* Relocated Eye-Catching PWA / APK Install Button */}
-              <TouchableOpacity
-                style={styles.pwaHeaderBtn}
-                onPress={() => setQrModalVisible(true)}
-                activeOpacity={0.8}
-              >
-                <Ionicons name="phone-portrait-outline" size={15} color="#0284C7" />
-                <Text style={styles.pwaHeaderBtnText}>📲 Install App / PWA</Text>
-              </TouchableOpacity>
+              {/* Desktop Only Secondary Cloud/Install Action Buttons */}
+              {isDesktop && (
+                <>
+                  <TouchableOpacity
+                    style={styles.pwaHeaderBtn}
+                    onPress={() => setQrModalVisible(true)}
+                    activeOpacity={0.8}
+                  >
+                    <Ionicons name="phone-portrait-outline" size={15} color="#0284C7" />
+                    <Text style={styles.pwaHeaderBtnText}>📲 Install App / PWA</Text>
+                  </TouchableOpacity>
 
-              <TouchableOpacity
-                style={styles.firebaseHeaderBtn}
-                onPress={() => setFirebaseModalVisible(true)}
-                activeOpacity={0.8}
-              >
-                <Ionicons name="flame" size={16} color="#EA580C" />
-                <Text style={styles.firebaseHeaderBtnText}>🔥 Firebase</Text>
-              </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.firebaseHeaderBtn}
+                    onPress={() => setFirebaseModalVisible(true)}
+                    activeOpacity={0.8}
+                  >
+                    <Ionicons name="flame" size={16} color="#EA580C" />
+                    <Text style={styles.firebaseHeaderBtnText}>🔥 Firebase</Text>
+                  </TouchableOpacity>
 
-              <TouchableOpacity
-                style={{
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  gap: 5,
-                  paddingHorizontal: 10,
-                  paddingVertical: 6,
-                  borderRadius: Radius.full,
-                  backgroundColor: syncStatus === 'synced' ? '#F0FDF4' : syncStatus === 'syncing' ? '#FEF3C7' : '#F8FAFC',
-                  borderWidth: 1,
-                  borderColor: syncStatus === 'synced' ? '#BBF7D0' : '#CBD5E1',
-                }}
-                onPress={syncNow}
-                activeOpacity={0.8}
-              >
-                <Ionicons
-                  name={isSyncing ? 'sync' : 'cloud-done'}
-                  size={14}
-                  color={syncStatus === 'synced' ? '#16A34A' : '#D97706'}
-                />
-                <Text style={{ fontSize: 11, fontWeight: '800', color: syncStatus === 'synced' ? '#16A34A' : '#475569' }}>
-                  {isSyncing ? 'Syncing...' : lastSyncedAt ? 'Cloud Synced' : 'Sync Now'}
-                </Text>
-              </TouchableOpacity>
+                  <TouchableOpacity
+                    style={{
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      gap: 5,
+                      paddingHorizontal: 10,
+                      paddingVertical: 6,
+                      borderRadius: Radius.full,
+                      backgroundColor: syncStatus === 'synced' ? '#F0FDF4' : syncStatus === 'syncing' ? '#FEF3C7' : '#F8FAFC',
+                      borderWidth: 1,
+                      borderColor: syncStatus === 'synced' ? '#BBF7D0' : '#CBD5E1',
+                    }}
+                    onPress={syncNow}
+                    activeOpacity={0.8}
+                  >
+                    <Ionicons
+                      name={isSyncing ? 'sync' : 'cloud-done'}
+                      size={14}
+                      color={syncStatus === 'synced' ? '#16A34A' : '#D97706'}
+                    />
+                    <Text style={{ fontSize: 11, fontWeight: '800', color: syncStatus === 'synced' ? '#16A34A' : '#475569' }}>
+                      {isSyncing ? 'Syncing...' : lastSyncedAt ? 'Cloud Synced' : 'Sync Now'}
+                    </Text>
+                  </TouchableOpacity>
+                </>
+              )}
 
               {/* Voice Data Input Button */}
               <TouchableOpacity
                 style={{
                   flexDirection: 'row',
                   alignItems: 'center',
-                  gap: 5,
-                  paddingHorizontal: 12,
-                  paddingVertical: 7,
+                  gap: 4,
+                  paddingHorizontal: isDesktop ? 12 : 8,
+                  paddingVertical: isDesktop ? 7 : 6,
                   backgroundColor: '#8B5CF6',
                   borderRadius: Radius.full,
                   shadowColor: '#8B5CF6',
@@ -571,7 +560,7 @@ export default function MasterDashboardScreen() {
               >
                 <Ionicons name="mic" size={15} color="#FFFFFF" />
                 <Text style={{ fontSize: 12, fontWeight: '900', color: '#FFFFFF' }}>
-                  🎙️ Voice
+                  {isDesktop ? '🎙️ Voice' : 'Voice'}
                 </Text>
               </TouchableOpacity>
 
@@ -580,9 +569,9 @@ export default function MasterDashboardScreen() {
                 style={{
                   flexDirection: 'row',
                   alignItems: 'center',
-                  gap: 6,
-                  paddingHorizontal: 12,
-                  paddingVertical: 7,
+                  gap: 4,
+                  paddingHorizontal: isDesktop ? 12 : 8,
+                  paddingVertical: isDesktop ? 7 : 6,
                   backgroundColor: pendingNotifCount > 0 ? '#FFFBEB' : '#FFFFFF',
                   borderRadius: Radius.full,
                   borderWidth: 1.5,
@@ -599,9 +588,11 @@ export default function MasterDashboardScreen() {
                   size={16}
                   color={pendingNotifCount > 0 ? '#D97706' : '#0284C7'}
                 />
-                <Text style={{ fontSize: 12, fontWeight: '800', color: pendingNotifCount > 0 ? '#B45309' : '#0F172A' }}>
-                  Alerts
-                </Text>
+                {isDesktop && (
+                  <Text style={{ fontSize: 12, fontWeight: '800', color: pendingNotifCount > 0 ? '#B45309' : '#0F172A' }}>
+                    Alerts
+                  </Text>
+                )}
                 {pendingNotifCount > 0 && (
                   <View
                     style={{
@@ -622,12 +613,12 @@ export default function MasterDashboardScreen() {
               </TouchableOpacity>
 
               <TouchableOpacity
-                style={styles.quickEntryHeaderBtn}
+                style={[styles.quickEntryHeaderBtn, !isDesktop && { paddingHorizontal: 10, paddingVertical: 6 }]}
                 onPress={() => openModal('stock')}
                 activeOpacity={0.85}
               >
                 <Ionicons name="add-circle" size={16} color="#FFFFFF" />
-                <Text style={styles.quickEntryHeaderBtnText}>+ Data Entry</Text>
+                <Text style={styles.quickEntryHeaderBtnText}>{isDesktop ? '+ Data Entry' : '+ Entry'}</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -640,6 +631,8 @@ export default function MasterDashboardScreen() {
               onOpenCategorySetup={() => setActiveTab('categories')}
             />
           )}
+          {activeTab === 'income_expense_details' && <IncomeExpenseDetailsScreen />}
+          {activeTab === 'projects' && <ProjectsScreen />}
           {activeTab === 'reports' && <FinancialStatementsScreen />}
           {activeTab === 'categories' && <CategorySetupScreen onBackToExpenses={() => setActiveTab('expenses')} />}
           {activeTab === 'stocks' && (
@@ -699,10 +692,32 @@ export default function MasterDashboardScreen() {
                 }}
               />
 
-              {/* 2. Executive Quick Action Ribbon */}
+              {/* 2. Executive Quick Navigation Ribbon */}
               <View style={styles.actionRibbon}>
                 <TouchableOpacity
                   style={[styles.actionPill, { borderColor: '#0284C7', backgroundColor: '#F0F9FF' }]}
+                  onPress={() => setActiveTab('income_expense_details')}
+                  activeOpacity={0.8}
+                >
+                  <Ionicons name="swap-horizontal-outline" size={15} color="#0284C7" />
+                  <Text style={[styles.actionPillText, { color: '#0284C7', fontWeight: '800' }]}>
+                    📖 Incomes - Expenses Details
+                  </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[styles.actionPill, { borderColor: '#8B5CF6', backgroundColor: '#F5F3FF' }]}
+                  onPress={() => setActiveTab('projects')}
+                  activeOpacity={0.8}
+                >
+                  <Ionicons name="briefcase-outline" size={15} color="#8B5CF6" />
+                  <Text style={[styles.actionPillText, { color: '#8B5CF6', fontWeight: '800' }]}>
+                    📁 Projects Ledger & P&L
+                  </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[styles.actionPill, { borderColor: '#0EA5E9', backgroundColor: '#F0F9FF' }]}
                   onPress={() => setActiveTab('register')}
                   activeOpacity={0.8}
                 >
@@ -711,63 +726,27 @@ export default function MasterDashboardScreen() {
                     📝 Quicken Register
                   </Text>
                 </TouchableOpacity>
+
                 <TouchableOpacity
-                  style={[styles.actionPill, { borderColor: '#38BDF8', backgroundColor: '#F0F9FF' }]}
-                  onPress={() => setQrModalVisible(true)}
-                  activeOpacity={0.8}
-                >
-                  <Ionicons name="phone-portrait-outline" size={15} color="#0284C7" />
-                  <Text style={[styles.actionPillText, { color: '#0284C7', fontWeight: '800' }]}>
-                    📱 Mobile App (QR & PWA)
-                  </Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[styles.actionPill, { borderColor: '#38BDF8', backgroundColor: '#F0F9FF' }]}
+                  style={[styles.actionPill, { borderColor: '#10B981', backgroundColor: '#F0FDF4' }]}
                   onPress={() => setActiveTab('reports')}
                   activeOpacity={0.8}
                 >
-                  <Ionicons name="document-text-outline" size={15} color="#0284C7" />
-                  <Text style={[styles.actionPillText, { color: '#0284C7', fontWeight: '800' }]}>
-                    📊 Financial Statements
+                  <Ionicons name="document-text-outline" size={15} color="#16A34A" />
+                  <Text style={[styles.actionPillText, { color: '#16A34A', fontWeight: '800' }]}>
+                    📊 Statements
                   </Text>
                 </TouchableOpacity>
+
                 <TouchableOpacity
-                  style={[styles.actionPill, { borderColor: '#A78BFA', backgroundColor: '#F5F3FF' }]}
-                  onPress={() => setActiveTab('categories')}
+                  style={[styles.actionPill, { borderColor: '#F59E0B', backgroundColor: '#FFFBEB' }]}
+                  onPress={() => openModal('expense')}
                   activeOpacity={0.8}
                 >
-                  <Ionicons name="pricetags-outline" size={15} color="#8B5CF6" />
-                  <Text style={[styles.actionPillText, { color: '#8B5CF6', fontWeight: '800' }]}>
-                    🏷️ Category & Budgets
+                  <Ionicons name="add-circle-outline" size={15} color="#D97706" />
+                  <Text style={[styles.actionPillText, { color: '#D97706', fontWeight: '800' }]}>
+                    + Quick Record
                   </Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={[styles.actionPill, { borderColor: '#BAE6FD', backgroundColor: '#F0F9FF' }]} onPress={() => openModal('withdrawal')} activeOpacity={0.8}>
-                  <Ionicons name="cash-outline" size={15} color="#0284C7" />
-                  <Text style={[styles.actionPillText, { color: '#0284C7' }]}>💸 Cash Withdrawal</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={[styles.actionPill, { borderColor: '#DDD6FE', backgroundColor: '#F5F3FF' }]} onPress={() => openModal('transfer')} activeOpacity={0.8}>
-                  <Ionicons name="swap-horizontal" size={15} color="#8B5CF6" />
-                  <Text style={[styles.actionPillText, { color: '#8B5CF6' }]}>🔁 Bank Transfer</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={[styles.actionPill, { borderColor: '#BBF7D0', backgroundColor: '#F0FDF4' }]} onPress={() => openModal('income')} activeOpacity={0.8}>
-                  <Ionicons name="wallet-outline" size={15} color="#16A34A" />
-                  <Text style={[styles.actionPillText, { color: '#16A34A' }]}>💰 Add Salary / Income</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={[styles.actionPill, { borderColor: '#FECACA', backgroundColor: '#FEF2F2' }]} onPress={() => openModal('expense')} activeOpacity={0.8}>
-                  <Ionicons name="receipt-outline" size={15} color="#EF4444" />
-                  <Text style={[styles.actionPillText, { color: '#EF4444' }]}>🧾 Record Expense</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.actionPill} onPress={() => openModal('stock')} activeOpacity={0.8}>
-                  <Ionicons name="trending-up" size={15} color="#0D9488" />
-                  <Text style={styles.actionPillText}>+ Stock</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.actionPill} onPress={() => openModal('asset')} activeOpacity={0.8}>
-                  <Ionicons name="business-outline" size={15} color="#D97706" />
-                  <Text style={styles.actionPillText}>+ Physical Asset</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.actionPill} onPress={() => openModal('bank')} activeOpacity={0.8}>
-                  <Ionicons name="business-outline" size={15} color="#64748B" />
-                  <Text style={styles.actionPillText}>+ Bank Account</Text>
                 </TouchableOpacity>
               </View>
 
@@ -1023,12 +1002,6 @@ export default function MasterDashboardScreen() {
                   </View>
                 </View>
               </View>
-
-              {/* 7. Human Capital Wealth Velocity & Time-Value */}
-              <WealthVelocityCard velocity={wealthVelocity} />
-
-              {/* 8. Principal Wealth Consultant Directives */}
-              <FinancialConsultantToolsCard planning={planningSuite} />
             </ScrollView>
           )}
         </View>

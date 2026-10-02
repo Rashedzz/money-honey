@@ -51,7 +51,14 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
     restoreLocalBackup,
     toggleAutoCloudBackup,
     triggerManualCloudBackup,
+    startFreshSlate,
   } = useAuth();
+
+  // Fresh Slate State
+  const [freshUserName, setFreshUserName] = useState('');
+  const [freshUserId, setFreshUserId] = useState('');
+  const [showFreshConfirm, setShowFreshConfirm] = useState(false);
+  const [freshSuccessMsg, setFreshSuccessMsg] = useState('');
 
   // Profile Form State
   const [name, setName] = useState(user?.name || 'Rashed Zaman');
@@ -685,6 +692,110 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
                 Execute Full Database Restore
               </Text>
             </TouchableOpacity>
+          </View>
+        )}
+      </GlassCard>
+
+      {/* 3.5. Multi-User Sharing & Start Fresh / Zero-Balance Reset */}
+      <GlassCard style={styles.card} padding={20} glowColor="#10B981">
+        <View style={styles.sectionHeaderRow}>
+          <View>
+            <Text style={[styles.sectionTitle, { color: '#059669' }]}>
+              👥 MULTI-USER SHARING & START FRESH (BLANK PORTFOLIO)
+            </Text>
+            <Text style={styles.sectionSub}>
+              How data isolation works when sharing the app, and how to start with ৳0 balance
+            </Text>
+          </View>
+        </View>
+
+        <View style={styles.architectureBox}>
+          <View style={styles.archItem}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+              <Ionicons name="shield-checkmark" size={18} color="#059669" />
+              <Text style={{ fontSize: 14, fontWeight: '800', color: '#0F172A' }}>
+                100% Device-Isolated Storage Architecture
+              </Text>
+            </View>
+            <Text style={{ fontSize: 12, color: '#64748B', marginTop: 4, lineHeight: 18 }}>
+              • When you share the Money-Honey link with friends or colleagues, it opens in <Text style={{ fontWeight: '700' }}>their own device/browser</Text>.{'\n'}
+              • Your financial figures, bank accounts, and transactions are <Text style={{ fontWeight: '700' }}>stored only on your local device</Text>. Other users will never see your data.{'\n'}
+              • Any user can also start a completely clean portfolio with ৳0 balance using the button below.
+            </Text>
+          </View>
+        </View>
+
+        {freshSuccessMsg ? (
+          <View style={[styles.successBanner, { marginTop: 12 }]}>
+            <Ionicons name="checkmark-circle" size={16} color="#16A34A" />
+            <Text style={styles.successBannerText}>{freshSuccessMsg}</Text>
+          </View>
+        ) : null}
+
+        {!showFreshConfirm ? (
+          <TouchableOpacity
+            style={[styles.saveGreenBtn, { backgroundColor: '#059669', marginTop: 14 }]}
+            onPress={() => setShowFreshConfirm(true)}
+            activeOpacity={0.85}
+          >
+            <Ionicons name="refresh-circle-outline" size={20} color="#FFFFFF" />
+            <Text style={styles.saveBtnText}>Start Fresh Slate (Zero Balance / New User)</Text>
+          </TouchableOpacity>
+        ) : (
+          <View style={{ marginTop: 14, padding: 14, backgroundColor: '#FEF2F2', borderRadius: Radius.md, borderWidth: 1, borderColor: '#FECACA' }}>
+            <Text style={{ fontSize: 14, fontWeight: '800', color: '#991B1B', marginBottom: 4 }}>
+              ⚠️ Confirm Fresh Slate Reset
+            </Text>
+            <Text style={{ fontSize: 12, color: '#7F1D1D', marginBottom: 12, lineHeight: 18 }}>
+              This will clear local bank balances and ledgers on this device and initialize a fresh profile with ৳0 balance.
+            </Text>
+
+            <View style={styles.twoCol}>
+              <View style={styles.col}>
+                <Text style={styles.inputLabel}>NEW USER NAME</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="e.g. Asif Ahmed"
+                  placeholderTextColor="#94A3B8"
+                  value={freshUserName}
+                  onChangeText={setFreshUserName}
+                />
+              </View>
+              <View style={styles.col}>
+                <Text style={styles.inputLabel}>USER HANDLE / ID</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="e.g. asif01"
+                  placeholderTextColor="#94A3B8"
+                  value={freshUserId}
+                  onChangeText={setFreshUserId}
+                />
+              </View>
+            </View>
+
+            <View style={{ flexDirection: 'row', gap: 10, marginTop: 8 }}>
+              <TouchableOpacity
+                style={{ flex: 1, paddingVertical: 10, backgroundColor: '#DC2626', borderRadius: Radius.sm, alignItems: 'center' }}
+                onPress={async () => {
+                  await startFreshSlate(freshUserName || 'New User', freshUserId || undefined);
+                  setShowFreshConfirm(false);
+                  setFreshSuccessMsg('Fresh slate initialized! All accounts reset to ৳0 balance.');
+                  setTimeout(() => setFreshSuccessMsg(''), 4000);
+                }}
+                activeOpacity={0.85}
+              >
+                <Text style={{ color: '#FFFFFF', fontWeight: '800', fontSize: 13 }}>
+                  Yes, Start Fresh Slate (৳0)
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={{ paddingHorizontal: 16, paddingVertical: 10, backgroundColor: '#FFFFFF', borderRadius: Radius.sm, borderWidth: 1, borderColor: '#CBD5E1', alignItems: 'center' }}
+                onPress={() => setShowFreshConfirm(false)}
+                activeOpacity={0.85}
+              >
+                <Text style={{ color: '#475569', fontWeight: '700', fontSize: 13 }}>Cancel</Text>
+              </TouchableOpacity>
+            </View>
           </View>
         )}
       </GlassCard>

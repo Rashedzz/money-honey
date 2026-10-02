@@ -52,6 +52,8 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({
   }> = [
     { id: 'dashboard', label: 'Home Dashboard', icon: 'grid-outline' },
     { id: 'register', label: 'Quicken Register', icon: 'receipt-outline', badge: 'Active' },
+    { id: 'income_expense_details', label: 'Incomes - Expenses', icon: 'swap-horizontal-outline', badge: 'Cash Book' },
+    { id: 'projects', label: 'Projects Ledger', icon: 'briefcase-outline', badge: 'P&L' },
     { id: 'expenses', label: 'Spending & Budgets', icon: 'pie-chart-outline' },
     { id: 'reports', label: 'Financial Statements', icon: 'document-text-outline', badge: 'IFRS' },
     { id: 'categories', label: 'Category & Budget Setup', icon: 'pricetags-outline', badge: 'Setup' },

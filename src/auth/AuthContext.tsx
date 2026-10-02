@@ -50,6 +50,7 @@ export interface AuthContextType {
   restoreLocalBackup: (backupData: string) => { success: boolean; error?: string };
   toggleAutoCloudBackup: (enable: boolean) => void;
   triggerManualCloudBackup: () => Promise<{ success: boolean; message: string }>;
+  startFreshSlate: (newUserName?: string, newUserId?: string) => Promise<void>;
 }
 
 const USER_STORAGE_KEY = 'money_honey_user_session';
@@ -472,6 +473,56 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setIsAuthModalVisible(true);
   };
 
+  const startFreshSlate = async (newUserName?: string, newUserId?: string): Promise<void> => {
+    try {
+      const cleanId = (newUserId || 'user_' + Date.now().toString().slice(-4)).trim().toLowerCase();
+      const cleanName = (newUserName || 'Fresh User').trim();
+
+      const freshProfile: UserProfile = {
+        id: cleanId,
+        name: cleanName,
+        avatar: '🌱',
+        createdAt: Date.now(),
+      };
+
+      if (typeof window !== 'undefined' && window.localStorage) {
+        window.localStorage.setItem('mh_fresh_slate_user', 'true');
+        window.localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(freshProfile));
+
+        const blankAccounts = [{
+          id: 'CASH-VAULT',
+          bankName: 'Cash in Hand',
+          accountName: 'Physical Cash Wallet',
+          accountNumber: 'CASH-VAULT',
+          accountType: 'Physical Cash',
+          currentBalance: 0,
+          color: '#10B981',
+        }];
+        window.localStorage.setItem('mh_user_bank_accounts', JSON.stringify(blankAccounts));
+        window.localStorage.setItem('mh_user_bank_accounts_vault_backup', JSON.stringify(blankAccounts));
+        window.localStorage.removeItem('mh_user_bank_accounts_snapshot_history');
+
+        window.localStorage.setItem('mh_user_expenses', JSON.stringify([]));
+        window.localStorage.setItem('mh_user_incomes', JSON.stringify([]));
+        window.localStorage.setItem('mh_user_transfers', JSON.stringify([]));
+        window.localStorage.setItem('mh_user_assets', JSON.stringify([]));
+        window.localStorage.setItem('mh_user_cash', JSON.stringify([]));
+        window.localStorage.setItem('mh_user_loans', JSON.stringify([]));
+        window.localStorage.setItem('mh_user_stocks', JSON.stringify([]));
+        window.localStorage.setItem('mh_user_policies', JSON.stringify([]));
+        window.localStorage.setItem('mh_user_birthdays', JSON.stringify([]));
+        window.localStorage.setItem('mh_user_projects', JSON.stringify([]));
+      }
+
+      setUser(freshProfile);
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new Event('mh_balance_updated'));
+      }
+    } catch (e) {
+      console.warn('Failed to start fresh slate:', e);
+    }
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -508,6 +559,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         restoreLocalBackup,
         toggleAutoCloudBackup,
         triggerManualCloudBackup,
+        startFreshSlate,
       }}
     >
       {children}

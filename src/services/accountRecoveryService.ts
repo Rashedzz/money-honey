@@ -230,14 +230,17 @@ export class AccountRecoveryService {
         });
       }
 
-      // Apply adjustments on base balances
+      // Apply adjustments on base balances: NEVER double-add incomes on established positive balances!
       const result: BankAccountItem[] = [];
       discoveredAccountsMap.forEach((acc) => {
-        const netAdjustment = balanceAdjustments[acc.id] || 0;
-        const adjustedBal = Math.max(0, acc.currentBalance + netAdjustment);
+        // If account had 0 balance initially, use netAdjustment if positive; otherwise preserve established balance
+        const finalBal = acc.currentBalance > 0
+          ? acc.currentBalance
+          : Math.max(0, balanceAdjustments[acc.id] || 0);
+
         result.push({
           ...acc,
-          currentBalance: adjustedBal > 0 ? adjustedBal : acc.currentBalance,
+          currentBalance: finalBal,
         });
       });
 
@@ -269,6 +272,26 @@ export class AccountRecoveryService {
 
       const totalBal = currentAccounts.reduce((sum, a) => sum + (a.currentBalance || 0), 0);
       const isMissingOrZero = currentAccounts.length <= 1 || totalBal === 0;
+
+      // If the user has opted for a fresh slate (blank portfolio), do NOT force demo balances
+      if (typeof window !== 'undefined' && window.localStorage) {
+        if (window.localStorage.getItem('mh_fresh_slate_user') === 'true') {
+          const freshCash: BankAccountItem[] = currentAccounts.length > 0 ? currentAccounts : [{
+            id: CASH_IN_HAND_ID,
+            bankName: 'Cash in Hand',
+            accountName: 'Cash Wallet',
+            accountNumber: 'CASH-VAULT',
+            accountType: 'Physical Cash',
+            currentBalance: 0,
+            color: '#10B981',
+          }];
+          return {
+            success: true,
+            accounts: freshCash,
+            message: 'Fresh slate mode active — blank portfolio preserved.',
+          };
+        }
+      }
 
       if (!force && !isMissingOrZero) {
         return {
@@ -406,5 +429,26 @@ export class AccountRecoveryService {
     // Ensure core accounts are present with positive balances
     const result = Array.from(mergedMap.values());
     return result;
+  }
+
+  public static isFreshSlate(): boolean {
+    try {
+      if (typeof window !== 'undefined' && window.localStorage) {
+        return window.localStorage.getItem('mh_fresh_slate_user') === 'true';
+      }
+    } catch (e) {}
+    return false;
+  }
+
+  public static setFreshSlate(isFresh: boolean): void {
+    try {
+      if (typeof window !== 'undefined' && window.localStorage) {
+        if (isFresh) {
+          window.localStorage.setItem('mh_fresh_slate_user', 'true');
+        } else {
+          window.localStorage.removeItem('mh_fresh_slate_user');
+        }
+      }
+    } catch (e) {}
   }
 }

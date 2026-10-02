@@ -16,6 +16,8 @@ import { BankAccountItem } from '../../services/transactionManager';
 export type SidebarTabType =
   | 'dashboard'
   | 'register'
+  | 'income_expense_details'
+  | 'projects'
   | 'reports'
   | 'categories'
   | 'stocks'
@@ -93,6 +95,8 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
   }> = [
     { id: 'dashboard', label: 'Dashboard', icon: 'grid-outline' },
     { id: 'register', label: 'Quicken Register', icon: 'receipt-outline', badge: 'Live' },
+    { id: 'income_expense_details', label: 'Incomes - Expenses', icon: 'swap-horizontal-outline', badge: 'Cash Book' },
+    { id: 'projects', label: 'Projects Ledger', icon: 'briefcase-outline', badge: 'P&L' },
     { id: 'expenses', label: 'Spending & Budgets', icon: 'pie-chart-outline' },
     { id: 'reports', label: 'Financial Statements', icon: 'document-text-outline', badge: 'IFRS' },
     { id: 'categories', label: 'Category & Budgets', icon: 'pricetags-outline' },

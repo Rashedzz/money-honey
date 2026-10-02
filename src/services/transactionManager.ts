@@ -30,6 +30,7 @@ export interface ExpenseItem {
   id: string;
   category: 'Asset Expense' | 'Household & Living' | 'Debt Service EMI' | 'Personal / Discretionary' | string;
   linkedAssetId?: string;
+  projectId?: string;
   title: string;
   amount: number;
   date: string;
@@ -46,6 +47,7 @@ export interface IncomeItem {
   date: string;
   accountId?: string;
   destinationAccount?: string;
+  projectId?: string;
   notes?: string;
 }
 
@@ -360,6 +362,7 @@ export class TransactionManager {
     accountId?: string;
     date?: string;
     linkedAssetId?: string;
+    projectId?: string;
     notes?: string;
     userId?: string;
   }): { expense: ExpenseItem; updatedAccounts: BankAccountItem[] } {
@@ -370,6 +373,7 @@ export class TransactionManager {
       accountId,
       date = new Date().toISOString().split('T')[0],
       linkedAssetId,
+      projectId,
       notes,
       userId = 'rashed01',
     } = params;
@@ -411,6 +415,7 @@ export class TransactionManager {
       paymentMethod,
       accountId: targetAccountId,
       linkedAssetId,
+      projectId,
       notes,
     };
 
@@ -434,6 +439,7 @@ export class TransactionManager {
     category?: string;
     accountId?: string;
     date?: string;
+    projectId?: string;
     notes?: string;
     userId?: string;
   }): { income: IncomeItem; updatedAccounts: BankAccountItem[] } {
@@ -443,6 +449,7 @@ export class TransactionManager {
       category = 'Salary',
       accountId,
       date = new Date().toISOString().split('T')[0],
+      projectId,
       notes,
       userId = 'rashed01',
     } = params;
@@ -481,6 +488,7 @@ export class TransactionManager {
       date,
       accountId: targetAccountId,
       destinationAccount,
+      projectId,
       notes,
     };
 
