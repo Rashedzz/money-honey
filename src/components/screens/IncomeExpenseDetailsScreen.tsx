@@ -8,6 +8,7 @@ import {
   TextInput,
   Platform,
   Alert,
+  useWindowDimensions,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, Spacing, Radius } from '../../theme';
@@ -22,6 +23,7 @@ import {
 } from '../../services/transactionManager';
 
 type PresetRange = 'THIS_MONTH' | 'LAST_MONTH' | 'LAST_3_MONTHS' | 'THIS_YEAR' | 'CUSTOM';
+type ViewFilterType = 'ALL' | 'INCOMES_ONLY' | 'EXPENSES_ONLY' | 'DAILY_CARDS';
 
 interface DailyAccountMovements {
   date: string; // YYYY-MM-DD
@@ -62,9 +64,12 @@ export const IncomeExpenseDetailsScreen: React.FC<IncomeExpenseDetailsScreenProp
     return `${y}-${String(m).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`;
   }, [today]);
 
+  const { width } = useWindowDimensions();
+  const isMobile = width < 768;
+
   const [startDate, setStartDate] = useState<string>(defaultStartDate);
   const [endDate, setEndDate] = useState<string>(defaultEndDate);
-  const [viewFilter, setViewFilter] = useState<'ALL' | 'INCOMES_ONLY' | 'EXPENSES_ONLY'>('ALL');
+  const [viewFilter, setViewFilter] = useState<ViewFilterType>('ALL');
   const [showEmptyDays, setShowEmptyDays] = useState(false);
   const [selectedDayDetail, setSelectedDayDetail] = useState<DailyAccountMovements | null>(null);
 
@@ -122,6 +127,21 @@ export const IncomeExpenseDetailsScreen: React.FC<IncomeExpenseDetailsScreenProp
     const banks = raw.filter((a) => a.id !== CASH_IN_HAND_ID && a.accountType !== 'Physical Cash');
     return cash ? [cash, ...banks] : raw;
   }, [refreshKey]);
+
+  // Table Width Calculator for Smooth 2D Horizontal Scroll
+  const totalTableWidth = useMemo(() => {
+    let w = 130; // Date column width
+    const incCols = accounts.length * 135 + 145; // Bank columns + Total
+    const expCols = accounts.length * 135 + 145; // Bank columns + Total
+    if (viewFilter === 'ALL') {
+      w += incCols + expCols;
+    } else if (viewFilter === 'INCOMES_ONLY') {
+      w += incCols;
+    } else if (viewFilter === 'EXPENSES_ONLY') {
+      w += expCols;
+    }
+    return Math.max(w, isMobile ? 850 : width - 48);
+  }, [accounts, viewFilter, width, isMobile]);
 
   // 2. Raw Transactions
   const rawExpenses = useMemo(() => {
@@ -370,7 +390,38 @@ export const IncomeExpenseDetailsScreen: React.FC<IncomeExpenseDetailsScreenProp
   };
 
   return (
-    <View style={styles.container}>
+    <ScrollView
+      style={styles.screenScroll}
+      contentContainerStyle={styles.scrollContent}
+      showsVerticalScrollIndicator={true}
+    >
+      <View style={styles.container}>
+        {Platform.OS === 'web' && (
+          // @ts-ignore
+          <style dangerouslySetInnerHTML={{
+            __html: `
+              .cashbook-scroll-container::-webkit-scrollbar {
+                height: 8px;
+                width: 8px;
+              }
+              .cashbook-scroll-container::-webkit-scrollbar-track {
+                background: #F1F5F9;
+                border-radius: 4px;
+              }
+              .cashbook-scroll-container::-webkit-scrollbar-thumb {
+                background: #0284C7;
+                border-radius: 4px;
+              }
+              .cashbook-scroll-container::-webkit-scrollbar-thumb:hover {
+                background: #0369A1;
+              }
+              .cashbook-scroll-container {
+                scrollbar-width: thin;
+                scrollbar-color: #0284C7 #F1F5F9;
+              }
+            `
+          }} />
+        )}
       {/* 1. Header Toolbar */}
       <View style={styles.topHeader}>
         <View style={styles.headerLeft}>
@@ -490,6 +541,12 @@ export const IncomeExpenseDetailsScreen: React.FC<IncomeExpenseDetailsScreenProp
             >
               <Text style={[styles.toggleText, viewFilter === 'EXPENSES_ONLY' && styles.toggleTextActive]}>Expenses</Text>
             </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.toggleBtn, viewFilter === 'DAILY_CARDS' && styles.toggleBtnActive]}
+              onPress={() => setViewFilter('DAILY_CARDS')}
+            >
+              <Text style={[styles.toggleText, viewFilter === 'DAILY_CARDS' && styles.toggleTextActive]}>📱 Daily Cards</Text>
+            </TouchableOpacity>
           </View>
 
           {/* Show All 31 Days Toggle */}
@@ -538,76 +595,92 @@ export const IncomeExpenseDetailsScreen: React.FC<IncomeExpenseDetailsScreenProp
       </View>
 
       {/* 4. Full Dual-Column Two-Part Table */}
-      <View style={styles.tableCard}>
-        <ScrollView horizontal showsHorizontalScrollIndicator={true}>
-          <View>
-            {/* Super Header: Left Incomes vs Right Expenses */}
-            <View style={styles.superHeaderRow}>
-              <View style={[styles.superHeaderCell, styles.dateCol]}>
-                <Text style={styles.superHeaderText}>TIMELINE</Text>
+      {viewFilter !== 'DAILY_CARDS' && (
+        <View style={styles.tableCard}>
+          {isMobile && (
+            <View style={styles.mobileHintBar}>
+              <Ionicons name="swap-horizontal" size={14} color="#0284C7" />
+              <Text style={styles.mobileHintText}>
+                Swipe horizontally to view all bank columns & totals
+              </Text>
+            </View>
+          )}
+
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={true}
+            style={styles.tableHorizontalScroll}
+            contentContainerStyle={{ minWidth: totalTableWidth }}
+            // @ts-ignore
+            className="cashbook-scroll-container"
+          >
+            <View>
+              {/* Super Header: Left Incomes vs Right Expenses */}
+              <View style={styles.superHeaderRow}>
+                <View style={[styles.superHeaderCell, styles.dateColSuperHeader]}>
+                  <Text style={styles.superHeaderText}>TIMELINE</Text>
+                </View>
+
+                {viewFilter !== 'EXPENSES_ONLY' && (
+                  <View style={[styles.superHeaderCell, styles.incomesSuperCol]}>
+                    <Ionicons name="arrow-down-circle" size={15} color="#16A34A" />
+                    <Text style={[styles.superHeaderText, { color: '#16A34A' }]}>
+                      INCOMES & CREDITS (LEFT SIDE)
+                    </Text>
+                  </View>
+                )}
+
+                {viewFilter !== 'INCOMES_ONLY' && (
+                  <View style={[styles.superHeaderCell, styles.expensesSuperCol]}>
+                    <Ionicons name="arrow-up-circle" size={15} color="#EF4444" />
+                    <Text style={[styles.superHeaderText, { color: '#EF4444' }]}>
+                      EXPENSES & DEBITS (RIGHT SIDE)
+                    </Text>
+                  </View>
+                )}
               </View>
 
-              {viewFilter !== 'EXPENSES_ONLY' && (
-                <View style={[styles.superHeaderCell, styles.incomesSuperCol]}>
-                  <Ionicons name="arrow-down-circle" size={15} color="#16A34A" />
-                  <Text style={[styles.superHeaderText, { color: '#16A34A' }]}>
-                    INCOMES & CREDITS (LEFT SIDE)
-                  </Text>
+              {/* Sub-Header Row: Date | Cash in Hand | Bank 1 | Bank 2 ... | Total */}
+              <View style={styles.headerRow}>
+                <View style={[styles.thCell, styles.dateColHeader]}>
+                  <Text style={styles.thText}>Date</Text>
                 </View>
-              )}
 
-              {viewFilter !== 'INCOMES_ONLY' && (
-                <View style={[styles.superHeaderCell, styles.expensesSuperCol]}>
-                  <Ionicons name="arrow-up-circle" size={15} color="#EF4444" />
-                  <Text style={[styles.superHeaderText, { color: '#EF4444' }]}>
-                    EXPENSES & DEBITS (RIGHT SIDE)
-                  </Text>
-                </View>
-              )}
-            </View>
+                {/* Incomes Sub-columns */}
+                {viewFilter !== 'EXPENSES_ONLY' && (
+                  <>
+                    {accounts.map((acc) => (
+                      <View key={`inc_h_${acc.id}`} style={styles.dataCol}>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                          <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: acc.color || '#16A34A' }} />
+                          <Text style={styles.thText} numberOfLines={1}>{acc.bankName}</Text>
+                        </View>
+                      </View>
+                    ))}
+                    <View style={[styles.dataCol, styles.totalCol, { backgroundColor: '#F0FDF4' }]}>
+                      <Text style={[styles.thText, { color: '#16A34A', fontWeight: '900' }]}>Total Incomes</Text>
+                    </View>
+                  </>
+                )}
 
-            {/* Sub-Header Row: Date | Cash in Hand | Bank 1 | Bank 2 ... | Total */}
-            <View style={styles.headerRow}>
-              <View style={[styles.thCell, styles.dateCol]}>
-                <Text style={styles.thText}>Date</Text>
+                {/* Expenses Sub-columns */}
+                {viewFilter !== 'INCOMES_ONLY' && (
+                  <>
+                    {accounts.map((acc) => (
+                      <View key={`exp_h_${acc.id}`} style={styles.dataCol}>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                          <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: acc.color || '#EF4444' }} />
+                          <Text style={styles.thText} numberOfLines={1}>{acc.bankName}</Text>
+                        </View>
+                      </View>
+                    ))}
+                    <View style={[styles.dataCol, styles.totalCol, { backgroundColor: '#FEF2F2' }]}>
+                      <Text style={[styles.thText, { color: '#DC2626', fontWeight: '900' }]}>Total Expenses</Text>
+                    </View>
+                  </>
+                )}
               </View>
 
-              {/* Incomes Sub-columns */}
-              {viewFilter !== 'EXPENSES_ONLY' && (
-                <>
-                  {accounts.map((acc) => (
-                    <View key={`inc_h_${acc.id}`} style={styles.dataCol}>
-                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                        <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: acc.color || '#16A34A' }} />
-                        <Text style={styles.thText} numberOfLines={1}>{acc.bankName}</Text>
-                      </View>
-                    </View>
-                  ))}
-                  <View style={[styles.dataCol, styles.totalCol, { backgroundColor: '#F0FDF4' }]}>
-                    <Text style={[styles.thText, { color: '#16A34A', fontWeight: '900' }]}>Total Incomes</Text>
-                  </View>
-                </>
-              )}
-
-              {/* Expenses Sub-columns */}
-              {viewFilter !== 'INCOMES_ONLY' && (
-                <>
-                  {accounts.map((acc) => (
-                    <View key={`exp_h_${acc.id}`} style={styles.dataCol}>
-                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                        <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: acc.color || '#EF4444' }} />
-                        <Text style={styles.thText} numberOfLines={1}>{acc.bankName}</Text>
-                      </View>
-                    </View>
-                  ))}
-                  <View style={[styles.dataCol, styles.totalCol, { backgroundColor: '#FEF2F2' }]}>
-                    <Text style={[styles.thText, { color: '#DC2626', fontWeight: '900' }]}>Total Expenses</Text>
-                  </View>
-                </>
-              )}
-            </View>
-
-            <ScrollView style={{ maxHeight: 520 }}>
               {/* ROW 1: OPENING BALANCE */}
               <View style={[styles.tr, styles.openingRow]}>
                 <View style={[styles.tdCell, styles.dateCol]}>
@@ -809,10 +882,106 @@ export const IncomeExpenseDetailsScreen: React.FC<IncomeExpenseDetailsScreenProp
                   </>
                 )}
               </View>
-            </ScrollView>
-          </View>
-        </ScrollView>
-      </View>
+            </View>
+          </ScrollView>
+        </View>
+      )}
+
+      {/* 4b. Mobile Daily Cards Feed (Alternative View) */}
+      {viewFilter === 'DAILY_CARDS' && (
+        <View style={styles.dailyCardsContainer}>
+          {dailyMovements.length === 0 ? (
+            <View style={styles.emptyFeedBox}>
+              <Ionicons name="calendar-outline" size={36} color="#94A3B8" />
+              <Text style={styles.emptyFeedTitle}>No transactions recorded</Text>
+              <Text style={styles.emptyFeedSub}>Try changing the date filter or adding new transactions</Text>
+            </View>
+          ) : (
+            dailyMovements.map((m) => {
+              const dayParts = m.date.split('-');
+              const dayNum = dayParts[2] || '01';
+              const monthNum = dayParts[1] || '01';
+              const months = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
+              const monthStr = months[parseInt(monthNum, 10) - 1] || 'MTH';
+              const dayNet = m.totalIncome - m.totalExpense;
+
+              return (
+                <TouchableOpacity
+                  key={`feed_${m.date}`}
+                  style={styles.dailyCard}
+                  onPress={() => setSelectedDayDetail(m)}
+                  activeOpacity={0.88}
+                >
+                  <View style={styles.dailyCardHeader}>
+                    <View style={styles.dayCalendarBadge}>
+                      <Text style={styles.dayBadgeNum}>{dayNum}</Text>
+                      <Text style={styles.dayBadgeMon}>{monthStr}</Text>
+                    </View>
+
+                    <View style={{ flex: 1, marginLeft: 10 }}>
+                      <Text style={styles.dailyCardDateText}>{m.date} ({m.dayLabel})</Text>
+                      <Text style={styles.dailyCardSubText}>
+                        {m.incomeItems.length} Incomes • {m.expenseItems.length} Expenses
+                      </Text>
+                    </View>
+
+                    <View style={[styles.dailyCardNetBadge, { backgroundColor: dayNet > 0 ? '#DCFCE7' : dayNet < 0 ? '#FEE2E2' : '#F1F5F9' }]}>
+                      <Text style={[styles.dailyCardNetVal, { color: dayNet > 0 ? '#15803D' : dayNet < 0 ? '#DC2626' : '#64748B' }]}>
+                        {dayNet > 0 ? '+' : dayNet < 0 ? '−' : ''}৳ {Math.abs(dayNet).toLocaleString('en-IN')}
+                      </Text>
+                    </View>
+                  </View>
+
+                  {/* Account Breakdowns for this day */}
+                  <View style={styles.dailyCardBody}>
+                    {m.totalIncome > 0 && (
+                      <View style={styles.dailySection}>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: 4 }}>
+                          <Ionicons name="arrow-down-circle" size={13} color="#16A34A" />
+                          <Text style={[styles.dailySectionTitle, { color: '#16A34A' }]}>
+                            INCOMES: +৳ {m.totalIncome.toLocaleString('en-IN')}
+                          </Text>
+                        </View>
+                        <View style={styles.accountBadgesRow}>
+                          {accounts.filter(acc => (m.incomes[acc.id] || 0) > 0).map(acc => (
+                            <View key={`feed_inc_${m.date}_${acc.id}`} style={styles.accBadgeGreen}>
+                              <Text style={styles.accBadgeName}>{acc.bankName}:</Text>
+                              <Text style={styles.accBadgeAmt}>+৳ {(m.incomes[acc.id] || 0).toLocaleString('en-IN')}</Text>
+                            </View>
+                          ))}
+                        </View>
+                      </View>
+                    )}
+
+                    {m.totalExpense > 0 && (
+                      <View style={[styles.dailySection, { marginTop: m.totalIncome > 0 ? 8 : 0 }]}>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: 4 }}>
+                          <Ionicons name="arrow-up-circle" size={13} color="#EF4444" />
+                          <Text style={[styles.dailySectionTitle, { color: '#EF4444' }]}>
+                            EXPENSES: −৳ {m.totalExpense.toLocaleString('en-IN')}
+                          </Text>
+                        </View>
+                        <View style={styles.accountBadgesRow}>
+                          {accounts.filter(acc => (m.expenses[acc.id] || 0) > 0).map(acc => (
+                            <View key={`feed_exp_${m.date}_${acc.id}`} style={styles.accBadgeRed}>
+                              <Text style={styles.accBadgeName}>{acc.bankName}:</Text>
+                              <Text style={styles.accBadgeAmt}>−৳ {(m.expenses[acc.id] || 0).toLocaleString('en-IN')}</Text>
+                            </View>
+                          ))}
+                        </View>
+                      </View>
+                    )}
+
+                    {m.totalIncome === 0 && m.totalExpense === 0 && (
+                      <Text style={styles.dailyNoTransText}>No activity on this date</Text>
+                    )}
+                  </View>
+                </TouchableOpacity>
+              );
+            })
+          )}
+        </View>
+      )}
 
       {/* 5. Day Transaction Drilldown Modal / Popover */}
       {selectedDayDetail && (
@@ -878,7 +1047,8 @@ export const IncomeExpenseDetailsScreen: React.FC<IncomeExpenseDetailsScreenProp
           </View>
         </View>
       )}
-    </View>
+      </View>
+    </ScrollView>
   );
 };
 
@@ -1179,6 +1349,8 @@ const styles = StyleSheet.create({
     width: 130,
     paddingHorizontal: 10,
     justifyContent: 'center',
+    backgroundColor: '#FFFFFF',
+    ...(Platform.OS === 'web' ? { position: 'sticky' as any, left: 0, zIndex: 5 } : {}),
   },
   dataCol: {
     width: 140,
@@ -1372,5 +1544,183 @@ const styles = StyleSheet.create({
   drillItemAmount: {
     fontSize: 13,
     fontWeight: '900',
+  },
+  // Scrolling & Mobile Responsive Enhancements
+  screenScroll: {
+    flex: 1,
+    backgroundColor: '#F8FAFC',
+  },
+  scrollContent: {
+    paddingBottom: 60,
+    flexGrow: 1,
+  },
+  tableHorizontalScroll: {
+    width: '100%',
+  },
+  mobileHintBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    backgroundColor: '#F0F9FF',
+    borderBottomWidth: 1,
+    borderBottomColor: '#BAE6FD',
+  },
+  mobileHintText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#0284C7',
+  },
+  dateColSuperHeader: {
+    width: 130,
+    backgroundColor: '#F1F5F9',
+    ...(Platform.OS === 'web' ? { position: 'sticky' as any, left: 0, zIndex: 10 } : {}),
+  },
+  dateColHeader: {
+    width: 130,
+    backgroundColor: '#F8FAFC',
+    paddingHorizontal: 10,
+    ...(Platform.OS === 'web' ? { position: 'sticky' as any, left: 0, zIndex: 10 } : {}),
+  },
+
+  // Daily Cards Feed View
+  dailyCardsContainer: {
+    gap: 12,
+  },
+  emptyFeedBox: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: Radius.lg,
+    padding: Spacing.xl,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  emptyFeedTitle: {
+    fontSize: 15,
+    fontWeight: '800',
+    color: '#0F172A',
+    marginTop: 10,
+  },
+  emptyFeedSub: {
+    fontSize: 12,
+    color: '#64748B',
+    marginTop: 4,
+    textAlign: 'center',
+  },
+  dailyCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: Radius.lg,
+    padding: Spacing.md,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 3,
+    elevation: 1,
+  },
+  dailyCardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderBottomWidth: 1,
+    borderBottomColor: '#F1F5F9',
+    paddingBottom: 10,
+  },
+  dayCalendarBadge: {
+    width: 44,
+    height: 44,
+    borderRadius: Radius.md,
+    backgroundColor: '#F1F5F9',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: '#CBD5E1',
+  },
+  dayBadgeNum: {
+    fontSize: 15,
+    fontWeight: '900',
+    color: '#0F172A',
+    lineHeight: 18,
+  },
+  dayBadgeMon: {
+    fontSize: 9,
+    fontWeight: '800',
+    color: '#64748B',
+    letterSpacing: 0.5,
+  },
+  dailyCardDateText: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: '#0F172A',
+  },
+  dailyCardSubText: {
+    fontSize: 11,
+    color: '#64748B',
+    marginTop: 2,
+  },
+  dailyCardNetBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: Radius.full,
+  },
+  dailyCardNetVal: {
+    fontSize: 12,
+    fontWeight: '900',
+  },
+  dailyCardBody: {
+    paddingTop: 10,
+  },
+  dailySection: {
+    backgroundColor: '#F8FAFC',
+    borderRadius: Radius.md,
+    padding: 8,
+    borderWidth: 1,
+    borderColor: '#F1F5F9',
+  },
+  dailySectionTitle: {
+    fontSize: 10.5,
+    fontWeight: '800',
+    letterSpacing: 0.5,
+  },
+  accountBadgesRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
+  },
+  accBadgeGreen: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#DCFCE7',
+    paddingHorizontal: 7,
+    paddingVertical: 3,
+    borderRadius: Radius.sm,
+  },
+  accBadgeRed: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#FEE2E2',
+    paddingHorizontal: 7,
+    paddingVertical: 3,
+    borderRadius: Radius.sm,
+  },
+  accBadgeName: {
+    fontSize: 10.5,
+    fontWeight: '700',
+    color: '#334155',
+  },
+  accBadgeAmt: {
+    fontSize: 10.5,
+    fontWeight: '900',
+    color: '#0F172A',
+  },
+  dailyNoTransText: {
+    fontSize: 11.5,
+    color: '#94A3B8',
+    fontStyle: 'italic',
+    paddingVertical: 2,
   },
 });
