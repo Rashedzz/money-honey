@@ -184,7 +184,7 @@ Money-Honey Private Wealth Management (IFRS / GAAP Audited)`;
           <View style={styles.actionButtonsCol}>
             <View style={styles.actionButtonsRow}>
               <TouchableOpacity
-                style={[styles.exportBtn, { backgroundColor: '#0284C7' }]}
+                style={[styles.exportBtn, { backgroundColor: '#0F172A' }]}
                 onPress={handlePrintOrPdf}
                 activeOpacity={0.8}
               >
@@ -193,21 +193,21 @@ Money-Honey Private Wealth Management (IFRS / GAAP Audited)`;
               </TouchableOpacity>
 
               <TouchableOpacity
-                style={[styles.exportBtn, { backgroundColor: '#10B981' }]}
+                style={[styles.exportBtn, { backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#CBD5E1' }]}
                 onPress={handleShareReport}
                 activeOpacity={0.8}
               >
-                <Ionicons name="share-social-outline" size={16} color="#FFFFFF" />
-                <Text style={styles.exportBtnText}>Share</Text>
+                <Ionicons name="share-social-outline" size={16} color="#334155" />
+                <Text style={[styles.exportBtnText, { color: '#334155' }]}>Share</Text>
               </TouchableOpacity>
 
               <TouchableOpacity
-                style={[styles.exportBtn, { backgroundColor: '#64748B' }]}
+                style={[styles.exportBtn, { backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#CBD5E1' }]}
                 onPress={handleDownloadHtml}
                 activeOpacity={0.8}
               >
-                <Ionicons name="download-outline" size={16} color="#FFFFFF" />
-                <Text style={styles.exportBtnText}>Download</Text>
+                <Ionicons name="download-outline" size={16} color="#334155" />
+                <Text style={[styles.exportBtnText, { color: '#334155' }]}>Download</Text>
               </TouchableOpacity>
 
               {/* Currency Toggle */}
@@ -550,25 +550,25 @@ Money-Honey Private Wealth Management (IFRS / GAAP Audited)`;
           </View>
 
           {/* Cash Reconciliation */}
-          <View style={[styles.statementSection, { backgroundColor: '#131D33', padding: 14, borderRadius: 10 }]}>
-            <Text style={[styles.sectionHeader, { color: '#38BDF8', borderBottomColor: '#38BDF8' }]}>
-              LIQUID CASH RECONCILIATION
+          <View style={[styles.statementSection, { backgroundColor: '#F8FAFC', padding: 14, borderRadius: 10, borderWidth: 1, borderColor: '#E2E8F0' }]}>
+            <Text style={[styles.sectionHeader, { color: '#0F172A', borderBottomColor: '#CBD5E1' }]}>
+              CASH & BANK RECONCILIATION
             </Text>
             <View style={styles.tableRow}>
-              <Text style={styles.rowLabel}>Opening Cash Reserves (Beginning of Period)</Text>
+              <Text style={styles.rowLabel}>Opening Cash & Bank Balance (Start of Period)</Text>
               <Text style={styles.rowValue}>{fmt(cashFlow.openingCashBalance)}</Text>
             </View>
             <View style={styles.tableRow}>
-              <Text style={styles.rowLabel}>Net Change in Liquid Cash (A + B + C)</Text>
-              <Text style={[styles.rowValue, { color: cashFlow.netChangeInCash >= 0 ? '#10B981' : '#EF4444', fontWeight: '800' }]}>
+              <Text style={styles.rowLabel}>Net Change in Cash (A + B + C)</Text>
+              <Text style={[styles.rowValue, { color: cashFlow.netChangeInCash >= 0 ? '#16A34A' : '#DC2626', fontWeight: '800' }]}>
                 {cashFlow.netChangeInCash >= 0 ? '+' : ''}{fmt(cashFlow.netChangeInCash)}
               </Text>
             </View>
             <View style={[styles.tableRow, styles.grandTotalRow]}>
-              <Text style={[styles.grandTotalLabel, { color: '#38BDF8' }]}>
-                CLOSING CASH RESERVES (Reconciled with Banks & Vault)
+              <Text style={[styles.grandTotalLabel, { color: '#0F172A' }]}>
+                CLOSING CASH & BANK BALANCE
               </Text>
-              <Text style={[styles.grandTotalValue, { color: '#38BDF8' }]}>{fmt(cashFlow.closingCashBalance)}</Text>
+              <Text style={[styles.grandTotalValue, { color: '#0F172A' }]}>{fmt(cashFlow.closingCashBalance)}</Text>
             </View>
           </View>
         </View>
@@ -1106,7 +1106,7 @@ Money-Honey Private Wealth Management (IFRS / GAAP Audited)`;
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#080B14',
+    backgroundColor: '#F8FAFC',
   },
   content: {
     padding: Spacing.lg,
@@ -1126,44 +1126,48 @@ const styles = StyleSheet.create({
     gap: 16,
   },
   badgeIFRS: {
-    backgroundColor: 'rgba(16, 185, 129, 0.15)',
+    backgroundColor: '#F0FDF4',
     paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: 4,
+    borderWidth: 1,
+    borderColor: '#BBF7D0',
   },
   badgeIFRSText: {
     fontSize: 10,
     fontWeight: '800',
-    color: '#10B981',
+    color: '#15803D',
     letterSpacing: 0.8,
   },
   badgeIntuit: {
-    backgroundColor: 'rgba(2, 132, 199, 0.15)',
+    backgroundColor: '#F1F5F9',
     paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: 4,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
   },
   badgeIntuitText: {
     fontSize: 10,
     fontWeight: '800',
-    color: '#38BDF8',
+    color: '#334155',
     letterSpacing: 0.8,
   },
   headerTitle: {
-    fontSize: 22,
+    fontSize: 21,
     fontWeight: '800',
-    color: '#FFFFFF',
+    color: '#0F172A',
     marginTop: 8,
-    letterSpacing: -0.5,
+    letterSpacing: -0.4,
   },
   headerSub: {
-    fontSize: 12,
-    color: '#94A3B8',
+    fontSize: 12.5,
+    color: '#64748B',
     marginTop: 4,
     maxWidth: 550,
   },
   actionButtonsCol: {
-    alignItems: 'flex-end',
+    alignItems: 'flex-start',
   },
   actionButtonsRow: {
     flexDirection: 'row',
@@ -1184,15 +1188,15 @@ const styles = StyleSheet.create({
     fontSize: 12,
   },
   currencyToggleBtn: {
-    backgroundColor: '#1E293B',
+    backgroundColor: '#F8FAFC',
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: Radius.md,
     borderWidth: 1,
-    borderColor: '#38BDF8',
+    borderColor: '#CBD5E1',
   },
   currencyToggleText: {
-    color: '#38BDF8',
+    color: '#0F172A',
     fontWeight: '800',
     fontSize: 12,
   },
@@ -1200,7 +1204,7 @@ const styles = StyleSheet.create({
     marginTop: 16,
     paddingTop: 14,
     borderTopWidth: 1,
-    borderTopColor: 'rgba(255,255,255,0.08)',
+    borderTopColor: '#F1F5F9',
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
@@ -1209,7 +1213,7 @@ const styles = StyleSheet.create({
   periodRowLabel: {
     fontSize: 11,
     fontWeight: '800',
-    color: '#94A3B8',
+    color: '#64748B',
     letterSpacing: 0.8,
   },
   periodPillScroll: {
@@ -1220,15 +1224,18 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: Radius.full,
-    backgroundColor: '#1E293B',
+    backgroundColor: '#F8FAFC',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
   },
   periodPillActive: {
-    backgroundColor: '#0284C7',
+    backgroundColor: '#0F172A',
+    borderColor: '#0F172A',
   },
   periodPillText: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: '#94A3B8',
+    fontSize: 11.5,
+    fontWeight: '700',
+    color: '#475569',
   },
   periodPillTextActive: {
     color: '#FFFFFF',
@@ -1248,28 +1255,28 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 10,
     borderRadius: Radius.md,
-    backgroundColor: '#0F172A',
+    backgroundColor: '#FFFFFF',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.08)',
+    borderColor: '#E2E8F0',
   },
   tabBtnActive: {
-    backgroundColor: '#0284C7',
-    borderColor: '#0284C7',
+    backgroundColor: '#0F172A',
+    borderColor: '#0F172A',
   },
   tabBtnText: {
     fontSize: 13,
     fontWeight: '700',
-    color: '#94A3B8',
+    color: '#475569',
   },
   tabBtnTextActive: {
     color: '#FFFFFF',
   },
   statementCard: {
-    backgroundColor: '#0B1120',
+    backgroundColor: '#FFFFFF',
     borderRadius: 14,
     padding: 20,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.08)',
+    borderColor: '#E2E8F0',
   },
   sheetHeader: {
     flexDirection: 'row',
@@ -1280,44 +1287,46 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     paddingBottom: 14,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.08)',
+    borderBottomColor: '#E2E8F0',
   },
   sheetTitle: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '800',
-    color: '#FFFFFF',
-    letterSpacing: 0.5,
+    color: '#0F172A',
+    letterSpacing: 0.3,
   },
   sheetSubtitle: {
     fontSize: 12,
-    color: '#94A3B8',
+    color: '#64748B',
     marginTop: 2,
   },
   auditStatusTag: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    backgroundColor: 'rgba(22, 163, 74, 0.15)',
+    backgroundColor: '#F0FDF4',
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: Radius.full,
+    borderWidth: 1,
+    borderColor: '#BBF7D0',
   },
   auditStatusTagText: {
     fontSize: 11,
     fontWeight: '800',
-    color: '#16A34A',
-    letterSpacing: 0.5,
+    color: '#15803D',
+    letterSpacing: 0.4,
   },
   statementSection: {
     marginBottom: 24,
   },
   sectionHeader: {
-    fontSize: 13,
+    fontSize: 12.5,
     fontWeight: '800',
-    color: '#10B981',
-    letterSpacing: 1,
+    color: '#0F172A',
+    letterSpacing: 0.8,
     borderBottomWidth: 1.5,
-    borderBottomColor: '#10B981',
+    borderBottomColor: '#CBD5E1',
     paddingBottom: 4,
     marginBottom: 10,
   },
@@ -1326,8 +1335,8 @@ const styles = StyleSheet.create({
   },
   subCategoryTitle: {
     fontSize: 11,
-    fontWeight: '700',
-    color: '#38BDF8',
+    fontWeight: '800',
+    color: '#64748B',
     letterSpacing: 0.5,
     marginBottom: 6,
     textTransform: 'uppercase',
@@ -1336,65 +1345,66 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: 7,
+    paddingVertical: 7.5,
     paddingHorizontal: 8,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.04)',
+    borderBottomColor: '#F1F5F9',
   },
   rowLabel: {
     fontSize: 13,
-    color: '#CBD5E1',
+    color: '#334155',
     flex: 1,
   },
   rowSubLabel: {
     fontSize: 11,
-    color: '#94A3B8',
+    color: '#64748B',
     marginTop: 2,
   },
   rowValue: {
     fontSize: 13,
     fontWeight: '700',
-    color: '#F8FAFC',
+    color: '#0F172A',
     textAlign: 'right',
   },
   subtotalRow: {
     borderTopWidth: 1,
-    borderTopColor: '#475569',
+    borderTopColor: '#CBD5E1',
     borderBottomWidth: 1,
-    borderBottomColor: '#475569',
-    backgroundColor: 'rgba(255,255,255,0.02)',
+    borderBottomColor: '#CBD5E1',
+    backgroundColor: '#F8FAFC',
     marginVertical: 4,
   },
   subtotalLabel: {
     fontSize: 13,
     fontWeight: '800',
-    color: '#FFFFFF',
+    color: '#0F172A',
   },
   subtotalValue: {
     fontSize: 14,
     fontWeight: '800',
-    color: '#FFFFFF',
+    color: '#0F172A',
   },
   grandTotalRow: {
     borderTopWidth: 2,
-    borderTopColor: '#FFFFFF',
-    borderBottomWidth: 3,
-    borderBottomColor: '#FFFFFF',
+    borderTopColor: '#0F172A',
+    borderBottomWidth: 2,
+    borderBottomColor: '#0F172A',
+    backgroundColor: '#F8FAFC',
     paddingVertical: 12,
     paddingHorizontal: 12,
     borderRadius: 6,
     marginVertical: 8,
   },
   grandTotalLabel: {
-    fontSize: 14,
+    fontSize: 13.5,
     fontWeight: '900',
-    color: '#FFFFFF',
-    letterSpacing: 0.5,
+    color: '#0F172A',
+    letterSpacing: 0.4,
   },
   grandTotalValue: {
-    fontSize: 16,
+    fontSize: 15.5,
     fontWeight: '900',
-    color: '#FFFFFF',
+    color: '#0F172A',
   },
   emptyRow: {
     fontSize: 12,
@@ -1407,25 +1417,25 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: '#131D33',
+    backgroundColor: '#F8FAFC',
     padding: 12,
     borderRadius: 8,
     marginBottom: 6,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.04)',
+    borderColor: '#E2E8F0',
   },
   ledgerItemTitle: {
     fontSize: 13,
     fontWeight: '700',
-    color: '#F8FAFC',
+    color: '#0F172A',
   },
   ledgerItemSub: {
     fontSize: 11,
-    color: '#94A3B8',
+    color: '#64748B',
     marginTop: 2,
   },
   ledgerItemAmount: {
-    fontSize: 15,
+    fontSize: 14.5,
     fontWeight: '800',
   },
   catProgressItem: {
@@ -1437,24 +1447,24 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   catName: {
-    fontSize: 12,
+    fontSize: 12.5,
     fontWeight: '700',
-    color: '#E2E8F0',
+    color: '#1E293B',
   },
   catAmount: {
-    fontSize: 12,
+    fontSize: 12.5,
     fontWeight: '800',
-    color: '#38BDF8',
+    color: '#0F172A',
   },
   progressBarTrack: {
-    height: 6,
-    backgroundColor: '#1E293B',
-    borderRadius: 3,
+    height: 7,
+    backgroundColor: '#E2E8F0',
+    borderRadius: 4,
     overflow: 'hidden',
   },
   progressBarFill: {
     height: '100%',
-    borderRadius: 3,
+    borderRadius: 4,
   },
   scoreStrip: {
     flexDirection: 'row',
@@ -1465,42 +1475,42 @@ const styles = StyleSheet.create({
   scoreCard: {
     flex: 1,
     minWidth: 160,
-    backgroundColor: '#131D33',
+    backgroundColor: '#F8FAFC',
     padding: 14,
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.06)',
+    borderColor: '#E2E8F0',
   },
   scoreLabel: {
     fontSize: 10,
     fontWeight: '800',
-    color: '#94A3B8',
-    letterSpacing: 0.8,
+    color: '#64748B',
+    letterSpacing: 0.7,
   },
   scoreVal: {
-    fontSize: 22,
+    fontSize: 21,
     fontWeight: '900',
     marginVertical: 4,
   },
   scoreSub: {
-    fontSize: 10,
+    fontSize: 10.5,
     color: '#64748B',
   },
   ratioRowCard: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: '#131D33',
+    backgroundColor: '#F8FAFC',
     padding: 14,
     borderRadius: 8,
     marginBottom: 8,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.04)',
+    borderColor: '#E2E8F0',
   },
   ratioName: {
-    fontSize: 13,
+    fontSize: 13.5,
     fontWeight: '800',
-    color: '#FFFFFF',
+    color: '#0F172A',
   },
   ratioStatusBadge: {
     paddingHorizontal: 6,
@@ -1513,12 +1523,12 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
   },
   ratioDesc: {
-    fontSize: 11,
-    color: '#94A3B8',
+    fontSize: 11.5,
+    color: '#475569',
     marginTop: 2,
   },
   ratioBench: {
-    fontSize: 10,
+    fontSize: 10.5,
     color: '#64748B',
     fontStyle: 'italic',
     marginTop: 2,
@@ -1528,7 +1538,7 @@ const styles = StyleSheet.create({
     marginLeft: 10,
   },
   ratioValueText: {
-    fontSize: 18,
+    fontSize: 17,
     fontWeight: '900',
   },
 });

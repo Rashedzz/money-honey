@@ -7,10 +7,10 @@ import {
   TextInput,
   TouchableOpacity,
   ScrollView,
-  Platform,
+  useWindowDimensions,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { Colors, Typography, Spacing, Radius } from '../../theme';
+import { Colors, Spacing, Radius } from '../../theme';
 import { FormDraftManager } from '../../utils/formDrafts';
 import {
   TransactionManager,
@@ -18,16 +18,29 @@ import {
   CASH_IN_HAND_ID,
 } from '../../services/transactionManager';
 import { CategoryManager, FinancialCategory } from '../../services/categoryManager';
+import {
+  PaperAssetsManager,
+  FDRAsset,
+  DPSAsset,
+  SanchaypatraAsset,
+  addMonthsToDateStr,
+  calculateDaysLeftToDate,
+  calculateDpsMaturityEstimate,
+} from '../../services/paperAssetsManager';
+import { showToast } from '../shared/GlobalDialogHost';
 
 export type EntryType =
+  | 'expense'
+  | 'income'
+  | 'transfer'
+  | 'withdrawal'
+  | 'fdr'
+  | 'dps'
+  | 'sanchaypatra'
   | 'bank'
   | 'loan'
-  | 'income'
-  | 'expense'
-  | 'withdrawal'
-  | 'transfer'
-  | 'asset'
   | 'stock'
+  | 'asset'
   | 'insurance'
   | 'birthday';
 
@@ -40,15 +53,85 @@ interface UniversalEntryModalProps {
   onOpenVoiceInput?: () => void;
 }
 
+const POPULAR_BD_BANKS = [
+  'Sonali Bank PLC',
+  'BRAC Bank PLC',
+  'The City Bank',
+  'Eastern Bank (EBL)',
+  'Dutch-Bangla Bank',
+  'Islami Bank BD',
+  'Prime Bank',
+  'IDLC Finance',
+];
+
+const PLAIN_LANGUAGE_GUIDES: Record<EntryType, { title: string; tip: string }> = {
+  expense: {
+    title: 'Record Daily Expense / Bill',
+    tip: 'Subtracts money from the Bank or Cash wallet you pick below and logs it in your Daily Cash Book.',
+  },
+  income: {
+    title: 'Record Income / Money Received',
+    tip: 'Adds money directly into the Bank or Cash account you pick below and logs it in your Daily Cash Book.',
+  },
+  transfer: {
+    title: 'Transfer Between Accounts',
+    tip: 'Moves money from one account to another (for example Bank to bKash or Bank to Bank). Total Net Worth stays unchanged.',
+  },
+  withdrawal: {
+    title: 'ATM / Bank Cash Withdrawal',
+    tip: 'Deducts money from your Bank Account and adds the exact amount into your Physical Cash in Hand wallet.',
+  },
+  fdr: {
+    title: 'Add Bank Fixed Deposit (FDR)',
+    tip: 'Lump-sum deposit locked for 3 months to 5+ years for fixed interest. Tap any duration pill below to auto-fill Maturity Date.',
+  },
+  dps: {
+    title: 'Add Monthly Savings Scheme (DPS)',
+    tip: 'Save a fixed amount every month for 1–10 years and receive your total deposit plus bonus profit at maturity.',
+  },
+  sanchaypatra: {
+    title: 'Add Govt. Sanchaypatra Certificate',
+    tip: 'Government savings certificate paying regular profit (monthly or every 3 months) into your linked bank account.',
+  },
+  bank: {
+    title: 'Add Bank Account or Mobile Wallet',
+    tip: 'Enlist a Savings/Current Bank Account or Mobile Wallet (bKash/Nagad) with its current available balance.',
+  },
+  loan: {
+    title: 'Record Loan or Borrowed Money',
+    tip: 'Track bank loans (Home/Car/Personal) or private family borrowings along with monthly installment (EMI).',
+  },
+  stock: {
+    title: 'Add Stock / Share Holding (DSE)',
+    tip: 'Track shares bought on Dhaka/Chittagong Stock Exchange with live profit/loss calculation.',
+  },
+  asset: {
+    title: 'Add Land, Flat, Gold or Vehicle',
+    tip: 'Record valuable physical property, current market value, and any monthly rental income it generates.',
+  },
+  insurance: {
+    title: 'Add Life / Health Insurance Policy',
+    tip: 'Keep track of insurance coverage amount, annual/monthly premium, and family nominee.',
+  },
+  birthday: {
+    title: 'Add Family Birthday / Event Reminder',
+    tip: 'Set an annual date reminder and optional gift budget so you never miss an important occasion.',
+  },
+};
+
 export const UniversalEntryModal: React.FC<UniversalEntryModalProps> = ({
   visible,
-  initialType = 'income',
+  initialType = 'expense',
   onClose,
   onSave,
   onOpenCategorySetup,
   onOpenVoiceInput,
 }) => {
+  const { width } = useWindowDimensions();
+  const isMobile = width < 620;
+
   const [selectedType, setSelectedType] = useState<EntryType>(initialType);
+  const [formError, setFormError] = useState<string>('');
 
   // Common Fields
   const [title, setTitle] = useState('');
@@ -66,38 +149,87 @@ export const UniversalEntryModal: React.FC<UniversalEntryModalProps> = ({
   const [toAccountId, setToAccountId] = useState<string>('');
   const [txDate, setTxDate] = useState<string>(new Date().toISOString().split('T')[0]);
 
-  // Dynamic Categories from CategoryManager
+  // Dedicated FDR / DPS / Sanchaypatra Fields (Mobile & Desktop Friendly)
+  const [savBankName, setSavBankName] = useState('Sonali Bank PLC');
+  const [savBranch, setSavBranch] = useState('');
+  const [savCertNo, setSavCertNo] = useState('');
+  const [savRate, setSavRate] = useState('9.5');
+  const [savTaxPct, setSavTaxPct] = useState('10');
+  const [savTenorMonths, setSavTenorMonths] = useState('12');
+  const [savMaturityDate, setSavMaturityDate] = useState(() =>
+    addMonthsToDateStr(new Date().toISOString().slice(0, 10), 12)
+  );
+  const [savInterval, setSavInterval] = useState<'Monthly' | '3 Months' | 'At Maturity'>('At Maturity');
+  const [savLinkedAccId, setSavLinkedAccId] = useState<string>('');
+  const [savDeductNow, setSavDeductNow] = useState<boolean>(false);
+  const [dpsDepositDay, setDpsDepositDay] = useState('10');
+  const [dpsAlreadyDeposited, setDpsAlreadyDeposited] = useState('');
+
+  // Dynamic Categories
   const [expenseCategories, setExpenseCategories] = useState<FinancialCategory[]>([]);
   const [incomeCategories, setIncomeCategories] = useState<FinancialCategory[]>([]);
 
-  // Sync initialType
+  // Sync initialType when modal opens
   useEffect(() => {
-    if (initialType) setSelectedType(initialType);
-  }, [initialType]);
+    if (visible && initialType) {
+      setSelectedType(initialType);
+      setFormError('');
+    }
+  }, [visible, initialType]);
 
-  // Load categories and subscribe to updates
+  // Smart defaults when switching between FDR / DPS / Sanchaypatra
+  useEffect(() => {
+    setFormError('');
+    const today = new Date().toISOString().slice(0, 10);
+    if (selectedType === 'fdr') {
+      setSavRate('9.5');
+      setSavTaxPct('10');
+      setSavTenorMonths('12');
+      setSavInterval('At Maturity');
+      setSavMaturityDate(addMonthsToDateStr(today, 12));
+    } else if (selectedType === 'dps') {
+      setSavRate('9.0');
+      setSavTaxPct('5');
+      setSavTenorMonths('60');
+      setSavMaturityDate(addMonthsToDateStr(today, 60));
+    } else if (selectedType === 'sanchaypatra') {
+      setSavRate('11.77');
+      setSavTaxPct('10');
+      setSavTenorMonths('36');
+      setSavInterval('3 Months');
+      setSavMaturityDate(addMonthsToDateStr(today, 36));
+      if (!title) setTitle('3-Month Profit Based Sanchaypatra');
+    }
+  }, [selectedType]);
+
+  // Load categories
   useEffect(() => {
     const loadCategories = () => {
       setExpenseCategories(CategoryManager.getExpenseCategories());
       setIncomeCategories(CategoryManager.getIncomeCategories());
     };
-    if (visible) {
-      loadCategories();
-    }
+    if (visible) loadCategories();
     const unsub = CategoryManager.subscribeToCategoryUpdates(loadCategories);
     return () => unsub();
   }, [visible]);
 
-  // Load accounts when modal opens & set smart defaults
+  // Load accounts & smart defaults
   useEffect(() => {
     if (visible) {
       const accs = TransactionManager.getAccountsWithCash();
       setAccounts(accs);
       if (accs.length > 0) {
         if (!selectedAccountId) setSelectedAccountId(accs[0].id);
-        if (!depositAccountId) setSelectedAccountId(accs[0].id);
-        const nonCash = accs.find((a) => a.accountType !== 'Physical Cash');
-        if (nonCash) setFromBankId(nonCash.id);
+        if (!depositAccountId) setDepositAccountId(accs[0].id);
+        const nonCash = accs.find((a) => a.accountType !== 'Physical Cash' && a.id !== CASH_IN_HAND_ID);
+        if (nonCash) {
+          setFromBankId(nonCash.id);
+          setSavLinkedAccId(nonCash.id);
+          setSavBankName(nonCash.bankName);
+          setSavBranch(nonCash.branch || nonCash.address || '');
+        } else {
+          setSavLinkedAccId(accs[0].id);
+        }
         if (accs.length >= 2) {
           setFromAccountId(accs[0].id);
           setToAccountId(accs[1].id);
@@ -108,9 +240,9 @@ export const UniversalEntryModal: React.FC<UniversalEntryModalProps> = ({
     }
   }, [visible]);
 
-  // Restore draft when modal opens or selectedType changes
+  // Restore draft for standard types
   useEffect(() => {
-    if (visible) {
+    if (visible && !['fdr', 'dps', 'sanchaypatra'].includes(selectedType)) {
       const draft = FormDraftManager.loadDraft(`universal_${selectedType}`, {
         title: '',
         amount: '',
@@ -126,9 +258,12 @@ export const UniversalEntryModal: React.FC<UniversalEntryModalProps> = ({
     }
   }, [visible, selectedType]);
 
-  // Auto-save draft on any input change so data is never lost if user minimizes app
   useEffect(() => {
-    if (visible && (title || amount || category || subInfo || extraField)) {
+    if (
+      visible &&
+      !['fdr', 'dps', 'sanchaypatra'].includes(selectedType) &&
+      (title || amount || category || subInfo || extraField)
+    ) {
       FormDraftManager.saveDraft(`universal_${selectedType}`, {
         title,
         amount,
@@ -139,6 +274,20 @@ export const UniversalEntryModal: React.FC<UniversalEntryModalProps> = ({
     }
   }, [title, amount, category, subInfo, extraField, selectedType, visible]);
 
+  const handleSelectTenorMonths = (months: number) => {
+    setSavTenorMonths(String(months));
+    const start = txDate || new Date().toISOString().slice(0, 10);
+    setSavMaturityDate(addMonthsToDateStr(start, months));
+  };
+
+  const handleSelectLinkedBankForSavings = (acc: BankAccountItem) => {
+    setSavLinkedAccId(acc.id);
+    if (acc.accountType !== 'Physical Cash' && acc.id !== CASH_IN_HAND_ID) {
+      setSavBankName(acc.bankName);
+      setSavBranch(acc.branch || acc.address || '');
+    }
+  };
+
   const resetForm = () => {
     FormDraftManager.clearDraft(`universal_${selectedType}`);
     setTitle('');
@@ -146,17 +295,165 @@ export const UniversalEntryModal: React.FC<UniversalEntryModalProps> = ({
     setCategory('');
     setSubInfo('');
     setExtraField('');
+    setSavCertNo('');
+    setDpsAlreadyDeposited('');
+    setSavDeductNow(false);
+    setFormError('');
   };
 
   const handleSave = () => {
-    const isSpecialType =
-      selectedType === 'birthday' ||
-      selectedType === 'withdrawal' ||
-      selectedType === 'transfer';
-
-    if (!title.trim() && !isSpecialType) return;
-
+    setFormError('');
     const parsedAmount = parseFloat(amount.replace(/,/g, '')) || 0;
+
+    // 1. Handle FDR, DPS & Sanchaypatra (Works identically on Mobile & Laptop!)
+    if (selectedType === 'fdr' || selectedType === 'dps' || selectedType === 'sanchaypatra') {
+      if (parsedAmount <= 0) {
+        setFormError(
+          selectedType === 'dps'
+            ? 'Please enter the Monthly Installment (৳) amount.'
+            : 'Please enter the Investment Amount (৳).'
+        );
+        return;
+      }
+
+      const linkedAcc = accounts.find((a) => a.id === savLinkedAccId);
+      const linkedAccNo = linkedAcc?.accountNumber || 'N/A';
+      const bankLabel = savBankName.trim() || linkedAcc?.bankName || 'Commercial Bank';
+      const branchLabel = savBranch.trim() || linkedAcc?.branch || 'Main Branch';
+      const rate = parseFloat(savRate) || 0;
+      const taxPct = parseFloat(savTaxPct) || 0;
+      const months = Math.max(1, parseInt(savTenorMonths, 10) || 12);
+      const startDate = txDate || new Date().toISOString().slice(0, 10);
+      const matDate = savMaturityDate || addMonthsToDateStr(startDate, months);
+
+      const intervalsPerYear =
+        savInterval === 'Monthly' ? 12 : savInterval === '3 Months' ? 4 : 1;
+      const grossInterval = (parsedAmount * (rate / 100)) / intervalsPerYear;
+      const taxInterval = grossInterval * (taxPct / 100);
+      const netInterval = grossInterval - taxInterval;
+      const monthlyNet = Math.round((netInterval * intervalsPerYear) / 12);
+      const annualTax = Math.round(taxInterval * intervalsPerYear);
+
+      if (selectedType === 'fdr') {
+        const fdrNo = savCertNo.trim() || `FDR-${Math.floor(100000 + Math.random() * 900000)}`;
+        const newFdr: FDRAsset = {
+          id: `FDR-${Date.now()}`,
+          type: 'FDR',
+          bankName: bankLabel,
+          address: branchLabel,
+          accountNumber: linkedAccNo,
+          linkedAccountNo: linkedAccNo,
+          fdrNumber: fdrNo,
+          amount: parsedAmount,
+          openingDate: startDate,
+          tenorMonths: months,
+          maturityDate: matDate,
+          profitRateYearly: rate,
+          sourceTaxPercent: taxPct,
+          payoutInterval: savInterval,
+          monthlyReturn: monthlyNet,
+          sourceTaxAnnual: annualTax,
+          closingDaysRemaining: calculateDaysLeftToDate(matDate),
+        };
+        PaperAssetsManager.addOrUpdateAsset(newFdr, {
+          deductFromAccountId: savDeductNow ? savLinkedAccId : undefined,
+          deductionAmount: savDeductNow ? parsedAmount : 0,
+        });
+        showToast(`FDR saved (${bankLabel} • ৳${parsedAmount.toLocaleString('en-IN')})`);
+        onSave('fdr', newFdr);
+        resetForm();
+        onClose();
+        return;
+      }
+
+      if (selectedType === 'dps') {
+        const dpsNo = savCertNo.trim() || `DPS-${Math.floor(100000 + Math.random() * 900000)}`;
+        const tenorYears = Math.max(1, Math.round((months / 12) * 10) / 10);
+        const est = calculateDpsMaturityEstimate(parsedAmount, tenorYears, rate);
+        const initialDeposited =
+          dpsAlreadyDeposited.trim() !== ''
+            ? parseFloat(dpsAlreadyDeposited.replace(/,/g, '')) || 0
+            : parsedAmount;
+
+        const newDps: DPSAsset = {
+          id: `DPS-${Date.now()}`,
+          type: 'DPS',
+          bankName: bankLabel,
+          address: branchLabel,
+          linkedAccountNo: linkedAccNo,
+          dpsNumber: dpsNo,
+          monthlyEmi: parsedAmount,
+          depositDayOfMonth: parseInt(dpsDepositDay, 10) || 10,
+          tenorYears,
+          openingDate: startDate,
+          maturityDate: matDate,
+          profitRateYearly: rate,
+          projectedMaturityAmount: est.maturityValue,
+          totalDepositedSoFar: initialDeposited,
+          closingDaysRemaining: calculateDaysLeftToDate(matDate),
+          installmentsPaid: Math.max(1, Math.round(initialDeposited / parsedAmount)),
+        };
+        PaperAssetsManager.addOrUpdateAsset(newDps, {
+          deductFromAccountId: savDeductNow ? savLinkedAccId : undefined,
+          deductionAmount: savDeductNow ? parsedAmount : 0,
+        });
+        showToast(`DPS saved (${bankLabel} • ৳${parsedAmount.toLocaleString('en-IN')}/mo)`);
+        onSave('dps', newDps);
+        resetForm();
+        onClose();
+        return;
+      }
+
+      if (selectedType === 'sanchaypatra') {
+        const certNo = savCertNo.trim() || `SP-${Math.floor(100000 + Math.random() * 900000)}`;
+        const spName = title.trim() || '3-Month Profit Based Sanchaypatra';
+        const newSp: SanchaypatraAsset = {
+          id: `SC-${Date.now()}`,
+          type: 'Sanchaypatra',
+          name: spName,
+          institution: bankLabel,
+          address: branchLabel,
+          linkedAccountNo: linkedAccNo,
+          bankName: bankLabel,
+          certificateNumber: certNo,
+          amount: parsedAmount,
+          activationDate: startDate,
+          maturityDate: matDate,
+          profitRateYearly: rate,
+          sourceTaxPercent: taxPct,
+          payoutInterval: savInterval,
+          monthlyProfit: monthlyNet,
+          grossProfitPerInterval: Math.round(grossInterval),
+          netProfitPerInterval: Math.round(netInterval),
+          sourceTaxDeductedPerInterval: Math.round(taxInterval),
+          totalTaxDeductedAnnual: annualTax,
+          closingDaysRemaining: calculateDaysLeftToDate(matDate),
+        };
+        PaperAssetsManager.addOrUpdateAsset(newSp, {
+          deductFromAccountId: savDeductNow ? savLinkedAccId : undefined,
+          deductionAmount: savDeductNow ? parsedAmount : 0,
+        });
+        showToast(`Sanchaypatra saved (৳${parsedAmount.toLocaleString('en-IN')})`);
+        onSave('sanchaypatra', newSp);
+        resetForm();
+        onClose();
+        return;
+      }
+    }
+
+    // 2. Standard Transaction & Entity Validations
+    const isNoTitleNeeded = selectedType === 'withdrawal' || selectedType === 'transfer';
+    if (!title.trim() && !isNoTitleNeeded) {
+      setFormError('Please enter a name or description first.');
+      return;
+    }
+    if (
+      ['expense', 'income', 'withdrawal', 'transfer', 'loan', 'asset'].includes(selectedType) &&
+      parsedAmount <= 0
+    ) {
+      setFormError('Please enter an amount greater than 0.');
+      return;
+    }
 
     let payload: any = {
       id: `${selectedType.toUpperCase()}-${Math.floor(100 + Math.random() * 900)}`,
@@ -179,6 +476,7 @@ export const UniversalEntryModal: React.FC<UniversalEntryModalProps> = ({
         notes: subInfo.trim() || undefined,
       });
       payload = res.expense;
+      showToast(`Expense recorded: ৳${parsedAmount.toLocaleString('en-IN')}`);
     } else if (selectedType === 'income') {
       const res = TransactionManager.recordIncome({
         title: title.trim(),
@@ -189,9 +487,10 @@ export const UniversalEntryModal: React.FC<UniversalEntryModalProps> = ({
         notes: subInfo.trim() || undefined,
       });
       payload = res.income;
+      showToast(`Income added: +৳${parsedAmount.toLocaleString('en-IN')}`);
     } else if (selectedType === 'withdrawal') {
-      if (parsedAmount <= 0) return;
-      const effectiveBankId = fromBankId || accounts.find((a) => a.accountType !== 'Physical Cash')?.id || '';
+      const effectiveBankId =
+        fromBankId || accounts.find((a) => a.accountType !== 'Physical Cash')?.id || '';
       const res = TransactionManager.recordCashWithdrawal({
         fromBankId: effectiveBankId,
         amount: parsedAmount,
@@ -199,27 +498,32 @@ export const UniversalEntryModal: React.FC<UniversalEntryModalProps> = ({
         notes: subInfo.trim() || 'ATM Cash Withdrawal',
       });
       if (!res.success) {
-        alert(res.message);
+        setFormError(res.message);
         return;
       }
       payload = res.record;
+      showToast(`Withdrew ৳${parsedAmount.toLocaleString('en-IN')} to Cash in Hand`);
     } else if (selectedType === 'transfer') {
-      if (parsedAmount <= 0) return;
       const effectiveFrom = fromAccountId || accounts[0]?.id || '';
       const effectiveTo = toAccountId || accounts[1]?.id || '';
+      if (effectiveFrom === effectiveTo) {
+        setFormError('Please select two different accounts for transfer.');
+        return;
+      }
       const res = TransactionManager.recordTransfer({
         fromAccountId: effectiveFrom,
         toAccountId: effectiveTo,
         amount: parsedAmount,
         fee: parseFloat(extraField) || 0,
         date: txDate || new Date().toISOString().split('T')[0],
-        notes: subInfo.trim() || 'Inter-Bank Transfer',
+        notes: subInfo.trim() || 'Account Transfer',
       });
       if (!res.success) {
-        alert(res.message);
+        setFormError(res.message);
         return;
       }
       payload = res.record;
+      showToast(`Transferred ৳${parsedAmount.toLocaleString('en-IN')}`);
     } else if (selectedType === 'asset') {
       payload = {
         id: `AST-${Math.floor(100 + Math.random() * 900)}`,
@@ -231,6 +535,7 @@ export const UniversalEntryModal: React.FC<UniversalEntryModalProps> = ({
         isIdle: (parseFloat(subInfo) || 0) === 0,
         appreciationRateAnnualPct: parseFloat(extraField) || 5.0,
       };
+      showToast(`Physical asset saved: ${title.trim()}`);
     } else if (selectedType === 'insurance') {
       payload = {
         id: `INS-${Math.floor(100 + Math.random() * 900)}`,
@@ -242,6 +547,7 @@ export const UniversalEntryModal: React.FC<UniversalEntryModalProps> = ({
         nomineeName: extraField.trim() || 'Family Nominee',
         status: 'active',
       };
+      showToast(`Insurance policy saved`);
     } else if (selectedType === 'birthday') {
       payload = {
         id: `BD-${Math.floor(100 + Math.random() * 900)}`,
@@ -251,6 +557,7 @@ export const UniversalEntryModal: React.FC<UniversalEntryModalProps> = ({
         giftBudget: parsedAmount || 5000,
         notifyDaysBefore: 7,
       };
+      showToast(`Reminder saved for ${title.trim()}`);
     } else if (selectedType === 'stock') {
       const qty = parseFloat(subInfo) || 1;
       const bPrice = parsedAmount || 0;
@@ -273,23 +580,24 @@ export const UniversalEntryModal: React.FC<UniversalEntryModalProps> = ({
         gainLossPercent: gainPct,
         sector: category.trim() || 'Equities',
       };
+      showToast(`Stock added: ${title.trim().toUpperCase()}`);
     } else if (selectedType === 'bank') {
-      const newAcc = {
+      const newAcc: BankAccountItem = {
         id: `ACC-${Date.now()}-${Math.floor(100 + Math.random() * 900)}`,
         bankName: title.trim(),
-        accountType: category.trim() || 'Savings Account',
+        accountName: title.trim(),
+        accountType: (category.trim() as any) || 'Savings',
         accountNumber: subInfo.trim() || `****${Math.floor(1000 + Math.random() * 9000)}`,
         currentBalance: parsedAmount,
         routingNumber: extraField.trim() || undefined,
-        color: '#0284C7',
+        color: '#0F172A',
       };
-      try {
-        if (typeof window !== 'undefined' && window.localStorage) {
-          const raw = window.localStorage.getItem('mh_user_bank_accounts');
-          const existing = raw ? JSON.parse(raw) : [];
-          window.localStorage.setItem('mh_user_bank_accounts', JSON.stringify([...existing, newAcc]));
-        }
-      } catch (e) {}
+      const existingAccs = TransactionManager.getAccountsWithCash();
+      TransactionManager.saveAccounts([...existingAccs, newAcc]);
+      payload = newAcc;
+      showToast(`Bank account added: ${title.trim()}`);
+    } else if (selectedType === 'loan') {
+      showToast(`Loan recorded: ${title.trim()}`);
     }
 
     onSave(selectedType, payload);
@@ -297,32 +605,60 @@ export const UniversalEntryModal: React.FC<UniversalEntryModalProps> = ({
     onClose();
   };
 
-  const tabs: Array<{ id: EntryType; label: string; icon: keyof typeof Ionicons.glyphMap; color: string }> = [
-    { id: 'income', label: 'Income / Salary', icon: 'wallet', color: Colors.primary },
-    { id: 'expense', label: 'Expense', icon: 'receipt', color: Colors.danger },
-    { id: 'withdrawal', label: 'Withdraw Cash', icon: 'cash-outline', color: '#0284C7' },
-    { id: 'transfer', label: 'Bank Transfer', icon: 'swap-horizontal', color: '#8B5CF6' },
-    { id: 'stock', label: 'Stock / Equity', icon: 'trending-up', color: '#16A34A' },
-    { id: 'asset', label: 'Physical Asset', icon: 'business', color: Colors.secondary },
-    { id: 'loan', label: 'Loan / Debt', icon: 'card', color: Colors.danger },
-    { id: 'bank', label: 'Bank Account', icon: 'wallet-outline', color: Colors.primary },
-    { id: 'insurance', label: 'Insurance', icon: 'shield-checkmark', color: Colors.secondary },
-    { id: 'birthday', label: 'Birthday', icon: 'gift', color: Colors.accent },
+  const tabGroups: Array<{
+    heading: string;
+    items: Array<{ id: EntryType; label: string; icon: keyof typeof Ionicons.glyphMap }>;
+  }> = [
+    {
+      heading: 'DAILY MONEY',
+      items: [
+        { id: 'expense', label: 'Expense', icon: 'remove-circle-outline' },
+        { id: 'income', label: 'Income', icon: 'add-circle-outline' },
+        { id: 'transfer', label: 'Bank Transfer', icon: 'swap-horizontal-outline' },
+        { id: 'withdrawal', label: 'ATM / Cash', icon: 'cash-outline' },
+      ],
+    },
+    {
+      heading: 'SAVINGS, FDR & DPS',
+      items: [
+        { id: 'fdr', label: 'FDR (Fixed Deposit)', icon: 'lock-closed-outline' },
+        { id: 'dps', label: 'DPS (Monthly)', icon: 'calendar-outline' },
+        { id: 'sanchaypatra', label: 'Sanchaypatra', icon: 'document-text-outline' },
+        { id: 'bank', label: 'Bank Account', icon: 'wallet-outline' },
+        { id: 'stock', label: 'DSE Stock', icon: 'trending-up-outline' },
+      ],
+    },
+    {
+      heading: 'PROPERTY & LOANS',
+      items: [
+        { id: 'asset', label: 'Land / Gold / Flat', icon: 'business-outline' },
+        { id: 'loan', label: 'Loan / EMI', icon: 'card-outline' },
+        { id: 'insurance', label: 'Insurance', icon: 'shield-checkmark-outline' },
+        { id: 'birthday', label: 'Reminder', icon: 'gift-outline' },
+      ],
+    },
   ];
+
+  const guide = PLAIN_LANGUAGE_GUIDES[selectedType];
+  const rowStyle = isMobile ? styles.oneCol : styles.twoCol;
 
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
-      <View style={styles.overlay}>
-        <View style={styles.modalCard}>
-          {/* Header */}
+      <View style={[styles.overlay, isMobile && { padding: 8 }]}>
+        <View style={[styles.modalCard, isMobile && styles.modalCardMobile]}>
+          {/* Top Header */}
           <View style={styles.header}>
             <View style={styles.headerLeft}>
               <View style={styles.headerIcon}>
-                <Ionicons name="create-outline" size={18} color={Colors.primary} />
+                <Ionicons name="add-circle-outline" size={20} color="#0F172A" />
               </View>
-              <View>
-                <Text style={styles.title}>Universal Data Entry Vault</Text>
-                <Text style={styles.subtitle}>Enlist transactions, assets & financial entities</Text>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.title} numberOfLines={1}>
+                  Quick Financial Entry
+                </Text>
+                <Text style={styles.subtitle} numberOfLines={1}>
+                  Add daily cash flow, FDR, DPS, Sanchaypatra, banks or loans
+                </Text>
               </View>
             </View>
 
@@ -336,123 +672,523 @@ export const UniversalEntryModal: React.FC<UniversalEntryModalProps> = ({
                   style={styles.headerVoiceBtn}
                   activeOpacity={0.8}
                 >
-                  <Ionicons name="mic" size={15} color="#FFFFFF" />
-                  <Text style={styles.headerVoiceBtnText}>Voice</Text>
+                  <Ionicons name="mic-outline" size={15} color="#0F172A" />
+                  {!isMobile && <Text style={styles.headerVoiceBtnText}>Voice</Text>}
                 </TouchableOpacity>
               )}
 
               <TouchableOpacity onPress={onClose} style={styles.closeBtn}>
-                <Ionicons name="close" size={18} color={Colors.textSecondary} />
+                <Ionicons name="close" size={19} color="#334155" />
               </TouchableOpacity>
             </View>
           </View>
 
-          {/* Categorized Type Selector Tabs - Structured, no stretching */}
-          <View style={styles.tabCategorySection}>
-            <View style={styles.tabRow}>
-              <Text style={styles.tabGroupHeading}>CASH FLOW & BANKING</Text>
-              <View style={styles.tabPillGroup}>
-                {[
-                  { id: 'income' as EntryType, label: 'Income / Salary', icon: 'wallet', color: '#16A34A' },
-                  { id: 'expense' as EntryType, label: 'Regular Expense', icon: 'receipt', color: '#EF4444' },
-                  { id: 'withdrawal' as EntryType, label: 'Withdraw Cash', icon: 'cash-outline', color: '#0284C7' },
-                  { id: 'transfer' as EntryType, label: 'Bank Transfer', icon: 'swap-horizontal', color: '#8B5CF6' },
-                  { id: 'bank' as EntryType, label: 'Bank Account', icon: 'card-outline', color: '#0284C7' },
-                ].map((tab) => {
-                  const isSelected = selectedType === tab.id;
-                  return (
-                    <TouchableOpacity
-                      key={tab.id}
-                      style={[
-                        styles.modernTabPill,
-                        isSelected && { backgroundColor: tab.color, borderColor: tab.color },
-                      ]}
-                      onPress={() => setSelectedType(tab.id)}
-                      activeOpacity={0.8}
-                    >
-                      <Ionicons
-                        name={tab.icon as any}
-                        size={13}
-                        color={isSelected ? '#FFFFFF' : tab.color}
-                      />
-                      <Text
-                        style={[
-                          styles.modernTabPillText,
-                          isSelected && { color: '#FFFFFF', fontWeight: '800' },
-                        ]}
-                      >
-                        {tab.label}
-                      </Text>
-                    </TouchableOpacity>
-                  );
-                })}
-              </View>
-            </View>
-
-            <View style={styles.tabRow}>
-              <Text style={styles.tabGroupHeading}>ASSETS & PORTFOLIO</Text>
-              <View style={styles.tabPillGroup}>
-                {[
-                  { id: 'stock' as EntryType, label: 'Stock / Equity', icon: 'trending-up', color: '#0D9488' },
-                  { id: 'asset' as EntryType, label: 'Physical Asset', icon: 'business', color: '#D97706' },
-                  { id: 'loan' as EntryType, label: 'Loan / Debt', icon: 'card', color: '#DC2626' },
-                  { id: 'insurance' as EntryType, label: 'Insurance Policy', icon: 'shield-checkmark', color: '#6366F1' },
-                  { id: 'birthday' as EntryType, label: 'Birthday Event', icon: 'gift', color: '#EC4899' },
-                ].map((tab) => {
-                  const isSelected = selectedType === tab.id;
-                  return (
-                    <TouchableOpacity
-                      key={tab.id}
-                      style={[
-                        styles.modernTabPill,
-                        isSelected && { backgroundColor: tab.color, borderColor: tab.color },
-                      ]}
-                      onPress={() => setSelectedType(tab.id)}
-                      activeOpacity={0.8}
-                    >
-                      <Ionicons
-                        name={tab.icon as any}
-                        size={13}
-                        color={isSelected ? '#FFFFFF' : tab.color}
-                      />
-                      <Text
-                        style={[
-                          styles.modernTabPillText,
-                          isSelected && { color: '#FFFFFF', fontWeight: '800' },
-                        ]}
-                      >
-                        {tab.label}
-                      </Text>
-                    </TouchableOpacity>
-                  );
-                })}
-              </View>
-            </View>
-          </View>
-
-          {/* Dynamic Form Content */}
+          {/* Scrollable Body (Tabs + Plain-Language Guide + Inputs) */}
           <ScrollView
             showsVerticalScrollIndicator={true}
             style={styles.formScroll}
-            contentContainerStyle={{ paddingBottom: 40, flexGrow: 1 }}
+            contentContainerStyle={{ paddingBottom: 24 }}
+            keyboardShouldPersistTaps="handled"
           >
+            {/* Structured Entry Type Selector */}
+            <View style={styles.tabCategorySection}>
+              {tabGroups.map((group) => (
+                <View key={group.heading} style={styles.tabRow}>
+                  <Text style={styles.tabGroupHeading}>{group.heading}</Text>
+                  <ScrollView
+                    horizontal={isMobile}
+                    showsHorizontalScrollIndicator={false}
+                    contentContainerStyle={isMobile ? { gap: 6, paddingRight: 8 } : undefined}
+                  >
+                    <View style={isMobile ? styles.tabPillRowMobile : styles.tabPillGroup}>
+                      {group.items.map((tab) => {
+                        const isSelected = selectedType === tab.id;
+                        return (
+                          <TouchableOpacity
+                            key={tab.id}
+                            style={[
+                              styles.modernTabPill,
+                              isSelected && styles.modernTabPillActive,
+                            ]}
+                            onPress={() => setSelectedType(tab.id)}
+                            activeOpacity={0.8}
+                          >
+                            <Ionicons
+                              name={tab.icon}
+                              size={14}
+                              color={isSelected ? '#FFFFFF' : '#475569'}
+                            />
+                            <Text
+                              style={[
+                                styles.modernTabPillText,
+                                isSelected && styles.modernTabPillTextActive,
+                              ]}
+                            >
+                              {tab.label}
+                            </Text>
+                          </TouchableOpacity>
+                        );
+                      })}
+                    </View>
+                  </ScrollView>
+                </View>
+              ))}
+            </View>
+
+            {/* Plain-Language Explanation Box */}
+            <View style={styles.guideBox}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                <Ionicons name="information-circle-outline" size={16} color="#0F172A" />
+                <Text style={styles.guideTitle}>{guide.title}</Text>
+              </View>
+              <Text style={styles.guideText}>{guide.tip}</Text>
+            </View>
+
+            {/* Validation Error Banner */}
+            {!!formError && (
+              <View style={styles.errorBanner}>
+                <Ionicons name="alert-circle" size={16} color="#DC2626" />
+                <Text style={styles.errorBannerText}>{formError}</Text>
+              </View>
+            )}
+
+            {/* ==================== FDR / DPS / SANCHAYPATRA ==================== */}
+            {(selectedType === 'fdr' ||
+              selectedType === 'dps' ||
+              selectedType === 'sanchaypatra') && (
+              <>
+                {selectedType === 'sanchaypatra' && (
+                  <>
+                    <Text style={styles.label}>SANCHAYPATRA SCHEME NAME</Text>
+                    <View style={styles.sectorChips}>
+                      {[
+                        '3-Month Profit Based Sanchaypatra',
+                        '5-Year Bangladesh Sanchaypatra',
+                        'Poribar (Family) Sanchaypatra',
+                        'Pensioner Sanchaypatra',
+                      ].map((preset) => (
+                        <TouchableOpacity
+                          key={preset}
+                          style={[
+                            styles.sectorChip,
+                            title === preset && styles.sectorChipSelectedNavy,
+                          ]}
+                          onPress={() => setTitle(preset)}
+                        >
+                          <Text
+                            style={[
+                              styles.sectorChipText,
+                              title === preset && styles.sectorChipTextSelected,
+                            ]}
+                          >
+                            {preset}
+                          </Text>
+                        </TouchableOpacity>
+                      ))}
+                    </View>
+                    <TextInput
+                      style={styles.input}
+                      placeholder="e.g. 3-Month Profit Based Sanchaypatra"
+                      placeholderTextColor={Colors.textMuted}
+                      value={title}
+                      onChangeText={setTitle}
+                    />
+                  </>
+                )}
+
+                <Text style={styles.label}>
+                  LINKED BANK ACCOUNT (PROFIT / INSTALLMENT ACCOUNT)
+                </Text>
+                <View style={styles.accountPillsContainer}>
+                  {accounts.map((acc) => {
+                    const isSelected = savLinkedAccId === acc.id;
+                    const isCash =
+                      acc.accountType === 'Physical Cash' || acc.id === CASH_IN_HAND_ID;
+                    return (
+                      <TouchableOpacity
+                        key={acc.id}
+                        style={[styles.accountPill, isSelected && styles.accountPillSelected]}
+                        onPress={() => handleSelectLinkedBankForSavings(acc)}
+                        activeOpacity={0.8}
+                      >
+                        <Ionicons
+                          name={isCash ? 'cash-outline' : 'business-outline'}
+                          size={15}
+                          color={isSelected ? '#FFFFFF' : '#334155'}
+                        />
+                        <View>
+                          <Text
+                            style={[
+                              styles.accountPillName,
+                              isSelected && styles.accountPillNameSelected,
+                            ]}
+                          >
+                            {acc.bankName}
+                          </Text>
+                          <Text
+                            style={[
+                              styles.accountPillBal,
+                              isSelected && styles.accountPillBalSelected,
+                            ]}
+                          >
+                            ৳ {acc.currentBalance.toLocaleString('en-IN')}
+                          </Text>
+                        </View>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+
+                <Text style={styles.label}>BANK / INSTITUTION NAME (TAP OR TYPE)</Text>
+                <View style={styles.sectorChips}>
+                  {POPULAR_BD_BANKS.map((b) => (
+                    <TouchableOpacity
+                      key={b}
+                      style={[
+                        styles.sectorChip,
+                        savBankName === b && styles.sectorChipSelectedNavy,
+                      ]}
+                      onPress={() => setSavBankName(b)}
+                    >
+                      <Text
+                        style={[
+                          styles.sectorChipText,
+                          savBankName === b && styles.sectorChipTextSelected,
+                        ]}
+                      >
+                        {b}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+
+                <View style={rowStyle}>
+                  <View style={styles.col}>
+                    <Text style={styles.label}>INSTITUTION / BANK NAME *</Text>
+                    <TextInput
+                      style={styles.input}
+                      placeholder="e.g. BRAC Bank PLC"
+                      placeholderTextColor={Colors.textMuted}
+                      value={savBankName}
+                      onChangeText={setSavBankName}
+                    />
+                  </View>
+                  <View style={styles.col}>
+                    <Text style={styles.label}>
+                      {selectedType === 'fdr'
+                        ? 'FDR RECEIPT NO (OPTIONAL)'
+                        : selectedType === 'dps'
+                        ? 'DPS ACCOUNT NO (OPTIONAL)'
+                        : 'CERTIFICATE NO (OPTIONAL)'}
+                    </Text>
+                    <TextInput
+                      style={styles.input}
+                      placeholder="Leave blank to auto-generate ID"
+                      placeholderTextColor={Colors.textMuted}
+                      value={savCertNo}
+                      onChangeText={setSavCertNo}
+                    />
+                  </View>
+                </View>
+
+                <View style={rowStyle}>
+                  <View style={styles.col}>
+                    <Text style={styles.label}>
+                      {selectedType === 'dps'
+                        ? 'MONTHLY INSTALLMENT AMOUNT (৳) *'
+                        : 'DEPOSIT / PRINCIPAL AMOUNT (৳) *'}
+                    </Text>
+                    <TextInput
+                      style={styles.input}
+                      placeholder={selectedType === 'dps' ? 'e.g. 5000 or 10000' : 'e.g. 500000'}
+                      placeholderTextColor={Colors.textMuted}
+                      keyboardType="numeric"
+                      value={amount}
+                      onChangeText={setAmount}
+                    />
+                  </View>
+                  <View style={styles.col}>
+                    <Text style={styles.label}>YEARLY PROFIT / INTEREST RATE (%)</Text>
+                    <TextInput
+                      style={styles.input}
+                      placeholder="e.g. 9.5"
+                      placeholderTextColor={Colors.textMuted}
+                      keyboardType="numeric"
+                      value={savRate}
+                      onChangeText={setSavRate}
+                    />
+                  </View>
+                </View>
+
+                {selectedType === 'dps' && (
+                  <View style={rowStyle}>
+                    <View style={styles.col}>
+                      <Text style={styles.label}>ALREADY DEPOSITED SO FAR (৳)</Text>
+                      <TextInput
+                        style={styles.input}
+                        placeholder="Leave blank if 1st installment"
+                        placeholderTextColor={Colors.textMuted}
+                        keyboardType="numeric"
+                        value={dpsAlreadyDeposited}
+                        onChangeText={setDpsAlreadyDeposited}
+                      />
+                    </View>
+                    <View style={styles.col}>
+                      <Text style={styles.label}>MONTHLY DUE DAY (1–28)</Text>
+                      <TextInput
+                        style={styles.input}
+                        placeholder="e.g. 10"
+                        placeholderTextColor={Colors.textMuted}
+                        keyboardType="numeric"
+                        value={dpsDepositDay}
+                        onChangeText={setDpsDepositDay}
+                      />
+                    </View>
+                  </View>
+                )}
+
+                {selectedType !== 'dps' && (
+                  <View style={rowStyle}>
+                    <View style={styles.col}>
+                      <Text style={styles.label}>GOVT SOURCE TAX (AIT %)</Text>
+                      <View style={{ flexDirection: 'row', gap: 6, flexWrap: 'wrap' }}>
+                        {['0', '5', '10', '15'].map((tPct) => (
+                          <TouchableOpacity
+                            key={tPct}
+                            style={[
+                              styles.sectorChip,
+                              savTaxPct === tPct && styles.sectorChipSelectedNavy,
+                            ]}
+                            onPress={() => setSavTaxPct(tPct)}
+                          >
+                            <Text
+                              style={[
+                                styles.sectorChipText,
+                                savTaxPct === tPct && styles.sectorChipTextSelected,
+                              ]}
+                            >
+                              {tPct}%{tPct === '10' ? ' (TIN)' : ''}
+                            </Text>
+                          </TouchableOpacity>
+                        ))}
+                      </View>
+                    </View>
+
+                    <View style={styles.col}>
+                      <Text style={styles.label}>PROFIT PAYOUT SCHEDULE</Text>
+                      <View style={{ flexDirection: 'row', gap: 6, flexWrap: 'wrap' }}>
+                        {(['Monthly', '3 Months', 'At Maturity'] as const).map((inter) => (
+                          <TouchableOpacity
+                            key={inter}
+                            style={[
+                              styles.sectorChip,
+                              savInterval === inter && styles.sectorChipSelectedNavy,
+                            ]}
+                            onPress={() => setSavInterval(inter)}
+                          >
+                            <Text
+                              style={[
+                                styles.sectorChipText,
+                                savInterval === inter && styles.sectorChipTextSelected,
+                              ]}
+                            >
+                              {inter}
+                            </Text>
+                          </TouchableOpacity>
+                        ))}
+                      </View>
+                    </View>
+                  </View>
+                )}
+
+                {/* Quick Tenor Selector that Auto-Fills Maturity Date */}
+                <Text style={styles.label}>
+                  DURATION / TENOR (TAP TO AUTO-CALCULATE MATURITY DATE)
+                </Text>
+                <View style={styles.sectorChips}>
+                  {[
+                    { label: '3 Months', m: 3 },
+                    { label: '6 Months', m: 6 },
+                    { label: '1 Year', m: 12 },
+                    { label: '2 Years', m: 24 },
+                    { label: '3 Years', m: 36 },
+                    { label: '5 Years', m: 60 },
+                    { label: '10 Years', m: 120 },
+                  ].map((opt) => {
+                    const active = parseInt(savTenorMonths, 10) === opt.m;
+                    return (
+                      <TouchableOpacity
+                        key={opt.m}
+                        style={[styles.sectorChip, active && styles.sectorChipSelectedNavy]}
+                        onPress={() => handleSelectTenorMonths(opt.m)}
+                      >
+                        <Text
+                          style={[
+                            styles.sectorChipText,
+                            active && styles.sectorChipTextSelected,
+                          ]}
+                        >
+                          {opt.label}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+
+                <View style={rowStyle}>
+                  <View style={styles.col}>
+                    <Text style={styles.label}>OPENING / START DATE</Text>
+                    <TextInput
+                      style={styles.input}
+                      placeholder="YYYY-MM-DD"
+                      placeholderTextColor={Colors.textMuted}
+                      value={txDate}
+                      onChangeText={(val) => {
+                        setTxDate(val);
+                        if (val.length === 10) {
+                          setSavMaturityDate(
+                            addMonthsToDateStr(val, parseInt(savTenorMonths, 10) || 12)
+                          );
+                        }
+                      }}
+                    />
+                  </View>
+                  <View style={styles.col}>
+                    <Text style={styles.label}>MATURITY / CLOSING DATE (AUTO-FILLED)</Text>
+                    <TextInput
+                      style={styles.input}
+                      placeholder="YYYY-MM-DD"
+                      placeholderTextColor={Colors.textMuted}
+                      value={savMaturityDate}
+                      onChangeText={setSavMaturityDate}
+                    />
+                  </View>
+                </View>
+
+                {/* Balance Deduction Toggle */}
+                <TouchableOpacity
+                  style={[
+                    styles.toggleCard,
+                    savDeductNow && styles.toggleCardActive,
+                  ]}
+                  onPress={() => setSavDeductNow(!savDeductNow)}
+                  activeOpacity={0.85}
+                >
+                  <Ionicons
+                    name={savDeductNow ? 'checkbox' : 'square-outline'}
+                    size={20}
+                    color={savDeductNow ? '#0F172A' : '#64748B'}
+                  />
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.toggleCardTitle}>
+                      Opened today using money from my selected Bank Account
+                    </Text>
+                    <Text style={styles.toggleCardSub}>
+                      {savDeductNow
+                        ? 'Will deduct this opening amount from your selected Bank Account balance.'
+                        : 'Unchecked: Records an existing holding without changing your current Bank balance.'}
+                    </Text>
+                  </View>
+                </TouchableOpacity>
+
+                {/* Live Plain-English Calculation Preview */}
+                {(() => {
+                  const p = parseFloat(amount.replace(/,/g, '')) || 0;
+                  if (p <= 0) return null;
+                  const r = parseFloat(savRate) || 0;
+                  const tax = parseFloat(savTaxPct) || 0;
+                  const m = Math.max(1, parseInt(savTenorMonths, 10) || 12);
+
+                  if (selectedType === 'dps') {
+                    const years = Math.max(0.5, m / 12);
+                    const est = calculateDpsMaturityEstimate(p, years, r);
+                    return (
+                      <View style={styles.previewCard}>
+                        <Text style={styles.previewHeading}>
+                          INSTANT DPS MATURITY PREVIEW ({m} MONTHS)
+                        </Text>
+                        <Text style={styles.previewPlainSentence}>
+                          Depositing <Text style={{ fontWeight: '800' }}>৳{p.toLocaleString('en-IN')}/month</Text> for{' '}
+                          <Text style={{ fontWeight: '800' }}>{m} months</Text> builds{' '}
+                          <Text style={{ fontWeight: '800' }}>৳{est.totalDeposited.toLocaleString('en-IN')}</Text> in principal + ~
+                          <Text style={{ fontWeight: '800', color: '#16A34A' }}>
+                            ৳{est.estimatedProfit.toLocaleString('en-IN')}
+                          </Text>{' '}
+                          profit.
+                        </Text>
+                        <View style={styles.previewMetricsRow}>
+                          <View>
+                            <Text style={styles.previewMetricLabel}>TOTAL YOU DEPOSIT</Text>
+                            <Text style={styles.previewMetricVal}>
+                              ৳ {est.totalDeposited.toLocaleString('en-IN')}
+                            </Text>
+                          </View>
+                          <View>
+                            <Text style={styles.previewMetricLabel}>EST. MATURITY PAYOUT</Text>
+                            <Text style={[styles.previewMetricVal, { color: '#16A34A' }]}>
+                              ৳ {est.maturityValue.toLocaleString('en-IN')}
+                            </Text>
+                          </View>
+                        </View>
+                      </View>
+                    );
+                  }
+
+                  const grossYearly = p * (r / 100);
+                  const netYearly = grossYearly * (1 - tax / 100);
+                  const netMonthly = Math.round(netYearly / 12);
+                  const totalNetOverTerm = Math.round((netYearly * m) / 12);
+
+                  return (
+                    <View style={styles.previewCard}>
+                      <Text style={styles.previewHeading}>
+                        INSTANT PROFIT & TAX PREVIEW (AFTER {tax}% SOURCE TAX)
+                      </Text>
+                      <Text style={styles.previewPlainSentence}>
+                        Your <Text style={{ fontWeight: '800' }}>৳{p.toLocaleString('en-IN')}</Text> earns{' '}
+                        <Text style={{ fontWeight: '800', color: '#16A34A' }}>
+                          +৳{netMonthly.toLocaleString('en-IN')}/month
+                        </Text>{' '}
+                        net after tax (~৳{Math.round(netYearly).toLocaleString('en-IN')}/year).
+                      </Text>
+                      <View style={styles.previewMetricsRow}>
+                        <View>
+                          <Text style={styles.previewMetricLabel}>MONTHLY NET PROFIT</Text>
+                          <Text style={[styles.previewMetricVal, { color: '#16A34A' }]}>
+                            +৳ {netMonthly.toLocaleString('en-IN')}
+                          </Text>
+                        </View>
+                        <View>
+                          <Text style={styles.previewMetricLabel}>PRINCIPAL + {m}M PROFIT</Text>
+                          <Text style={styles.previewMetricVal}>
+                            ৳ {(p + totalNetOverTerm).toLocaleString('en-IN')}
+                          </Text>
+                        </View>
+                      </View>
+                    </View>
+                  );
+                })()}
+              </>
+            )}
+
+            {/* ==================== INCOME ==================== */}
             {selectedType === 'income' && (
               <>
-                <Text style={styles.label}>INCOME TITLE / SOURCE *</Text>
+                <Text style={styles.label}>INCOME SOURCE / DESCRIPTION *</Text>
                 <TextInput
                   style={styles.input}
-                  placeholder="e.g. Monthly Tech Salary, Gulshan Flat Rent, Sanchaypatra Coupon"
+                  placeholder="e.g. Monthly Salary, House Rent, Business Profit"
                   placeholderTextColor={Colors.textMuted}
                   value={title}
                   onChangeText={setTitle}
                 />
 
-                <View style={styles.twoCol}>
+                <View style={rowStyle}>
                   <View style={styles.col}>
-                    <Text style={styles.label}>AMOUNT (৳ BDT) *</Text>
+                    <Text style={styles.label}>AMOUNT RECEIVED (৳ BDT) *</Text>
                     <TextInput
                       style={styles.input}
-                      placeholder="e.g. 135000"
+                      placeholder="e.g. 85000"
                       placeholderTextColor={Colors.textMuted}
                       keyboardType="numeric"
                       value={amount}
@@ -463,7 +1199,7 @@ export const UniversalEntryModal: React.FC<UniversalEntryModalProps> = ({
                     <Text style={styles.label}>CATEGORY</Text>
                     <TextInput
                       style={styles.input}
-                      placeholder="e.g. Salary, Rental Yield, Investment"
+                      placeholder="e.g. Salary, Rent, Bonus"
                       placeholderTextColor={Colors.textMuted}
                       value={category}
                       onChangeText={setCategory}
@@ -471,17 +1207,21 @@ export const UniversalEntryModal: React.FC<UniversalEntryModalProps> = ({
                   </View>
                 </View>
 
-                {/* Dynamic Income Category Chips */}
                 <View style={styles.sectorChips}>
                   {incomeCategories.map((cat) => {
                     const isSelected = category === cat.name;
                     return (
                       <TouchableOpacity
                         key={cat.id}
-                        style={[styles.sectorChip, isSelected && styles.sectorChipSelected]}
+                        style={[styles.sectorChip, isSelected && styles.sectorChipSelectedNavy]}
                         onPress={() => setCategory(cat.name)}
                       >
-                        <Text style={[styles.sectorChipText, isSelected && styles.sectorChipTextSelected]}>
+                        <Text
+                          style={[
+                            styles.sectorChipText,
+                            isSelected && styles.sectorChipTextSelected,
+                          ]}
+                        >
                           {cat.icon} {cat.name}
                         </Text>
                       </TouchableOpacity>
@@ -489,25 +1229,23 @@ export const UniversalEntryModal: React.FC<UniversalEntryModalProps> = ({
                   })}
                   {onOpenCategorySetup && (
                     <TouchableOpacity
-                      style={[styles.sectorChip, { borderColor: '#10B981', borderStyle: 'dashed' }]}
+                      style={[styles.sectorChip, { borderStyle: 'dashed' }]}
                       onPress={() => {
                         onClose();
                         onOpenCategorySetup();
                       }}
                     >
-                      <Text style={[styles.sectorChipText, { color: '#10B981', fontWeight: '800' }]}>
-                        ⚙️ Setup Categories
-                      </Text>
+                      <Text style={styles.sectorChipText}>+ Edit Categories</Text>
                     </TouchableOpacity>
                   )}
                 </View>
 
-                {/* Deposit Destination Account Picker */}
-                <Text style={styles.label}>DEPOSIT INTO (CREDIT ACCOUNT) *</Text>
+                <Text style={styles.label}>WHERE WAS THIS MONEY DEPOSITED? *</Text>
                 <View style={styles.accountPillsContainer}>
                   {accounts.map((acc) => {
                     const isSelected = depositAccountId === acc.id;
-                    const isCash = acc.accountType === 'Physical Cash' || acc.id === CASH_IN_HAND_ID;
+                    const isCash =
+                      acc.accountType === 'Physical Cash' || acc.id === CASH_IN_HAND_ID;
                     return (
                       <TouchableOpacity
                         key={acc.id}
@@ -516,15 +1254,25 @@ export const UniversalEntryModal: React.FC<UniversalEntryModalProps> = ({
                         activeOpacity={0.8}
                       >
                         <Ionicons
-                          name={isCash ? 'cash' : 'card'}
+                          name={isCash ? 'cash-outline' : 'card-outline'}
                           size={16}
-                          color={isSelected ? '#FFFFFF' : isCash ? '#10B981' : '#0284C7'}
+                          color={isSelected ? '#FFFFFF' : '#334155'}
                         />
                         <View>
-                          <Text style={[styles.accountPillName, isSelected && styles.accountPillNameSelected]}>
+                          <Text
+                            style={[
+                              styles.accountPillName,
+                              isSelected && styles.accountPillNameSelected,
+                            ]}
+                          >
                             {acc.bankName}
                           </Text>
-                          <Text style={[styles.accountPillBal, isSelected && styles.accountPillBalSelected]}>
+                          <Text
+                            style={[
+                              styles.accountPillBal,
+                              isSelected && styles.accountPillBalSelected,
+                            ]}
+                          >
                             ৳ {acc.currentBalance.toLocaleString('en-IN')}
                           </Text>
                         </View>
@@ -533,9 +1281,9 @@ export const UniversalEntryModal: React.FC<UniversalEntryModalProps> = ({
                   })}
                 </View>
 
-                <View style={styles.twoCol}>
+                <View style={rowStyle}>
                   <View style={styles.col}>
-                    <Text style={styles.label}>TRANSACTION DATE</Text>
+                    <Text style={styles.label}>DATE</Text>
                     <TextInput
                       style={styles.input}
                       placeholder="YYYY-MM-DD"
@@ -545,10 +1293,10 @@ export const UniversalEntryModal: React.FC<UniversalEntryModalProps> = ({
                     />
                   </View>
                   <View style={styles.col}>
-                    <Text style={styles.label}>NOTES / DETAILS</Text>
+                    <Text style={styles.label}>NOTES (OPTIONAL)</Text>
                     <TextInput
                       style={styles.input}
-                      placeholder="e.g. For month of August"
+                      placeholder="Optional memo"
                       placeholderTextColor={Colors.textMuted}
                       value={subInfo}
                       onChangeText={setSubInfo}
@@ -558,23 +1306,24 @@ export const UniversalEntryModal: React.FC<UniversalEntryModalProps> = ({
               </>
             )}
 
+            {/* ==================== EXPENSE ==================== */}
             {selectedType === 'expense' && (
               <>
-                <Text style={styles.label}>EXPENSE DESCRIPTION *</Text>
+                <Text style={styles.label}>WHAT DID YOU SPEND ON? *</Text>
                 <TextInput
                   style={styles.input}
-                  placeholder="e.g. Monthly Groceries, Flat Maintenance, Electricity"
+                  placeholder="e.g. Bazar / Groceries, Electricity Bill, School Fees"
                   placeholderTextColor={Colors.textMuted}
                   value={title}
                   onChangeText={setTitle}
                 />
 
-                <View style={styles.twoCol}>
+                <View style={rowStyle}>
                   <View style={styles.col}>
-                    <Text style={styles.label}>AMOUNT (৳ BDT) *</Text>
+                    <Text style={styles.label}>AMOUNT SPENT (৳ BDT) *</Text>
                     <TextInput
                       style={styles.input}
-                      placeholder="e.g. 28000"
+                      placeholder="e.g. 2500"
                       placeholderTextColor={Colors.textMuted}
                       keyboardType="numeric"
                       value={amount}
@@ -582,7 +1331,7 @@ export const UniversalEntryModal: React.FC<UniversalEntryModalProps> = ({
                     />
                   </View>
                   <View style={styles.col}>
-                    <Text style={styles.label}>EXPENSE SECTOR</Text>
+                    <Text style={styles.label}>CATEGORY</Text>
                     <TextInput
                       style={styles.input}
                       placeholder="e.g. Household & Living"
@@ -593,17 +1342,21 @@ export const UniversalEntryModal: React.FC<UniversalEntryModalProps> = ({
                   </View>
                 </View>
 
-                {/* Dynamic Expense Category Chips */}
                 <View style={styles.sectorChips}>
                   {expenseCategories.map((cat) => {
                     const isSelected = category === cat.name;
                     return (
                       <TouchableOpacity
                         key={cat.id}
-                        style={[styles.sectorChip, isSelected && styles.sectorChipSelected]}
+                        style={[styles.sectorChip, isSelected && styles.sectorChipSelectedNavy]}
                         onPress={() => setCategory(cat.name)}
                       >
-                        <Text style={[styles.sectorChipText, isSelected && styles.sectorChipTextSelected]}>
+                        <Text
+                          style={[
+                            styles.sectorChipText,
+                            isSelected && styles.sectorChipTextSelected,
+                          ]}
+                        >
                           {cat.icon} {cat.name}
                         </Text>
                       </TouchableOpacity>
@@ -611,25 +1364,23 @@ export const UniversalEntryModal: React.FC<UniversalEntryModalProps> = ({
                   })}
                   {onOpenCategorySetup && (
                     <TouchableOpacity
-                      style={[styles.sectorChip, { borderColor: '#EF4444', borderStyle: 'dashed' }]}
+                      style={[styles.sectorChip, { borderStyle: 'dashed' }]}
                       onPress={() => {
                         onClose();
                         onOpenCategorySetup();
                       }}
                     >
-                      <Text style={[styles.sectorChipText, { color: '#EF4444', fontWeight: '800' }]}>
-                        ⚙️ Manage Categories & Budgets
-                      </Text>
+                      <Text style={styles.sectorChipText}>+ Manage Budgets</Text>
                     </TouchableOpacity>
                   )}
                 </View>
 
-                {/* Deduct Balance Account Picker */}
-                <Text style={styles.label}>PAID FROM (DEDUCT BALANCE) *</Text>
+                <Text style={styles.label}>PAID FROM WHICH ACCOUNT / WALLET? *</Text>
                 <View style={styles.accountPillsContainer}>
                   {accounts.map((acc) => {
                     const isSelected = selectedAccountId === acc.id;
-                    const isCash = acc.accountType === 'Physical Cash' || acc.id === CASH_IN_HAND_ID;
+                    const isCash =
+                      acc.accountType === 'Physical Cash' || acc.id === CASH_IN_HAND_ID;
                     return (
                       <TouchableOpacity
                         key={acc.id}
@@ -638,15 +1389,25 @@ export const UniversalEntryModal: React.FC<UniversalEntryModalProps> = ({
                         activeOpacity={0.8}
                       >
                         <Ionicons
-                          name={isCash ? 'cash' : 'card'}
+                          name={isCash ? 'cash-outline' : 'card-outline'}
                           size={16}
-                          color={isSelected ? '#FFFFFF' : isCash ? '#10B981' : '#0284C7'}
+                          color={isSelected ? '#FFFFFF' : '#334155'}
                         />
                         <View>
-                          <Text style={[styles.accountPillName, isSelected && styles.accountPillNameSelected]}>
+                          <Text
+                            style={[
+                              styles.accountPillName,
+                              isSelected && styles.accountPillNameSelected,
+                            ]}
+                          >
                             {acc.bankName}
                           </Text>
-                          <Text style={[styles.accountPillBal, isSelected && styles.accountPillBalSelected]}>
+                          <Text
+                            style={[
+                              styles.accountPillBal,
+                              isSelected && styles.accountPillBalSelected,
+                            ]}
+                          >
                             ৳ {acc.currentBalance.toLocaleString('en-IN')}
                           </Text>
                         </View>
@@ -655,19 +1416,9 @@ export const UniversalEntryModal: React.FC<UniversalEntryModalProps> = ({
                   })}
                 </View>
 
-                <View style={styles.twoCol}>
+                <View style={rowStyle}>
                   <View style={styles.col}>
-                    <Text style={styles.label}>LINKED ASSET ID (OPTIONAL)</Text>
-                    <TextInput
-                      style={styles.input}
-                      placeholder="e.g. AST-101 (Flat Maintenance), AST-105"
-                      placeholderTextColor={Colors.textMuted}
-                      value={extraField}
-                      onChangeText={setExtraField}
-                    />
-                  </View>
-                  <View style={styles.col}>
-                    <Text style={styles.label}>TRANSACTION DATE</Text>
+                    <Text style={styles.label}>DATE</Text>
                     <TextInput
                       style={styles.input}
                       placeholder="YYYY-MM-DD"
@@ -676,22 +1427,24 @@ export const UniversalEntryModal: React.FC<UniversalEntryModalProps> = ({
                       onChangeText={setTxDate}
                     />
                   </View>
+                  <View style={styles.col}>
+                    <Text style={styles.label}>NOTES (OPTIONAL)</Text>
+                    <TextInput
+                      style={styles.input}
+                      placeholder="Optional note or bill ref"
+                      placeholderTextColor={Colors.textMuted}
+                      value={subInfo}
+                      onChangeText={setSubInfo}
+                    />
+                  </View>
                 </View>
-
-                <Text style={styles.label}>NOTES / PARTICULARS</Text>
-                <TextInput
-                  style={styles.input}
-                  placeholder="e.g. Monthly kitchen supplies and utility bills"
-                  placeholderTextColor={Colors.textMuted}
-                  value={subInfo}
-                  onChangeText={setSubInfo}
-                />
               </>
             )}
 
+            {/* ==================== WITHDRAWAL ==================== */}
             {selectedType === 'withdrawal' && (
               <>
-                <Text style={styles.label}>WITHDRAW FROM (SOURCE BANK ACCOUNT) *</Text>
+                <Text style={styles.label}>WITHDRAW FROM BANK ACCOUNT *</Text>
                 <View style={styles.accountPillsContainer}>
                   {accounts
                     .filter((a) => a.accountType !== 'Physical Cash' && a.id !== CASH_IN_HAND_ID)
@@ -705,15 +1458,25 @@ export const UniversalEntryModal: React.FC<UniversalEntryModalProps> = ({
                           activeOpacity={0.8}
                         >
                           <Ionicons
-                            name="card"
+                            name="card-outline"
                             size={16}
-                            color={isSelected ? '#FFFFFF' : '#0284C7'}
+                            color={isSelected ? '#FFFFFF' : '#334155'}
                           />
                           <View>
-                            <Text style={[styles.accountPillName, isSelected && styles.accountPillNameSelected]}>
+                            <Text
+                              style={[
+                                styles.accountPillName,
+                                isSelected && styles.accountPillNameSelected,
+                              ]}
+                            >
                               {acc.bankName}
                             </Text>
-                            <Text style={[styles.accountPillBal, isSelected && styles.accountPillBalSelected]}>
+                            <Text
+                              style={[
+                                styles.accountPillBal,
+                                isSelected && styles.accountPillBalSelected,
+                              ]}
+                            >
                               ৳ {acc.currentBalance.toLocaleString('en-IN')}
                             </Text>
                           </View>
@@ -732,34 +1495,23 @@ export const UniversalEntryModal: React.FC<UniversalEntryModalProps> = ({
                   onChangeText={setAmount}
                 />
 
-                <View
-                  style={{
-                    marginVertical: 12,
-                    padding: 14,
-                    backgroundColor: '#F0FDF4',
-                    borderRadius: 10,
-                    borderWidth: 1.5,
-                    borderColor: '#BBF7D0',
-                  }}
-                >
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                    <Ionicons name="cash" size={18} color="#16A34A" />
-                    <Text style={{ fontSize: 13, fontWeight: '800', color: '#166534' }}>
-                      DESTINATION: Physical Cash in Hand
-                    </Text>
-                  </View>
-                  <Text style={{ fontSize: 12, color: '#15803D', marginTop: 4 }}>
+                <View style={styles.previewCard}>
+                  <Text style={styles.previewHeading}>DESTINATION: CASH IN HAND WALLET</Text>
+                  <Text style={styles.previewPlainSentence}>
                     Current Cash in Hand:{' '}
                     <Text style={{ fontWeight: '800' }}>
-                      ৳ {((accounts.find((a) => a.accountType === 'Physical Cash' || a.id === CASH_IN_HAND_ID)?.currentBalance) || 0).toLocaleString('en-IN')}
+                      ৳{' '}
+                      {(
+                        accounts.find(
+                          (a) => a.accountType === 'Physical Cash' || a.id === CASH_IN_HAND_ID
+                        )?.currentBalance || 0
+                      ).toLocaleString('en-IN')}
                     </Text>
-                  </Text>
-                  <Text style={{ fontSize: 11, color: '#166534', marginTop: 4 }}>
-                    ⚡ Withdrawn amount will be automatically deducted from your bank balance and credited directly into your Physical Cash in Hand vault.
+                    . Withdrawn cash is added directly to your Cash wallet.
                   </Text>
                 </View>
 
-                <View style={styles.twoCol}>
+                <View style={rowStyle}>
                   <View style={styles.col}>
                     <Text style={styles.label}>DATE</Text>
                     <TextInput
@@ -771,10 +1523,10 @@ export const UniversalEntryModal: React.FC<UniversalEntryModalProps> = ({
                     />
                   </View>
                   <View style={styles.col}>
-                    <Text style={styles.label}>NOTE / PURPOSE</Text>
+                    <Text style={styles.label}>NOTE (OPTIONAL)</Text>
                     <TextInput
                       style={styles.input}
-                      placeholder="e.g. ATM withdrawal for groceries"
+                      placeholder="e.g. ATM Booth withdrawal"
                       placeholderTextColor={Colors.textMuted}
                       value={subInfo}
                       onChangeText={setSubInfo}
@@ -784,13 +1536,15 @@ export const UniversalEntryModal: React.FC<UniversalEntryModalProps> = ({
               </>
             )}
 
+            {/* ==================== TRANSFER ==================== */}
             {selectedType === 'transfer' && (
               <>
-                <Text style={styles.label}>TRANSFER FROM (SOURCE ACCOUNT) *</Text>
+                <Text style={styles.label}>SEND MONEY FROM *</Text>
                 <View style={styles.accountPillsContainer}>
                   {accounts.map((acc) => {
                     const isSelected = fromAccountId === acc.id;
-                    const isCash = acc.accountType === 'Physical Cash' || acc.id === CASH_IN_HAND_ID;
+                    const isCash =
+                      acc.accountType === 'Physical Cash' || acc.id === CASH_IN_HAND_ID;
                     return (
                       <TouchableOpacity
                         key={acc.id}
@@ -799,15 +1553,25 @@ export const UniversalEntryModal: React.FC<UniversalEntryModalProps> = ({
                         activeOpacity={0.8}
                       >
                         <Ionicons
-                          name={isCash ? 'cash' : 'card'}
+                          name={isCash ? 'cash-outline' : 'card-outline'}
                           size={16}
-                          color={isSelected ? '#FFFFFF' : isCash ? '#10B981' : '#0284C7'}
+                          color={isSelected ? '#FFFFFF' : '#334155'}
                         />
                         <View>
-                          <Text style={[styles.accountPillName, isSelected && styles.accountPillNameSelected]}>
+                          <Text
+                            style={[
+                              styles.accountPillName,
+                              isSelected && styles.accountPillNameSelected,
+                            ]}
+                          >
                             {acc.bankName}
                           </Text>
-                          <Text style={[styles.accountPillBal, isSelected && styles.accountPillBalSelected]}>
+                          <Text
+                            style={[
+                              styles.accountPillBal,
+                              isSelected && styles.accountPillBalSelected,
+                            ]}
+                          >
                             ৳ {acc.currentBalance.toLocaleString('en-IN')}
                           </Text>
                         </View>
@@ -816,30 +1580,41 @@ export const UniversalEntryModal: React.FC<UniversalEntryModalProps> = ({
                   })}
                 </View>
 
-                <Text style={styles.label}>TRANSFER TO (DESTINATION ACCOUNT) *</Text>
+                <Text style={styles.label}>RECEIVE MONEY INTO *</Text>
                 <View style={styles.accountPillsContainer}>
                   {accounts
                     .filter((a) => a.id !== fromAccountId)
                     .map((acc) => {
                       const isSelected = toAccountId === acc.id;
-                      const isCash = acc.accountType === 'Physical Cash' || acc.id === CASH_IN_HAND_ID;
+                      const isCash =
+                        acc.accountType === 'Physical Cash' || acc.id === CASH_IN_HAND_ID;
                       return (
                         <TouchableOpacity
                           key={acc.id}
-                          style={[styles.accountPill, isSelected && { backgroundColor: '#8B5CF6', borderColor: '#8B5CF6' }]}
+                          style={[styles.accountPill, isSelected && styles.accountPillSelected]}
                           onPress={() => setToAccountId(acc.id)}
                           activeOpacity={0.8}
                         >
                           <Ionicons
-                            name={isCash ? 'cash' : 'swap-horizontal'}
+                            name={isCash ? 'cash-outline' : 'swap-horizontal-outline'}
                             size={16}
-                            color={isSelected ? '#FFFFFF' : '#8B5CF6'}
+                            color={isSelected ? '#FFFFFF' : '#334155'}
                           />
                           <View>
-                            <Text style={[styles.accountPillName, isSelected && styles.accountPillNameSelected]}>
+                            <Text
+                              style={[
+                                styles.accountPillName,
+                                isSelected && styles.accountPillNameSelected,
+                              ]}
+                            >
                               {acc.bankName}
                             </Text>
-                            <Text style={[styles.accountPillBal, isSelected && styles.accountPillBalSelected]}>
+                            <Text
+                              style={[
+                                styles.accountPillBal,
+                                isSelected && styles.accountPillBalSelected,
+                              ]}
+                            >
                               ৳ {acc.currentBalance.toLocaleString('en-IN')}
                             </Text>
                           </View>
@@ -848,7 +1623,7 @@ export const UniversalEntryModal: React.FC<UniversalEntryModalProps> = ({
                     })}
                 </View>
 
-                <View style={styles.twoCol}>
+                <View style={rowStyle}>
                   <View style={styles.col}>
                     <Text style={styles.label}>TRANSFER AMOUNT (৳ BDT) *</Text>
                     <TextInput
@@ -864,7 +1639,7 @@ export const UniversalEntryModal: React.FC<UniversalEntryModalProps> = ({
                     <Text style={styles.label}>TRANSFER FEE / CHARGE (৳)</Text>
                     <TextInput
                       style={styles.input}
-                      placeholder="e.g. 15 (0 if free)"
+                      placeholder="0 if free"
                       placeholderTextColor={Colors.textMuted}
                       keyboardType="numeric"
                       value={extraField}
@@ -873,7 +1648,7 @@ export const UniversalEntryModal: React.FC<UniversalEntryModalProps> = ({
                   </View>
                 </View>
 
-                <View style={styles.twoCol}>
+                <View style={rowStyle}>
                   <View style={styles.col}>
                     <Text style={styles.label}>DATE</Text>
                     <TextInput
@@ -888,7 +1663,7 @@ export const UniversalEntryModal: React.FC<UniversalEntryModalProps> = ({
                     <Text style={styles.label}>REFERENCE / NOTE</Text>
                     <TextInput
                       style={styles.input}
-                      placeholder="e.g. BEFTN Transfer to BRAC, bKash Add Money"
+                      placeholder="e.g. NPSB / BEFTN / bKash Add Money"
                       placeholderTextColor={Colors.textMuted}
                       value={subInfo}
                       onChangeText={setSubInfo}
@@ -898,23 +1673,24 @@ export const UniversalEntryModal: React.FC<UniversalEntryModalProps> = ({
               </>
             )}
 
+            {/* ==================== PHYSICAL ASSET ==================== */}
             {selectedType === 'asset' && (
               <>
-                <Text style={styles.label}>ASSET NAME & LOCATION *</Text>
+                <Text style={styles.label}>PROPERTY / GOLD / ASSET NAME *</Text>
                 <TextInput
                   style={styles.input}
-                  placeholder="e.g. Purbachal 5-Katha Land, 22K Gold, Gulshan Flat"
+                  placeholder="e.g. Purbachal 5-Katha Plot, 10 Bhori 22K Gold, Uttara Flat"
                   placeholderTextColor={Colors.textMuted}
                   value={title}
                   onChangeText={setTitle}
                 />
 
-                <View style={styles.twoCol}>
+                <View style={rowStyle}>
                   <View style={styles.col}>
-                    <Text style={styles.label}>MARKET VALUE (৳) *</Text>
+                    <Text style={styles.label}>CURRENT MARKET VALUE (৳) *</Text>
                     <TextInput
                       style={styles.input}
-                      placeholder="e.g. 17500000"
+                      placeholder="e.g. 8500000"
                       placeholderTextColor={Colors.textMuted}
                       keyboardType="numeric"
                       value={amount}
@@ -922,10 +1698,10 @@ export const UniversalEntryModal: React.FC<UniversalEntryModalProps> = ({
                     />
                   </View>
                   <View style={styles.col}>
-                    <Text style={styles.label}>MONTHLY RENT/YIELD (৳)</Text>
+                    <Text style={styles.label}>MONTHLY RENT / INCOME (৳)</Text>
                     <TextInput
                       style={styles.input}
-                      placeholder="e.g. 65000 (0 if idle)"
+                      placeholder="0 if none"
                       placeholderTextColor={Colors.textMuted}
                       keyboardType="numeric"
                       value={subInfo}
@@ -934,22 +1710,36 @@ export const UniversalEntryModal: React.FC<UniversalEntryModalProps> = ({
                   </View>
                 </View>
 
-                <View style={styles.twoCol}>
+                <View style={rowStyle}>
                   <View style={styles.col}>
-                    <Text style={styles.label}>CATEGORY</Text>
-                    <TextInput
-                      style={styles.input}
-                      placeholder="e.g. Real Estate, Gold, Vehicle"
-                      placeholderTextColor={Colors.textMuted}
-                      value={category}
-                      onChangeText={setCategory}
-                    />
+                    <Text style={styles.label}>ASSET TYPE</Text>
+                    <View style={styles.sectorChips}>
+                      {['Real Estate', 'Land', 'Gold / Jewelry', 'Vehicle'].map((t) => (
+                        <TouchableOpacity
+                          key={t}
+                          style={[
+                            styles.sectorChip,
+                            category === t && styles.sectorChipSelectedNavy,
+                          ]}
+                          onPress={() => setCategory(t)}
+                        >
+                          <Text
+                            style={[
+                              styles.sectorChipText,
+                              category === t && styles.sectorChipTextSelected,
+                            ]}
+                          >
+                            {t}
+                          </Text>
+                        </TouchableOpacity>
+                      ))}
+                    </View>
                   </View>
                   <View style={styles.col}>
-                    <Text style={styles.label}>ANNUAL APPRECIATION (%)</Text>
+                    <Text style={styles.label}>YEARLY VALUE GROWTH (%)</Text>
                     <TextInput
                       style={styles.input}
-                      placeholder="e.g. 12.5"
+                      placeholder="e.g. 8"
                       placeholderTextColor={Colors.textMuted}
                       keyboardType="numeric"
                       value={extraField}
@@ -960,23 +1750,24 @@ export const UniversalEntryModal: React.FC<UniversalEntryModalProps> = ({
               </>
             )}
 
+            {/* ==================== LOAN ==================== */}
             {selectedType === 'loan' && (
               <>
-                <Text style={styles.label}>LOAN TITLE / PURPOSE *</Text>
+                <Text style={styles.label}>LOAN PURPOSE / TITLE *</Text>
                 <TextInput
                   style={styles.input}
-                  placeholder="e.g. Apartment Home Loan, Auto Loan, Private Debt"
+                  placeholder="e.g. Home Loan, Car Loan, Family Borrowing"
                   placeholderTextColor={Colors.textMuted}
                   value={title}
                   onChangeText={setTitle}
                 />
 
-                <View style={styles.twoCol}>
+                <View style={rowStyle}>
                   <View style={styles.col}>
-                    <Text style={styles.label}>OUTSTANDING PRINCIPAL (৳) *</Text>
+                    <Text style={styles.label}>REMAINING LOAN BALANCE (৳) *</Text>
                     <TextInput
                       style={styles.input}
-                      placeholder="e.g. 4250000"
+                      placeholder="e.g. 1500000"
                       placeholderTextColor={Colors.textMuted}
                       keyboardType="numeric"
                       value={amount}
@@ -984,10 +1775,10 @@ export const UniversalEntryModal: React.FC<UniversalEntryModalProps> = ({
                     />
                   </View>
                   <View style={styles.col}>
-                    <Text style={styles.label}>MONTHLY EMI (৳) *</Text>
+                    <Text style={styles.label}>MONTHLY INSTALLMENT / EMI (৳)</Text>
                     <TextInput
                       style={styles.input}
-                      placeholder="e.g. 45000"
+                      placeholder="e.g. 32000"
                       placeholderTextColor={Colors.textMuted}
                       keyboardType="numeric"
                       value={subInfo}
@@ -996,10 +1787,10 @@ export const UniversalEntryModal: React.FC<UniversalEntryModalProps> = ({
                   </View>
                 </View>
 
-                <Text style={styles.label}>LENDER / INSTITUTION</Text>
+                <Text style={styles.label}>BANK OR LENDER NAME</Text>
                 <TextInput
                   style={styles.input}
-                  placeholder="e.g. City Bank Ltd. or Outside Bank Private Lender"
+                  placeholder="e.g. City Bank PLC or Relative Name"
                   placeholderTextColor={Colors.textMuted}
                   value={category}
                   onChangeText={setCategory}
@@ -1007,33 +1798,76 @@ export const UniversalEntryModal: React.FC<UniversalEntryModalProps> = ({
               </>
             )}
 
+            {/* ==================== BANK ACCOUNT ==================== */}
             {selectedType === 'bank' && (
               <>
-                <Text style={styles.label}>BANK / INSTITUTION NAME *</Text>
+                <Text style={styles.label}>BANK OR MOBILE WALLET NAME *</Text>
+                <View style={styles.sectorChips}>
+                  {[...POPULAR_BD_BANKS.slice(0, 5), 'bKash', 'Nagad'].map((b) => (
+                    <TouchableOpacity
+                      key={b}
+                      style={[styles.sectorChip, title === b && styles.sectorChipSelectedNavy]}
+                      onPress={() => setTitle(b)}
+                    >
+                      <Text
+                        style={[
+                          styles.sectorChipText,
+                          title === b && styles.sectorChipTextSelected,
+                        ]}
+                      >
+                        {b}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
                 <TextInput
                   style={styles.input}
-                  placeholder="e.g. City Bank, BRAC Bank, Eastern Bank, bKash, Cash"
+                  placeholder="e.g. BRAC Bank PLC, City Bank, bKash"
                   placeholderTextColor={Colors.textMuted}
                   value={title}
                   onChangeText={setTitle}
                 />
 
-                <View style={styles.twoCol}>
+                <View style={rowStyle}>
                   <View style={styles.col}>
-                    <Text style={styles.label}>ACCOUNT NUMBER</Text>
+                    <Text style={styles.label}>CURRENT AVAILABLE BALANCE (৳) *</Text>
                     <TextInput
                       style={styles.input}
-                      placeholder="e.g. 1029384729"
+                      placeholder="e.g. 250000"
+                      placeholderTextColor={Colors.textMuted}
+                      keyboardType="numeric"
+                      value={amount}
+                      onChangeText={setAmount}
+                    />
+                  </View>
+                  <View style={styles.col}>
+                    <Text style={styles.label}>ACCOUNT NUMBER (OPTIONAL)</Text>
+                    <TextInput
+                      style={styles.input}
+                      placeholder="e.g. 1501204455"
                       placeholderTextColor={Colors.textMuted}
                       value={subInfo}
                       onChangeText={setSubInfo}
                     />
                   </View>
+                </View>
+
+                <View style={rowStyle}>
                   <View style={styles.col}>
-                    <Text style={styles.label}>BEFTN ROUTING NUMBER (9 DIGITS)</Text>
+                    <Text style={styles.label}>ACCOUNT TYPE</Text>
                     <TextInput
                       style={styles.input}
-                      placeholder="e.g. 095261234"
+                      placeholder="Savings / Current / MFS Wallet"
+                      placeholderTextColor={Colors.textMuted}
+                      value={category}
+                      onChangeText={setCategory}
+                    />
+                  </View>
+                  <View style={styles.col}>
+                    <Text style={styles.label}>ROUTING NUMBER (OPTIONAL)</Text>
+                    <TextInput
+                      style={styles.input}
+                      placeholder="9-digit BEFTN routing"
                       placeholderTextColor={Colors.textMuted}
                       keyboardType="numeric"
                       maxLength={9}
@@ -1042,50 +1876,27 @@ export const UniversalEntryModal: React.FC<UniversalEntryModalProps> = ({
                     />
                   </View>
                 </View>
-
-                <View style={styles.twoCol}>
-                  <View style={styles.col}>
-                    <Text style={styles.label}>CURRENT BALANCE (৳) *</Text>
-                    <TextInput
-                      style={styles.input}
-                      placeholder="e.g. 650000"
-                      placeholderTextColor={Colors.textMuted}
-                      keyboardType="numeric"
-                      value={amount}
-                      onChangeText={setAmount}
-                    />
-                  </View>
-                  <View style={styles.col}>
-                    <Text style={styles.label}>ACCOUNT TYPE</Text>
-                    <TextInput
-                      style={styles.input}
-                      placeholder="e.g. Savings, Salary, Current, Wallet"
-                      placeholderTextColor={Colors.textMuted}
-                      value={category}
-                      onChangeText={setCategory}
-                    />
-                  </View>
-                </View>
               </>
             )}
 
+            {/* ==================== INSURANCE ==================== */}
             {selectedType === 'insurance' && (
               <>
                 <Text style={styles.label}>POLICY NAME *</Text>
                 <TextInput
                   style={styles.input}
-                  placeholder="e.g. MetLife Guaranteed Savings Plan"
+                  placeholder="e.g. MetLife DPS / Life Protection Plan"
                   placeholderTextColor={Colors.textMuted}
                   value={title}
                   onChangeText={setTitle}
                 />
 
-                <View style={styles.twoCol}>
+                <View style={rowStyle}>
                   <View style={styles.col}>
-                    <Text style={styles.label}>SUM ASSURED / COVER (৳) *</Text>
+                    <Text style={styles.label}>TOTAL COVERAGE AMOUNT (৳) *</Text>
                     <TextInput
                       style={styles.input}
-                      placeholder="e.g. 10000000"
+                      placeholder="e.g. 5000000"
                       placeholderTextColor={Colors.textMuted}
                       keyboardType="numeric"
                       value={amount}
@@ -1096,7 +1907,7 @@ export const UniversalEntryModal: React.FC<UniversalEntryModalProps> = ({
                     <Text style={styles.label}>ANNUAL PREMIUM (৳)</Text>
                     <TextInput
                       style={styles.input}
-                      placeholder="e.g. 85000"
+                      placeholder="e.g. 60000"
                       placeholderTextColor={Colors.textMuted}
                       keyboardType="numeric"
                       value={subInfo}
@@ -1108,7 +1919,7 @@ export const UniversalEntryModal: React.FC<UniversalEntryModalProps> = ({
                 <Text style={styles.label}>NOMINEE NAME & RELATION</Text>
                 <TextInput
                   style={styles.input}
-                  placeholder="e.g. Sarah Rahman (Spouse)"
+                  placeholder="e.g. Spouse / Child"
                   placeholderTextColor={Colors.textMuted}
                   value={extraField}
                   onChangeText={setExtraField}
@@ -1116,20 +1927,21 @@ export const UniversalEntryModal: React.FC<UniversalEntryModalProps> = ({
               </>
             )}
 
+            {/* ==================== BIRTHDAY ==================== */}
             {selectedType === 'birthday' && (
               <>
-                <Text style={styles.label}>PERSON NAME *</Text>
+                <Text style={styles.label}>PERSON OR EVENT NAME *</Text>
                 <TextInput
                   style={styles.input}
-                  placeholder="e.g. Sarah Rahman, Ayan Rahman"
+                  placeholder="e.g. Mother's Birthday, Wedding Anniversary"
                   placeholderTextColor={Colors.textMuted}
                   value={title}
                   onChangeText={setTitle}
                 />
 
-                <View style={styles.twoCol}>
+                <View style={rowStyle}>
                   <View style={styles.col}>
-                    <Text style={styles.label}>DATE OF BIRTH (YYYY-MM-DD) *</Text>
+                    <Text style={styles.label}>DATE (YYYY-MM-DD) *</Text>
                     <TextInput
                       style={styles.input}
                       placeholder="e.g. 1994-08-24"
@@ -1142,7 +1954,7 @@ export const UniversalEntryModal: React.FC<UniversalEntryModalProps> = ({
                     <Text style={styles.label}>GIFT BUDGET (৳)</Text>
                     <TextInput
                       style={styles.input}
-                      placeholder="e.g. 15000"
+                      placeholder="e.g. 10000"
                       placeholderTextColor={Colors.textMuted}
                       keyboardType="numeric"
                       value={amount}
@@ -1153,44 +1965,51 @@ export const UniversalEntryModal: React.FC<UniversalEntryModalProps> = ({
               </>
             )}
 
+            {/* ==================== STOCK ==================== */}
             {selectedType === 'stock' && (
               <>
-                <Text style={styles.label}>POPULAR DSE STOCKS (CLICK TO AUTO-FILL)</Text>
-                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 12 }}>
-                  {['GP', 'BATBC', 'BEXIMCO', 'SQURPHARMA', 'ROBI', 'RENATA', 'BRACBANK', 'LHBL', 'ISLAMIBANK'].map((s) => (
+                <Text style={styles.label}>POPULAR DSE STOCKS (TAP TO AUTO-FILL)</Text>
+                <View style={styles.sectorChips}>
+                  {[
+                    'GP',
+                    'BATBC',
+                    'SQURPHARMA',
+                    'BRACBANK',
+                    'RENATA',
+                    'ROBI',
+                    'LHBL',
+                    'ISLAMIBANK',
+                  ].map((s) => (
                     <TouchableOpacity
                       key={s}
                       onPress={() => {
                         setTitle(s);
-                        if (s === 'GP') setCategory('Grameenphone Ltd. (Telecom)');
-                        else if (s === 'BATBC') setCategory('British American Tobacco BD (FMCG)');
-                        else if (s === 'SQURPHARMA') setCategory('Square Pharmaceuticals (Pharma)');
-                        else if (s === 'ROBI') setCategory('Robi Axiata Ltd. (Telecom)');
-                        else if (s === 'BRACBANK') setCategory('BRAC Bank PLC (Banking)');
-                        else setCategory(`${s} (DSE Equities)`);
+                        if (s === 'GP') setCategory('Grameenphone Ltd.');
+                        else if (s === 'BATBC') setCategory('British American Tobacco BD');
+                        else if (s === 'SQURPHARMA') setCategory('Square Pharmaceuticals');
+                        else if (s === 'BRACBANK') setCategory('BRAC Bank PLC');
+                        else setCategory(`${s} (DSE)`);
                       }}
-                      style={{
-                        paddingHorizontal: 10,
-                        paddingVertical: 5,
-                        borderRadius: 6,
-                        backgroundColor: title === s ? '#16A34A' : '#F1F5F9',
-                        borderWidth: 1,
-                        borderColor: title === s ? '#15803D' : '#E2E8F0',
-                      }}
+                      style={[styles.sectorChip, title === s && styles.sectorChipSelectedNavy]}
                     >
-                      <Text style={{ fontSize: 11, fontWeight: '800', color: title === s ? '#FFFFFF' : '#334155' }}>
+                      <Text
+                        style={[
+                          styles.sectorChipText,
+                          title === s && styles.sectorChipTextSelected,
+                        ]}
+                      >
                         {s}
                       </Text>
                     </TouchableOpacity>
                   ))}
                 </View>
 
-                <View style={styles.twoCol}>
+                <View style={rowStyle}>
                   <View style={styles.col}>
-                    <Text style={styles.label}>STOCK TICKER / SYMBOL *</Text>
+                    <Text style={styles.label}>STOCK SYMBOL *</Text>
                     <TextInput
                       style={styles.input}
-                      placeholder="e.g. GP, BEXIMCO, BATBC"
+                      placeholder="e.g. GP, SQURPHARMA"
                       placeholderTextColor={Colors.textMuted}
                       autoCapitalize="characters"
                       value={title}
@@ -1198,10 +2017,10 @@ export const UniversalEntryModal: React.FC<UniversalEntryModalProps> = ({
                     />
                   </View>
                   <View style={styles.col}>
-                    <Text style={styles.label}>COMPANY NAME / SECTOR</Text>
+                    <Text style={styles.label}>COMPANY / SECTOR</Text>
                     <TextInput
                       style={styles.input}
-                      placeholder="e.g. Grameenphone (Telecom)"
+                      placeholder="e.g. Pharma / Telecom"
                       placeholderTextColor={Colors.textMuted}
                       value={category}
                       onChangeText={setCategory}
@@ -1209,12 +2028,12 @@ export const UniversalEntryModal: React.FC<UniversalEntryModalProps> = ({
                   </View>
                 </View>
 
-                <View style={styles.twoCol}>
+                <View style={rowStyle}>
                   <View style={styles.col}>
-                    <Text style={styles.label}>TOTAL SHARES / QUANTITY *</Text>
+                    <Text style={styles.label}>NUMBER OF SHARES *</Text>
                     <TextInput
                       style={styles.input}
-                      placeholder="e.g. 500"
+                      placeholder="e.g. 200"
                       placeholderTextColor={Colors.textMuted}
                       keyboardType="numeric"
                       value={subInfo}
@@ -1225,7 +2044,7 @@ export const UniversalEntryModal: React.FC<UniversalEntryModalProps> = ({
                     <Text style={styles.label}>BUY PRICE PER SHARE (৳) *</Text>
                     <TextInput
                       style={styles.input}
-                      placeholder="e.g. 286.50"
+                      placeholder="e.g. 285"
                       placeholderTextColor={Colors.textMuted}
                       keyboardType="numeric"
                       value={amount}
@@ -1234,95 +2053,32 @@ export const UniversalEntryModal: React.FC<UniversalEntryModalProps> = ({
                   </View>
                 </View>
 
-                <View style={styles.twoCol}>
-                  <View style={styles.col}>
-                    <Text style={styles.label}>CURRENT MARKET PRICE (CMP) (৳) *</Text>
-                    <TextInput
-                      style={styles.input}
-                      placeholder="e.g. 312.00 (leave blank to use buy price)"
-                      placeholderTextColor={Colors.textMuted}
-                      keyboardType="numeric"
-                      value={extraField}
-                      onChangeText={setExtraField}
-                    />
-                  </View>
-                  <View style={styles.col}>
-                    <Text style={styles.label}>EXCHANGE</Text>
-                    <TextInput
-                      style={[styles.input, { backgroundColor: '#F8FAFC' }]}
-                      editable={false}
-                      value="Dhaka Stock Exchange (DSE)"
-                    />
-                  </View>
-                </View>
-
-                {/* Real-time Live P&L Preview Card */}
-                {(() => {
-                  const q = parseFloat(subInfo) || 0;
-                  const bp = parseFloat(amount.replace(/,/g, '')) || 0;
-                  const cp = parseFloat(extraField.replace(/,/g, '')) || bp;
-                  const inv = q * bp;
-                  const val = q * cp;
-                  const pnl = val - inv;
-                  const pnlPct = inv > 0 ? (pnl / inv) * 100 : 0;
-                  const isGain = pnl >= 0;
-
-                  if (q <= 0 || bp <= 0) return null;
-
-                  return (
-                    <View
-                      style={{
-                        backgroundColor: isGain ? '#F0FDF4' : '#FEF2F2',
-                        borderRadius: 10,
-                        padding: 12,
-                        marginTop: 8,
-                        marginBottom: 16,
-                        borderWidth: 1,
-                        borderColor: isGain ? '#BBF7D0' : '#FECACA',
-                      }}
-                    >
-                      <Text
-                        style={{
-                          fontSize: 11,
-                          fontWeight: '800',
-                          color: isGain ? '#15803D' : '#B91C1C',
-                          marginBottom: 6,
-                          letterSpacing: 0.5,
-                        }}
-                      >
-                        ⚡ REAL-TIME VALUATION & P/L CALCULATION PREVIEW
-                      </Text>
-                      <View style={{ flexDirection: 'row', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
-                        <View>
-                          <Text style={{ fontSize: 10, color: '#64748B', fontWeight: '700' }}>TOTAL INVESTED</Text>
-                          <Text style={{ fontSize: 14, fontWeight: '900', color: '#0F172A' }}>
-                            ৳ {inv.toLocaleString('en-IN')}
-                          </Text>
-                        </View>
-                        <View>
-                          <Text style={{ fontSize: 10, color: '#64748B', fontWeight: '700' }}>MARKET VALUATION</Text>
-                          <Text style={{ fontSize: 14, fontWeight: '900', color: '#0F172A' }}>
-                            ৳ {val.toLocaleString('en-IN')}
-                          </Text>
-                        </View>
-                        <View>
-                          <Text style={{ fontSize: 10, color: '#64748B', fontWeight: '700' }}>NET PROFIT / LOSS</Text>
-                          <Text style={{ fontSize: 14, fontWeight: '900', color: isGain ? '#16A34A' : '#DC2626' }}>
-                            {isGain ? '+' : '−'}৳ {Math.abs(pnl).toLocaleString('en-IN')} ({pnlPct.toFixed(2)}%)
-                          </Text>
-                        </View>
-                      </View>
-                    </View>
-                  );
-                })()}
+                <Text style={styles.label}>TODAY'S MARKET PRICE PER SHARE (৳)</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Leave blank to use buy price"
+                  placeholderTextColor={Colors.textMuted}
+                  keyboardType="numeric"
+                  value={extraField}
+                  onChangeText={setExtraField}
+                />
               </>
             )}
+          </ScrollView>
+
+          {/* Pinned Footer Action Bar (Always reachable on Mobile & Desktop) */}
+          <View style={styles.footerBar}>
+            <TouchableOpacity style={styles.cancelFooterBtn} onPress={onClose} activeOpacity={0.8}>
+              <Text style={styles.cancelFooterBtnText}>Cancel</Text>
+            </TouchableOpacity>
 
             <TouchableOpacity style={styles.submitBtn} onPress={handleSave} activeOpacity={0.85}>
-              <Ionicons name="checkmark-circle" size={18} color="#020617" />
-              <Text style={styles.submitBtnText}>Save Entry to Portfolio</Text>
+              <Ionicons name="checkmark-circle" size={18} color="#FFFFFF" />
+              <Text style={styles.submitBtnText}>
+                Save {selectedType === 'fdr' ? 'FDR' : selectedType === 'dps' ? 'DPS' : selectedType === 'sanchaypatra' ? 'Sanchaypatra' : 'Entry'}
+              </Text>
             </TouchableOpacity>
-          </ScrollView>
+          </View>
         </View>
       </View>
     </Modal>
@@ -1332,30 +2088,38 @@ export const UniversalEntryModal: React.FC<UniversalEntryModalProps> = ({
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(2, 6, 23, 0.85)',
+    backgroundColor: 'rgba(15, 23, 42, 0.65)',
     justifyContent: 'center',
     alignItems: 'center',
     padding: Spacing.md,
   },
   modalCard: {
     width: '96%',
-    maxWidth: 660,
+    maxWidth: 680,
     maxHeight: '92%',
     backgroundColor: '#FFFFFF',
     borderRadius: Radius.xl,
-    borderWidth: 1.5,
-    borderColor: '#BAE6FD',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
     paddingHorizontal: 20,
-    paddingTop: 18,
-    paddingBottom: 16,
+    paddingTop: 16,
+    paddingBottom: 14,
     display: 'flex',
     flexDirection: 'column',
     overflow: 'hidden',
-    shadowColor: '#0284C7',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.18,
-    shadowRadius: 20,
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.16,
+    shadowRadius: 24,
     elevation: 8,
+  },
+  modalCardMobile: {
+    width: '100%',
+    maxHeight: '95%',
+    paddingHorizontal: 14,
+    paddingTop: 14,
+    paddingBottom: 12,
+    borderRadius: Radius.lg,
   },
   formScroll: {
     flex: 1,
@@ -1365,75 +2129,76 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: Spacing.sm,
-    paddingBottom: Spacing.sm,
+    marginBottom: 10,
+    paddingBottom: 10,
     borderBottomWidth: 1,
     borderBottomColor: '#E2E8F0',
   },
   headerLeft: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    gap: 10,
+    flex: 1,
   },
   headerIcon: {
-    width: 40,
-    height: 40,
+    width: 36,
+    height: 36,
     borderRadius: Radius.md,
-    backgroundColor: '#E0F2FE',
+    backgroundColor: '#F1F5F9',
     borderWidth: 1,
-    borderColor: '#BAE6FD',
+    borderColor: '#E2E8F0',
     justifyContent: 'center',
     alignItems: 'center',
   },
   title: {
-    fontSize: 18,
+    fontSize: 17,
     fontWeight: '800',
     color: '#0F172A',
   },
   subtitle: {
     fontSize: 12,
-    color: '#0284C7',
-    fontWeight: '600',
+    color: '#64748B',
+    fontWeight: '500',
     marginTop: 1,
   },
   headerVoiceBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    backgroundColor: '#8B5CF6',
+    backgroundColor: '#F8FAFC',
+    borderWidth: 1,
+    borderColor: '#CBD5E1',
     paddingHorizontal: 10,
     paddingVertical: 6,
     borderRadius: Radius.full,
   },
   headerVoiceBtnText: {
-    fontSize: 11,
-    fontWeight: '800',
-    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#0F172A',
   },
   closeBtn: {
-    padding: 8,
+    padding: 7,
     borderRadius: Radius.full,
-    backgroundColor: '#F0F9FF',
-    borderWidth: 1,
-    borderColor: '#BAE6FD',
+    backgroundColor: '#F1F5F9',
   },
   tabCategorySection: {
-    marginBottom: Spacing.sm,
+    marginBottom: 10,
     gap: 8,
     backgroundColor: '#F8FAFC',
     borderRadius: Radius.md,
-    padding: 8,
+    padding: 10,
     borderWidth: 1,
     borderColor: '#E2E8F0',
   },
   tabRow: {
-    gap: 4,
+    gap: 5,
   },
   tabGroupHeading: {
-    fontSize: 9,
+    fontSize: 10,
     fontWeight: '800',
     color: '#64748B',
-    letterSpacing: 0.8,
+    letterSpacing: 0.7,
     textTransform: 'uppercase',
   },
   tabPillGroup: {
@@ -1441,99 +2206,126 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     gap: 6,
   },
+  tabPillRowMobile: {
+    flexDirection: 'row',
+    gap: 6,
+  },
   modernTabPill: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 5,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
+    paddingHorizontal: 11,
+    paddingVertical: 7,
     borderRadius: Radius.full,
     backgroundColor: '#FFFFFF',
-    borderWidth: 1.5,
+    borderWidth: 1,
     borderColor: '#CBD5E1',
-    height: 32,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 1,
+  },
+  modernTabPillActive: {
+    backgroundColor: '#0F172A',
+    borderColor: '#0F172A',
   },
   modernTabPillText: {
-    fontSize: 12,
+    fontSize: 12.5,
     fontWeight: '700',
     color: '#334155',
+  },
+  modernTabPillTextActive: {
+    color: '#FFFFFF',
+    fontWeight: '800',
+  },
+  guideBox: {
+    backgroundColor: '#F8FAFC',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    borderLeftWidth: 3,
+    borderLeftColor: '#0F172A',
+    borderRadius: Radius.md,
+    padding: 10,
+    marginBottom: 8,
+  },
+  guideTitle: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: '#0F172A',
+  },
+  guideText: {
+    fontSize: 12,
+    color: '#475569',
+    lineHeight: 17,
+    marginTop: 2,
+  },
+  errorBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: '#FEF2F2',
+    borderWidth: 1,
+    borderColor: '#FECACA',
+    borderRadius: Radius.md,
+    padding: 10,
+    marginBottom: 8,
+  },
+  errorBannerText: {
+    fontSize: 12.5,
+    fontWeight: '700',
+    color: '#DC2626',
+    flex: 1,
   },
   label: {
     fontSize: 11,
     fontWeight: '800',
-    color: '#0284C7',
+    color: '#475569',
     marginTop: 10,
-    marginBottom: 4,
-    letterSpacing: 0.5,
+    marginBottom: 5,
+    letterSpacing: 0.4,
   },
   input: {
-    backgroundColor: '#F8FAFC',
-    borderWidth: 1.5,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
     borderColor: '#CBD5E1',
     borderRadius: Radius.md,
     paddingHorizontal: 13,
-    paddingVertical: 10,
+    paddingVertical: 11,
     color: '#0F172A',
-    fontSize: 14,
+    fontSize: 14.5,
     fontWeight: '600',
   },
   twoCol: {
     flexDirection: 'row',
     gap: 12,
   },
+  oneCol: {
+    flexDirection: 'column',
+    gap: 2,
+  },
   col: {
     flex: 1,
-  },
-  submitBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    backgroundColor: '#0284C7',
-    paddingVertical: 13,
-    borderRadius: Radius.md,
-    marginTop: Spacing.md,
-    marginBottom: Spacing.xs,
-    shadowColor: '#0284C7',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 6,
-    elevation: 3,
-  },
-  submitBtnText: {
-    fontSize: 15,
-    fontWeight: '800',
-    color: '#FFFFFF',
   },
   accountPillsContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 8,
-    marginVertical: 6,
+    marginVertical: 4,
   },
   accountPill: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
     paddingHorizontal: 12,
-    paddingVertical: 8,
+    paddingVertical: 9,
     borderRadius: Radius.md,
-    backgroundColor: '#F0F9FF',
-    borderWidth: 1.5,
-    borderColor: '#BAE6FD',
+    backgroundColor: '#F8FAFC',
+    borderWidth: 1,
+    borderColor: '#CBD5E1',
   },
   accountPillSelected: {
-    backgroundColor: '#0284C7',
-    borderColor: '#0284C7',
+    backgroundColor: '#0F172A',
+    borderColor: '#0F172A',
   },
   accountPillName: {
-    fontSize: 12,
-    fontWeight: '800',
+    fontSize: 12.5,
+    fontWeight: '700',
     color: '#0F172A',
   },
   accountPillNameSelected: {
@@ -1545,32 +2337,137 @@ const styles = StyleSheet.create({
     color: '#64748B',
   },
   accountPillBalSelected: {
-    color: '#E0F2FE',
+    color: '#CBD5E1',
   },
   sectorChips: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 6,
-    marginVertical: 6,
+    marginVertical: 4,
   },
   sectorChip: {
-    paddingHorizontal: 10,
-    paddingVertical: 6,
+    paddingHorizontal: 11,
+    paddingVertical: 6.5,
     borderRadius: Radius.full,
     backgroundColor: '#F8FAFC',
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: '#CBD5E1',
   },
-  sectorChipSelected: {
-    backgroundColor: '#EF4444',
-    borderColor: '#EF4444',
+  sectorChipSelectedNavy: {
+    backgroundColor: '#0F172A',
+    borderColor: '#0F172A',
   },
   sectorChipText: {
     fontSize: 12,
     fontWeight: '700',
-    color: '#475569',
+    color: '#334155',
   },
   sectorChipTextSelected: {
+    color: '#FFFFFF',
+  },
+  toggleCard: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 10,
+    backgroundColor: '#F8FAFC',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    borderRadius: Radius.md,
+    padding: 12,
+    marginTop: 12,
+  },
+  toggleCardActive: {
+    backgroundColor: '#F1F5F9',
+    borderColor: '#0F172A',
+  },
+  toggleCardTitle: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#0F172A',
+  },
+  toggleCardSub: {
+    fontSize: 11.5,
+    color: '#64748B',
+    marginTop: 2,
+    lineHeight: 16,
+  },
+  previewCard: {
+    backgroundColor: '#F0FDF4',
+    borderWidth: 1,
+    borderColor: '#BBF7D0',
+    borderRadius: Radius.md,
+    padding: 12,
+    marginTop: 12,
+  },
+  previewHeading: {
+    fontSize: 10.5,
+    fontWeight: '800',
+    color: '#166534',
+    letterSpacing: 0.5,
+    marginBottom: 4,
+  },
+  previewPlainSentence: {
+    fontSize: 12.5,
+    color: '#14532D',
+    lineHeight: 18,
+  },
+  previewMetricsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    flexWrap: 'wrap',
+    gap: 12,
+    marginTop: 8,
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: '#DCFCE7',
+  },
+  previewMetricLabel: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: '#166534',
+  },
+  previewMetricVal: {
+    fontSize: 15,
+    fontWeight: '900',
+    color: '#0F172A',
+    marginTop: 1,
+  },
+  footerBar: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    alignItems: 'center',
+    gap: 10,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#E2E8F0',
+  },
+  cancelFooterBtn: {
+    paddingHorizontal: 16,
+    paddingVertical: 11,
+    borderRadius: Radius.md,
+    backgroundColor: '#F8FAFC',
+    borderWidth: 1,
+    borderColor: '#CBD5E1',
+  },
+  cancelFooterBtnText: {
+    fontSize: 13.5,
+    fontWeight: '700',
+    color: '#334155',
+  },
+  submitBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    backgroundColor: '#0F172A',
+    paddingVertical: 12,
+    paddingHorizontal: 18,
+    borderRadius: Radius.md,
+  },
+  submitBtnText: {
+    fontSize: 14.5,
+    fontWeight: '800',
     color: '#FFFFFF',
   },
 });

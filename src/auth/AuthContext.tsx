@@ -512,11 +512,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         window.localStorage.setItem('mh_user_policies', JSON.stringify([]));
         window.localStorage.setItem('mh_user_birthdays', JSON.stringify([]));
         window.localStorage.setItem('mh_user_projects', JSON.stringify([]));
+        window.localStorage.setItem('mh_user_paper_assets', JSON.stringify([]));
+        window.localStorage.setItem('mh_paper_assets', JSON.stringify([]));
+        window.localStorage.setItem('mh_user_goals', JSON.stringify([]));
       }
 
       setUser(freshProfile);
       if (typeof window !== 'undefined') {
         window.dispatchEvent(new Event('mh_balance_updated'));
+        window.dispatchEvent(new Event('mh_paper_assets_updated'));
       }
     } catch (e) {
       console.warn('Failed to start fresh slate:', e);

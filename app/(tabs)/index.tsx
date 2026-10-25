@@ -45,6 +45,7 @@ import { StockMarketScreen } from '../../src/components/screens/StockMarketScree
 // Dedicated Screen Views
 import { PhysicalAssetsScreen } from '../../src/components/screens/PhysicalAssetsScreen';
 import { PaperAssetsScreen } from '../../src/components/screens/PaperAssetsScreen';
+import { WealthPlannerScreen } from '../../src/components/screens/WealthPlannerScreen';
 import { ExpensesScreen } from '../../src/components/screens/ExpensesScreen';
 import { SettingsScreen } from '../../src/components/screens/SettingsScreen';
 import { ScheduleScreen } from '../../src/components/screens/ScheduleScreen';
@@ -52,6 +53,7 @@ import { FinancialStatementsScreen } from '../../src/components/screens/Financia
 import { IncomeExpenseDetailsScreen } from '../../src/components/screens/IncomeExpenseDetailsScreen';
 import { ProjectsScreen } from '../../src/components/screens/ProjectsScreen';
 import { CategorySetupScreen } from '../../src/components/screens/CategorySetupScreen';
+import { PaperAssetsManager } from '../../src/services/paperAssetsManager';
 import { QuickenBudgetPacingMeter } from '../../src/components/quicken/QuickenBudgetPacingMeter';
 import { QuickenSpendingWheel } from '../../src/components/quicken/QuickenSpendingWheel';
 import { QuickenIncomeVsExpenseChart } from '../../src/components/quicken/QuickenIncomeVsExpenseChart';
@@ -135,13 +137,15 @@ export default function MasterDashboardScreen() {
   const [policies, setPoliciesState] = useState<LifeInsurancePolicy[]>(() => getStoredData('mh_user_policies', []));
   const [birthdays, setBirthdaysState] = useState<BirthdayEvent[]>(() => getStoredData('mh_user_birthdays', []));
   const [schedules, setSchedulesState] = useState<ScheduleEvent[]>(() => getStoredData('mh_user_schedules', []));
+  const [paperSummary, setPaperSummary] = useState(() => PaperAssetsManager.getSummary());
 
-  // Sync bank accounts and cash flows when tab changes or transactions happen
+  // Sync bank accounts, paper savings, and cash flows when tab changes or transactions happen
   useEffect(() => {
-    if (activeTab === 'dashboard' || activeTab === 'register') {
+    if (activeTab === 'dashboard' || activeTab === 'register' || activeTab === 'paper_assets') {
       setBankAccounts(TransactionManager.getAccountsWithCash());
       setExpensesState(TransactionManager.getStoredExpenses());
       setIncomesState(TransactionManager.getStoredIncomes());
+      setPaperSummary(PaperAssetsManager.getSummary());
     }
   }, [activeTab]);
 
@@ -150,9 +154,17 @@ export default function MasterDashboardScreen() {
       setBankAccounts(TransactionManager.getAccountsWithCash());
       setExpensesState(TransactionManager.getStoredExpenses());
       setIncomesState(TransactionManager.getStoredIncomes());
+      setPaperSummary(PaperAssetsManager.getSummary());
     };
-    const unsub = subscribeToBalanceUpdates(handleBalanceChanged);
-    return () => unsub();
+    const unsub1 = subscribeToBalanceUpdates(handleBalanceChanged);
+    const unsub2 = PaperAssetsManager.subscribe(() => {
+      setPaperSummary(PaperAssetsManager.getSummary());
+      setBankAccounts(TransactionManager.getAccountsWithCash());
+    });
+    return () => {
+      unsub1();
+      unsub2();
+    };
   }, []);
 
   const setAssets = (updater: any) => {
@@ -207,7 +219,7 @@ export default function MasterDashboardScreen() {
 
   // Modals
   const [entryModalVisible, setEntryModalVisible] = useState(false);
-  const [modalInitialType, setModalInitialType] = useState<EntryType>('stock');
+  const [modalInitialType, setModalInitialType] = useState<EntryType>('expense');
   const [voiceModalVisible, setVoiceModalVisible] = useState(false);
   const [qrModalVisible, setQrModalVisible] = useState(false);
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
@@ -297,22 +309,7 @@ export default function MasterDashboardScreen() {
 
   const totalCurrentExpense = currentExpenseItems.reduce((sum, item) => sum + item.amount, 0);
 
-  const paperAssetsTotal = (() => {
-    try {
-      if (typeof window !== 'undefined' && window.localStorage) {
-        const raw =
-          window.localStorage.getItem('mh_user_paper_assets') ||
-          window.localStorage.getItem('mh_paper_assets');
-        if (raw) {
-          const parsed = JSON.parse(raw);
-          if (Array.isArray(parsed) && parsed.length > 0) {
-            return parsed.reduce((sum: number, item: any) => sum + (item.amount || item.investmentAmount || 0), 0);
-          }
-        }
-      }
-    } catch (e) {}
-    return 3000000;
-  })();
+  const paperAssetsTotal = paperSummary.totalCapital;
 
   const consolidatedNetWorth =
     totalCashInHand +
@@ -323,7 +320,11 @@ export default function MasterDashboardScreen() {
 
   const handleUniversalSave = (type: EntryType, data: any) => {
     const currentUid = user?.id || 'rashed01';
-    if (type === 'asset') {
+    if (type === 'fdr' || type === 'dps' || type === 'sanchaypatra') {
+      setPaperSummary(PaperAssetsManager.getSummary());
+      setBankAccounts(TransactionManager.getAccountsWithCash());
+      setExpensesState(TransactionManager.getStoredExpenses());
+    } else if (type === 'asset') {
       setAssets((prev: any) => {
         const next = [data, ...prev];
         FirebaseSyncService.pushCategory(currentUid, 'physical_assets', next);
@@ -358,23 +359,9 @@ export default function MasterDashboardScreen() {
         return next;
       });
     } else if (type === 'bank') {
-      const newAcc: BankAccountItem = {
-        id: `ACC-${Date.now()}-${Math.floor(100 + Math.random() * 900)}`,
-        bankName: data.title,
-        accountName: data.title,
-        accountType: data.category || 'Savings Account',
-        accountNumber: data.subInfo || `****${Math.floor(1000 + Math.random() * 9000)}`,
-        currentBalance: data.amount,
-        color: '#0284C7',
-      };
-      const updatedBanks = [...getStoredBankAccounts(), newAcc];
-      setStoredData('mh_user_bank_accounts', updatedBanks);
+      const updatedBanks = TransactionManager.getAccountsWithCash();
       setBankAccounts(updatedBanks);
-      setCashList((prev: any) => {
-        const next = [...prev, { id: newAcc.id, label: newAcc.bankName, amount: newAcc.currentBalance, color: '#0284C7' }];
-        FirebaseSyncService.pushCategory(currentUid, 'bank_accounts', updatedBanks);
-        return next;
-      });
+      FirebaseSyncService.pushCategory(currentUid, 'bank_accounts', updatedBanks);
     } else if (type === 'loan') {
       setLoanList((prev: any) => {
         const next = [...prev, { id: data.id, name: data.title, sub: data.category, amount: data.amount, color: '#EF4444' }];
@@ -397,20 +384,21 @@ export default function MasterDashboardScreen() {
   };
 
   const pageTitles: Record<SidebarTabType, string> = {
-    dashboard: 'Executive Wealth Dashboard',
-    register: 'Quicken Checkbook Register & Ledger',
-    income_expense_details: 'Incomes - Expenses Cash Book (Date Range)',
-    projects: 'Projects P&L & Balance Ledger',
-    reports: 'Financial Statements & Audit Ledgers (IFRS / GAAP)',
-    categories: 'Category & Budget Setup (Intuit Management)',
-    stocks: 'Stock Market Equities (DSE / CSE & Global)',
-    accounts: 'Liquid Bank Accounts & Cash Vault',
-    loans: 'Institutional Loans & Debt Service',
-    schedules: 'Automated Cash Flow & Schedules',
-    paper_assets: 'Paper Assets (Sanchaypatra / FDR / DPS)',
-    physical_assets: 'Physical Assets (Land / Gold / Flats)',
-    expenses: 'Expenses & Asset Maintenance Costs',
-    settings: 'Settings & Security Vault',
+    dashboard: 'Personal Wealth Overview',
+    register: 'All Transactions & Passbook',
+    income_expense_details: 'Daily Cash Book (Incomes & Expenses)',
+    paper_assets: 'Savings Vault: FDR, DPS & Sanchaypatra',
+    planner: 'Goals, Zakat & Smart Calculators',
+    projects: 'Projects Income & Expense Ledger',
+    reports: 'Financial Reports & Tax Statements',
+    categories: 'Categories & Monthly Budget Limits',
+    stocks: 'Stock Market Portfolio (DSE / CSE)',
+    accounts: 'Bank Accounts & Cash Wallet',
+    loans: 'Loans & Monthly EMI Tracker',
+    schedules: 'Upcoming Bills & Profit Reminders',
+    physical_assets: 'Land, Gold & Physical Property',
+    expenses: 'Spending & Monthly Budgets',
+    settings: 'Settings, Backup & Multi-User',
   };
 
   return (
@@ -558,11 +546,11 @@ export default function MasterDashboardScreen() {
               {/* Primary Action Button: Executive Deep Slate/Navy */}
               <TouchableOpacity
                 style={styles.primaryExecutiveBtn}
-                onPress={() => openModal('stock')}
+                onPress={() => openModal('expense')}
                 activeOpacity={0.85}
               >
                 <Ionicons name="add" size={17} color="#FFFFFF" />
-                <Text style={styles.primaryExecutiveBtnText}>{isDesktop ? '+ Data Entry' : '+ Entry'}</Text>
+                <Text style={styles.primaryExecutiveBtnText}>{isDesktop ? '+ Quick Add' : '+ Add'}</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -591,6 +579,14 @@ export default function MasterDashboardScreen() {
           {activeTab === 'loans' && <LoansScreen />}
           {activeTab === 'schedules' && <ScheduleScreen />}
           {activeTab === 'paper_assets' && <PaperAssetsScreen />}
+          {activeTab === 'planner' && (
+            <WealthPlannerScreen
+              stocksValue={stockSummary.currentValue}
+              physicalAssetsValue={assetSummary.totalAssetValuation}
+              loansTotal={totalLoans}
+              onNavigateToSavings={() => setActiveTab('paper_assets')}
+            />
+          )}
           {activeTab === 'physical_assets' && (
             <PhysicalAssetsScreen assets={assets} onAddAsset={(a) => setAssets([a, ...assets])} />
           )}
@@ -624,7 +620,7 @@ export default function MasterDashboardScreen() {
               {/* 1. Flagship Consolidated Net Worth Hero Card */}
               <NetWorthMeter
                 netWorth={consolidatedNetWorth}
-                totalAssets={totalCashInHand + stockSummary.currentValue + assetSummary.totalAssetValuation}
+                totalAssets={totalCashInHand + stockSummary.currentValue + paperAssetsTotal + assetSummary.totalAssetValuation}
                 totalLiabilities={totalLoans}
                 monthlyIncome={totalCurrentIncome}
                 monthlyExpense={totalCurrentExpense}
@@ -636,27 +632,71 @@ export default function MasterDashboardScreen() {
                 }}
               />
 
-              {/* 2. Executive Quick Navigation Ribbon */}
+              {/* 2. 1-Tap Quick Actions Bar (Mobile & Laptop Friendly) */}
               <View style={styles.actionRibbon}>
                 <TouchableOpacity
-                  style={styles.actionPill}
-                  onPress={() => setActiveTab('income_expense_details')}
+                  style={[styles.actionPill, { backgroundColor: '#0F172A', borderColor: '#0F172A' }]}
+                  onPress={() => openModal('expense')}
                   activeOpacity={0.8}
                 >
-                  <Ionicons name="swap-horizontal-outline" size={15} color="#475569" />
-                  <Text style={styles.actionPillText}>
-                    Incomes − Expenses Details
+                  <Ionicons name="remove-circle-outline" size={15} color="#FFFFFF" />
+                  <Text style={[styles.actionPillText, { color: '#FFFFFF', fontWeight: '800' }]}>
+                    + Expense
+                  </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[styles.actionPill, { backgroundColor: '#F0FDF4', borderColor: '#BBF7D0' }]}
+                  onPress={() => openModal('income')}
+                  activeOpacity={0.8}
+                >
+                  <Ionicons name="add-circle-outline" size={15} color="#15803D" />
+                  <Text style={[styles.actionPillText, { color: '#15803D', fontWeight: '800' }]}>
+                    + Income
                   </Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity
                   style={styles.actionPill}
-                  onPress={() => setActiveTab('projects')}
+                  onPress={() => openModal('fdr')}
                   activeOpacity={0.8}
                 >
-                  <Ionicons name="briefcase-outline" size={15} color="#475569" />
+                  <Ionicons name="shield-checkmark-outline" size={15} color="#0F172A" />
+                  <Text style={[styles.actionPillText, { color: '#0F172A', fontWeight: '800' }]}>
+                    + Add FDR / DPS
+                  </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={styles.actionPill}
+                  onPress={() => openModal('transfer')}
+                  activeOpacity={0.8}
+                >
+                  <Ionicons name="swap-horizontal-outline" size={15} color="#475569" />
                   <Text style={styles.actionPillText}>
-                    Projects Ledger & P&L
+                    Bank Transfer
+                  </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={styles.actionPill}
+                  onPress={() => setActiveTab('income_expense_details')}
+                  activeOpacity={0.8}
+                >
+                  <Ionicons name="book-outline" size={15} color="#475569" />
+                  <Text style={styles.actionPillText}>
+                    Daily Cash Book
+                  </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={styles.actionPill}
+                  onPress={() => setActiveTab('planner')}
+                  activeOpacity={0.8}
+                >
+                  <Ionicons name="calculator-outline" size={15} color="#475569" />
+                  <Text style={styles.actionPillText}>
+                    Calculators, Goals & Zakat
                   </Text>
                 </TouchableOpacity>
 
@@ -667,41 +707,118 @@ export default function MasterDashboardScreen() {
                 >
                   <Ionicons name="receipt-outline" size={15} color="#475569" />
                   <Text style={styles.actionPillText}>
-                    Account Register
-                  </Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  style={styles.actionPill}
-                  onPress={() => setActiveTab('reports')}
-                  activeOpacity={0.8}
-                >
-                  <Ionicons name="document-text-outline" size={15} color="#475569" />
-                  <Text style={styles.actionPillText}>
-                    Statements & Reports
-                  </Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  style={[styles.actionPill, { backgroundColor: '#0F172A', borderColor: '#0F172A' }]}
-                  onPress={() => openModal('expense')}
-                  activeOpacity={0.8}
-                >
-                  <Ionicons name="add-circle-outline" size={15} color="#FFFFFF" />
-                  <Text style={[styles.actionPillText, { color: '#FFFFFF', fontWeight: '800' }]}>
-                    + Quick Record
+                    All Passbooks
                   </Text>
                 </TouchableOpacity>
               </View>
 
-              {/* 3. Quicken 'What's Left to Spend' Budget Pacing Meter */}
+              {/* 3. Savings Vault Card: FDR, DPS & Sanchaypatra (Direct 1-Tap Access) */}
+              <View style={styles.fullWidthBox}>
+                <View style={styles.whiteCard}>
+                  <View style={styles.stockCardContent}>
+                    <View style={{ flex: 1, minWidth: 240 }}>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                        <View style={[styles.stockIconBadge, { backgroundColor: '#F1F5F9', borderColor: '#E2E8F0' }]}>
+                          <Ionicons name="shield-checkmark" size={16} color="#0F172A" />
+                        </View>
+                        <Text style={styles.stockCardHeaderTitle}>SAVINGS VAULT: FDR, DPS & SANCHAYPATRA</Text>
+                      </View>
+                      <View style={{ flexDirection: 'row', alignItems: 'baseline', flexWrap: 'wrap', gap: 8, marginTop: 4 }}>
+                        <Text style={styles.stockCardAmount}>
+                          ৳ {paperSummary.totalCapital.toLocaleString('en-IN')}
+                        </Text>
+                        <View style={{ backgroundColor: '#F8FAFC', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6, borderWidth: 1, borderColor: '#E2E8F0' }}>
+                          <Text style={{ fontSize: 13, fontWeight: '800', color: '#334155' }}>
+                            (৳ {(paperSummary.totalCapital / 100000).toFixed(2)} Lakhs)
+                          </Text>
+                        </View>
+                      </View>
+                      <Text style={styles.stockCardSub}>
+                        Est. Net Monthly Profit: +৳ {paperSummary.monthlyNetYield.toLocaleString('en-IN')}/mo (after source tax) • {paperSummary.totalCount} Active Certificates & Schemes
+                      </Text>
+                    </View>
+
+                    <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, alignItems: 'center' }}>
+                      <TouchableOpacity
+                        style={{ backgroundColor: '#0F172A', paddingHorizontal: 12, paddingVertical: 8, borderRadius: Radius.full, flexDirection: 'row', alignItems: 'center', gap: 5 }}
+                        onPress={() => openModal('fdr')}
+                        activeOpacity={0.85}
+                      >
+                        <Ionicons name="add" size={15} color="#FFFFFF" />
+                        <Text style={{ color: '#FFFFFF', fontSize: 12, fontWeight: '800' }}>Add FDR</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={{ backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#CBD5E1', paddingHorizontal: 12, paddingVertical: 8, borderRadius: Radius.full, flexDirection: 'row', alignItems: 'center', gap: 5 }}
+                        onPress={() => openModal('dps')}
+                        activeOpacity={0.85}
+                      >
+                        <Ionicons name="add" size={15} color="#0F172A" />
+                        <Text style={{ color: '#0F172A', fontSize: 12, fontWeight: '800' }}>Add DPS</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={{ backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#CBD5E1', paddingHorizontal: 12, paddingVertical: 8, borderRadius: Radius.full, flexDirection: 'row', alignItems: 'center', gap: 5 }}
+                        onPress={() => openModal('sanchaypatra')}
+                        activeOpacity={0.85}
+                      >
+                        <Ionicons name="add" size={15} color="#0F172A" />
+                        <Text style={{ color: '#0F172A', fontSize: 12, fontWeight: '800' }}>Sanchaypatra</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        onPress={() => setActiveTab('paper_assets')}
+                        style={styles.stockTerminalBtn}
+                        activeOpacity={0.8}
+                      >
+                        <Text style={[styles.stockTerminalBtnText, { color: '#0F172A' }]}>Open Vault</Text>
+                        <Ionicons name="arrow-forward" size={14} color="#0F172A" />
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+
+                  <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginTop: 14, borderTopWidth: 1, borderTopColor: '#F1F5F9', paddingTop: 12 }}>
+                    <TouchableOpacity
+                      style={{ flex: 1, minWidth: 150, backgroundColor: '#F8FAFC', borderRadius: Radius.md, padding: 10, borderWidth: 1, borderColor: '#E2E8F0' }}
+                      onPress={() => setActiveTab('paper_assets')}
+                    >
+                      <Text style={{ fontSize: 11, fontWeight: '700', color: '#64748B' }}>Fixed Deposits (FDR)</Text>
+                      <Text style={{ fontSize: 15, fontWeight: '900', color: '#0F172A', marginTop: 2 }}>
+                        ৳ {paperSummary.fdrTotal.toLocaleString('en-IN')}
+                      </Text>
+                      <Text style={{ fontSize: 11, color: '#64748B', marginTop: 2 }}>{paperSummary.fdrCount} active receipts</Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                      style={{ flex: 1, minWidth: 150, backgroundColor: '#F8FAFC', borderRadius: Radius.md, padding: 10, borderWidth: 1, borderColor: '#E2E8F0' }}
+                      onPress={() => setActiveTab('paper_assets')}
+                    >
+                      <Text style={{ fontSize: 11, fontWeight: '700', color: '#64748B' }}>Monthly DPS Schemes</Text>
+                      <Text style={{ fontSize: 15, fontWeight: '900', color: '#0F172A', marginTop: 2 }}>
+                        ৳ {paperSummary.dpsTotal.toLocaleString('en-IN')}
+                      </Text>
+                      <Text style={{ fontSize: 11, color: '#64748B', marginTop: 2 }}>{paperSummary.dpsCount} running schemes</Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                      style={{ flex: 1, minWidth: 150, backgroundColor: '#F8FAFC', borderRadius: Radius.md, padding: 10, borderWidth: 1, borderColor: '#E2E8F0' }}
+                      onPress={() => setActiveTab('paper_assets')}
+                    >
+                      <Text style={{ fontSize: 11, fontWeight: '700', color: '#64748B' }}>Govt. Sanchaypatra</Text>
+                      <Text style={{ fontSize: 15, fontWeight: '900', color: '#0F172A', marginTop: 2 }}>
+                        ৳ {paperSummary.sanchaypatraTotal.toLocaleString('en-IN')}
+                      </Text>
+                      <Text style={{ fontSize: 11, color: '#64748B', marginTop: 2 }}>{paperSummary.sanchaypatraCount} certificates</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              </View>
+
+              {/* 4. Quicken 'What's Left to Spend' Budget Pacing Meter */}
               <QuickenBudgetPacingMeter
                 totalBudget={CategoryManager.getTotalExpenseBudget()}
                 totalSpent={totalCurrentExpense}
                 onOpenBudgetSetup={() => setActiveTab('categories')}
               />
 
-              {/* 4. Quicken Upcoming Bills & Projected Checking Cushion */}
+              {/* 5. Quicken Upcoming Bills & Projected Checking Cushion */}
               <QuickenBillsScheduleStrip
                 currentCashBalance={totalCashInHand}
                 loans={loanList}
@@ -710,7 +827,7 @@ export default function MasterDashboardScreen() {
                 onOpenScheduleScreen={() => setActiveTab('schedules')}
               />
 
-              {/* 5. Quicken Visual Charts Row: Spending Wheel Donut & 6-Month Cash Flow Trend */}
+              {/* 6. Quicken Visual Charts Row: Spending Wheel Donut & 6-Month Cash Flow Trend */}
               <View style={isDesktop ? styles.gridRowTwoCol : styles.gridRow}>
                 <View style={styles.gridCol}>
                   <QuickenSpendingWheel
@@ -727,7 +844,7 @@ export default function MasterDashboardScreen() {
                 </View>
               </View>
 
-              {/* 6. DSE / CSE Stock Market & Listed Equities Card */}
+              {/* 7. DSE / CSE Stock Market & Listed Equities Card */}
               <View style={styles.fullWidthBox}>
                 <View style={styles.stockCard}>
                   <View style={styles.stockCardContent}>
@@ -736,7 +853,7 @@ export default function MasterDashboardScreen() {
                         <View style={styles.stockIconBadge}>
                           <Ionicons name="trending-up" size={16} color="#0D9488" />
                         </View>
-                        <Text style={styles.stockCardHeaderTitle}>DSE / CSE EQUITIES & PORTFOLIO SURVEILLANCE</Text>
+                        <Text style={styles.stockCardHeaderTitle}>STOCK MARKET PORTFOLIO (DSE / CSE)</Text>
                       </View>
                       <View style={{ flexDirection: 'row', alignItems: 'baseline', flexWrap: 'wrap', gap: 8, marginTop: 4 }}>
                         <Text style={styles.stockCardAmount}>
@@ -749,7 +866,7 @@ export default function MasterDashboardScreen() {
                         </View>
                       </View>
                       <Text style={styles.stockCardSub}>
-                        Capital Invested: ৳ {stockSummary.totalInvested.toLocaleString('en-IN')} (৳ {(stockSummary.totalInvested / 100000).toFixed(2)} Lakhs) • {stockSummary.totalHoldingsCount} Stock Positions (Dhaka & Chittagong Stock Exchanges)
+                        Total Invested: ৳ {stockSummary.totalInvested.toLocaleString('en-IN')} (৳ {(stockSummary.totalInvested / 100000).toFixed(2)} Lakhs) • {stockSummary.totalHoldingsCount} Stock Holdings
                       </Text>
                     </View>
 
@@ -770,7 +887,7 @@ export default function MasterDashboardScreen() {
                         style={styles.stockTerminalBtn}
                         activeOpacity={0.8}
                       >
-                        <Text style={styles.stockTerminalBtnText}>Open Stock Market Terminal</Text>
+                        <Text style={styles.stockTerminalBtnText}>Open Stock Market</Text>
                         <Ionicons name="arrow-forward" size={14} color="#0284C7" />
                       </TouchableOpacity>
                     </View>
@@ -780,7 +897,7 @@ export default function MasterDashboardScreen() {
                   {stocks.length > 0 && (
                     <View style={{ marginTop: 14, borderTopWidth: 1, borderTopColor: '#F1F5F9', paddingTop: 10 }}>
                       <Text style={{ fontSize: 11, fontWeight: '800', color: '#64748B', letterSpacing: 0.5, marginBottom: 6 }}>
-                        PORTFOLIO POSITIONS & UNREALIZED P/L (DSE/CSE)
+                        YOUR SHARES & PROFIT / LOSS
                       </Text>
                       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
                         {stocks.map((s) => {
@@ -812,7 +929,7 @@ export default function MasterDashboardScreen() {
                                 </View>
                               </View>
                               <Text style={{ fontSize: 11, color: '#64748B', marginTop: 2 }}>
-                                {s.quantity} shrs • Buy: ৳{s.buyPrice.toFixed(1)} • CMP: ৳{s.currentPrice.toFixed(1)}
+                                {s.quantity} shrs • Buy: ৳{s.buyPrice.toFixed(1)} • Now: ৳{s.currentPrice.toFixed(1)}
                               </Text>
                               <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 6, borderTopWidth: 1, borderTopColor: '#EEF2F6', paddingTop: 4 }}>
                                 <Text style={{ fontSize: 11, color: '#64748B' }}>Val: ৳{Math.round(sVal).toLocaleString('en-IN')}</Text>
@@ -829,21 +946,21 @@ export default function MasterDashboardScreen() {
                 </View>
               </View>
 
-              {/* 4. Solvency & Debt Service Coverage Ratio */}
+              {/* 8. Cash vs Loans Safety Meter */}
               <HealthStatusMeter totalCashInHand={totalCashInHand} totalLoans={totalLoans} />
 
-              {/* 5. Responsive 2-Column Grid: Liquid Reserves & Debt Liabilities */}
+              {/* 9. Responsive 2-Column Grid: Cash & Bank Accounts vs Loans */}
               <View style={[styles.gridRow, isDesktop && styles.gridRowTwoCol]}>
                 <View style={[styles.gridCol, isDesktop && styles.colHalf]}>
                   <View style={styles.whiteCard}>
                     <View style={styles.cardHeaderRow}>
                       <Ionicons name="wallet-outline" size={16} color="#475569" />
-                      <Text style={styles.cardLabel}>LIQUID CAPITAL & ACTIVE BANK ACCOUNTS</Text>
+                      <Text style={styles.cardLabel}>CASH & BANK ACCOUNTS</Text>
                     </View>
                     {liquidSegments.length === 0 ? (
                       <View style={{ alignItems: 'center', paddingVertical: 20 }}>
                         <Text style={{ fontSize: 13, color: '#64748B', fontStyle: 'italic', textAlign: 'center' }}>
-                          No bank accounts recorded. Click "+ Bank Account" above.
+                          No bank accounts recorded yet. Tap below to add one.
                         </Text>
                         <TouchableOpacity
                           style={{ marginTop: 10, paddingHorizontal: 14, paddingVertical: 8, backgroundColor: '#0F172A', borderRadius: Radius.full }}
@@ -856,7 +973,7 @@ export default function MasterDashboardScreen() {
                       <>
                         <SegmentedDonut
                           segments={liquidSegments}
-                          totalLabel="Total Liquid"
+                          totalLabel="Total Cash"
                           totalFormatted={`৳ ${totalCashInHand.toLocaleString('en-IN')}`}
                           size={140}
                         />
@@ -899,21 +1016,21 @@ export default function MasterDashboardScreen() {
                     <View style={styles.cardHeaderRow}>
                       <Ionicons name="card-outline" size={16} color="#DC2626" />
                       <Text style={[styles.cardLabel, { color: '#DC2626' }]}>
-                        OUTSTANDING LOAN LIABILITIES & DEBT LOAD
+                        LOANS & OUTSTANDING DEBT
                       </Text>
                     </View>
                     {loanList.length === 0 ? (
                       <View style={{ alignItems: 'center', paddingVertical: 20 }}>
                         <Text style={{ fontSize: 13, color: '#64748B', fontStyle: 'italic' }}>
-                          No debt liabilities recorded. Complete peace of mind.
+                          No loans recorded — zero debt!
                         </Text>
                       </View>
                     ) : (
                       <RadialGauge
                         score={totalLoans > 0 ? 80 : 0}
                         title={`৳ ${(totalLoans / 100000).toFixed(1)} Lakhs`}
-                        subtitle="Institutional & Outside Loans"
-                        statusLabel="Debt Load"
+                        subtitle="Bank & Personal Loans"
+                        statusLabel="Total Debt"
                         statusColor={Colors.danger}
                         size={140}
                       />
@@ -922,14 +1039,14 @@ export default function MasterDashboardScreen() {
                 </View>
               </View>
 
-              {/* 6. Responsive 2-Column Grid: Cash Inflow & Expense Outflow */}
+              {/* 10. Responsive 2-Column Grid: Incomes & Expenses */}
               <View style={[styles.gridRow, isDesktop && styles.gridRowTwoCol]}>
                 <View style={[styles.gridCol, isDesktop && styles.colHalf]}>
                   <View style={styles.whiteCard}>
                     <FlowBreakdownBar
                       items={currentIncomeItems}
                       total={totalCurrentIncome}
-                      title="MONTHLY CASH INFLOW & ASSET YIELD"
+                      title="THIS MONTH'S INCOMES"
                       totalFormatted={`৳ ${totalCurrentIncome.toLocaleString('en-IN')}`}
                     />
                   </View>
@@ -940,7 +1057,7 @@ export default function MasterDashboardScreen() {
                     <FlowBreakdownBar
                       items={currentExpenseItems}
                       total={totalCurrentExpense}
-                      title="MONTHLY OUTFLOW & DEBT SERVICE EXPENSES"
+                      title="THIS MONTH'S EXPENSES"
                       totalFormatted={`৳ ${totalCurrentExpense.toLocaleString('en-IN')}`}
                     />
                   </View>
@@ -957,7 +1074,7 @@ export default function MasterDashboardScreen() {
           activeTab={activeTab}
           onSelectTab={setActiveTab}
           onOpenDrawer={() => setMobileDrawerOpen(true)}
-          onQuickEntryPress={() => openModal('stock')}
+          onQuickEntryPress={() => openModal('expense')}
         />
       )}
 
@@ -967,7 +1084,7 @@ export default function MasterDashboardScreen() {
         onClose={() => setMobileDrawerOpen(false)}
         activeTab={activeTab}
         onSelectTab={setActiveTab}
-        onQuickEntryPress={() => openModal('stock')}
+        onQuickEntryPress={() => openModal('expense')}
         onOpenQrModal={() => setQrModalVisible(true)}
         onOpenAuthModal={openAuthModal}
         userProfile={user || { name: 'Rashed Zaman', avatar: '👨‍💼', id: 'rashed01' }}
@@ -1004,6 +1121,7 @@ export default function MasterDashboardScreen() {
           setExpensesState(getStoredData('mh_user_expenses', []));
           setPoliciesState(getStoredData('mh_user_policies', []));
           setBirthdaysState(getStoredData('mh_user_birthdays', []));
+          setPaperSummary(PaperAssetsManager.getSummary());
         }}
       />
 

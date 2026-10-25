@@ -92,13 +92,13 @@ export const QuickenBudgetPacingMeter: React.FC<QuickenBudgetPacingMeterProps> =
       {/* Main Metric Hero */}
       <View style={styles.heroRow}>
         <View style={styles.heroLeft}>
-          <Text style={styles.remainingLabel}>Available Discretionary Spend</Text>
+          <Text style={styles.remainingLabel}>Remaining Monthly Budget</Text>
           <Text style={[styles.remainingAmount, { color: totalSpent > totalBudget && totalBudget > 0 ? '#EF4444' : '#0F172A' }]}>
             ৳ {remainingBudget.toLocaleString('en-IN')}
           </Text>
           <Text style={styles.dailyBurnSub}>
             {daysRemaining > 0
-              ? `You can spend ~৳ ${remainingDailyAllowance.toLocaleString('en-IN')}/day for the rest of ${now.toLocaleString('default', { month: 'short' })}`
+              ? `Safe daily spending limit: ~৳ ${remainingDailyAllowance.toLocaleString('en-IN')}/day for the rest of ${now.toLocaleString('default', { month: 'short' })}`
               : 'End of month cycle reached'}
           </Text>
         </View>

@@ -26,7 +26,7 @@ export const HealthStatusMeter: React.FC<HealthStatusMeterProps> = ({
             size={18}
             color={isSolvent ? '#059669' : '#DC2626'}
           />
-          <Text style={styles.title}>LIQUID SOLVENCY & DEBT COVERAGE RATIO</Text>
+          <Text style={styles.title}>CASH & BANK SAFETY VS LOANS</Text>
         </View>
         <View
           style={[
@@ -46,12 +46,12 @@ export const HealthStatusMeter: React.FC<HealthStatusMeterProps> = ({
               { color: isSolvent ? '#059669' : '#DC2626' },
             ]}
           >
-            {isSolvent ? 'LIQUID SURPLUS' : 'LEVERAGED DEFICIT'}
+            {isSolvent ? 'SAFE CASH CUSHION' : 'LOANS EXCEED CASH'}
           </Text>
         </View>
       </View>
 
-      <Text style={styles.subFormula}>Liquid Reserve Buffer: Cash & Bank Accounts − Outstanding Borrowings</Text>
+      <Text style={styles.subFormula}>Compares your ready Bank & Cash balances against total borrowed Loans</Text>
 
       <View style={styles.mainValueRow}>
         <View>

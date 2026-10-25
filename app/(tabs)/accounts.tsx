@@ -834,7 +834,7 @@ export default function AccountsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#E0F2FE',
+    backgroundColor: '#F8FAFC',
   },
   content: {
     padding: Spacing.lg,

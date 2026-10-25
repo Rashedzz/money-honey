@@ -17,6 +17,8 @@ export type SidebarTabType =
   | 'dashboard'
   | 'register'
   | 'income_expense_details'
+  | 'paper_assets'
+  | 'planner'
   | 'projects'
   | 'reports'
   | 'categories'
@@ -24,7 +26,6 @@ export type SidebarTabType =
   | 'accounts'
   | 'loans'
   | 'schedules'
-  | 'paper_assets'
   | 'physical_assets'
   | 'expenses'
   | 'settings';
@@ -93,21 +94,26 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
     icon: keyof typeof Ionicons.glyphMap;
     badge?: string;
   }> = [
-    { id: 'dashboard', label: 'Dashboard', icon: 'grid-outline' },
-    { id: 'register', label: 'Checkbook Register', icon: 'receipt-outline' },
-    { id: 'income_expense_details', label: 'Incomes & Expenses', icon: 'swap-horizontal-outline' },
-    { id: 'projects', label: 'Projects Ledger', icon: 'briefcase-outline' },
-    { id: 'expenses', label: 'Spending & Budgets', icon: 'pie-chart-outline' },
-    { id: 'reports', label: 'Financial Statements', icon: 'document-text-outline' },
-    { id: 'categories', label: 'Category & Budgets', icon: 'pricetags-outline' },
-    { id: 'stocks', label: 'Stock Equities', icon: 'trending-up-outline' },
+    { id: 'dashboard', label: 'Overview Dashboard', icon: 'grid-outline' },
+    { id: 'income_expense_details', label: 'Daily Cash Book', icon: 'swap-horizontal-outline' },
+    { id: 'paper_assets', label: 'FDR, DPS & Sanchaypatra', icon: 'lock-closed-outline' },
+    { id: 'planner', label: 'Goals, Zakat & Calc', icon: 'calculator-outline', badge: 'New' },
+    { id: 'accounts', label: 'Bank Accounts & Cash', icon: 'wallet-outline' },
+    { id: 'register', label: 'All Transactions', icon: 'receipt-outline' },
+    { id: 'expenses', label: 'Expenses & Budgets', icon: 'pie-chart-outline' },
+    { id: 'projects', label: 'Projects Income & Cost', icon: 'briefcase-outline' },
+    { id: 'stocks', label: 'DSE Stocks', icon: 'trending-up-outline' },
+    { id: 'loans', label: 'Loans & Monthly EMI', icon: 'card-outline' },
+    { id: 'physical_assets', label: 'Land, Gold & Property', icon: 'business-outline' },
+    { id: 'reports', label: 'Reports & Tax', icon: 'document-text-outline' },
+    { id: 'categories', label: 'Categories & Limits', icon: 'pricetags-outline' },
     {
       id: 'schedules',
-      label: 'Bills & Schedules',
+      label: 'Bills & Reminders',
       icon: 'calendar-outline',
       badge: pendingNotifCount > 0 ? `${pendingNotifCount}` : undefined,
     },
-    { id: 'settings', label: 'Settings & Security', icon: 'settings-outline' },
+    { id: 'settings', label: 'Settings & Backup', icon: 'settings-outline' },
   ];
 
   return (

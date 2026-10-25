@@ -10,7 +10,7 @@ import {
   Image,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { Colors, Spacing, Radius } from '../../theme';
+import { Spacing, Radius } from '../../theme';
 import { DynamicMoneyTree } from '../visuals/DynamicMoneyTree';
 import { SidebarTabType } from './AppSidebar';
 
@@ -50,25 +50,26 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({
     icon: keyof typeof Ionicons.glyphMap;
     badge?: string;
   }> = [
-    { id: 'dashboard', label: 'Home Dashboard', icon: 'grid-outline' },
-    { id: 'register', label: 'Quicken Register', icon: 'receipt-outline', badge: 'Active' },
-    { id: 'income_expense_details', label: 'Incomes - Expenses', icon: 'swap-horizontal-outline', badge: 'Cash Book' },
-    { id: 'projects', label: 'Projects Ledger', icon: 'briefcase-outline', badge: 'P&L' },
-    { id: 'expenses', label: 'Spending & Budgets', icon: 'pie-chart-outline' },
-    { id: 'reports', label: 'Financial Statements', icon: 'document-text-outline', badge: 'IFRS' },
-    { id: 'categories', label: 'Category & Budget Setup', icon: 'pricetags-outline', badge: 'Setup' },
-    { id: 'stocks', label: 'Stock Market Equities', icon: 'trending-up-outline', badge: 'DSE/CSE' },
+    { id: 'dashboard', label: 'Overview Dashboard', icon: 'grid-outline' },
+    { id: 'income_expense_details', label: 'Daily Cash Book', icon: 'swap-horizontal-outline', badge: 'Ledger' },
+    { id: 'paper_assets', label: 'FDR, DPS & Sanchaypatra', icon: 'lock-closed-outline', badge: 'Savings' },
+    { id: 'planner', label: 'Goals, Zakat & Calculators', icon: 'calculator-outline', badge: 'New' },
     { id: 'accounts', label: 'Bank Accounts & Cash', icon: 'wallet-outline' },
-    { id: 'loans', label: 'Loans & Debt Service', icon: 'card-outline' },
+    { id: 'register', label: 'All Transactions', icon: 'receipt-outline' },
+    { id: 'expenses', label: 'Expenses & Monthly Budget', icon: 'pie-chart-outline' },
+    { id: 'projects', label: 'Projects Income & Cost', icon: 'briefcase-outline' },
+    { id: 'loans', label: 'Loans & Monthly EMI', icon: 'card-outline' },
+    { id: 'stocks', label: 'DSE Stocks & Shares', icon: 'trending-up-outline' },
+    { id: 'physical_assets', label: 'Land, Gold & Property', icon: 'business-outline' },
+    { id: 'reports', label: 'Reports & Tax Statements', icon: 'document-text-outline' },
+    { id: 'categories', label: 'Categories & Budget Limits', icon: 'pricetags-outline' },
     {
       id: 'schedules',
-      label: 'Bills & Income Schedules',
+      label: 'Bills & Profit Reminders',
       icon: 'calendar-outline',
       badge: pendingNotifCount > 0 ? `${pendingNotifCount}` : undefined,
     },
-    { id: 'paper_assets', label: 'Paper Assets (Sanchaypatra)', icon: 'document-text-outline' },
-    { id: 'physical_assets', label: 'Physical Assets (Land/Gold)', icon: 'business-outline' },
-    { id: 'settings', label: 'Settings & Security Vault', icon: 'settings-outline' },
+    { id: 'settings', label: 'Settings & Backup', icon: 'settings-outline' },
   ];
 
   const handleItemPress = (tab: SidebarTabType) => {
@@ -79,24 +80,22 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
       <View style={styles.overlay}>
-        {/* Backdrop click to close */}
         <TouchableOpacity style={styles.backdrop} activeOpacity={1} onPress={onClose} />
 
-        {/* Drawer Content */}
         <SafeAreaView style={styles.drawerContainer}>
           <View style={styles.drawerContent}>
             {/* Brand Header */}
             <View style={styles.brandHeader}>
               <View style={styles.brandRow}>
-                <DynamicMoneyTree size={38} />
+                <DynamicMoneyTree size={36} />
                 <View style={styles.brandCol}>
                   <Text style={styles.brandTitle}>Money-Honey</Text>
-                  <Text style={styles.brandSubtitle}>Quicken Executive Suite</Text>
+                  <Text style={styles.brandSubtitle}>Personal Wealth Suite</Text>
                 </View>
               </View>
 
               <TouchableOpacity style={styles.closeBtn} onPress={onClose}>
-                <Ionicons name="close" size={24} color="#FFFFFF" />
+                <Ionicons name="close" size={22} color="#FFFFFF" />
               </TouchableOpacity>
             </View>
 
@@ -120,7 +119,7 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({
                   <View
                     style={[
                       styles.statusDot,
-                      { backgroundColor: isOnline ? '#10B981' : '#F59E0B' },
+                      { backgroundColor: isOnline ? '#16A34A' : '#F59E0B' },
                     ]}
                   />
                   <Text style={styles.profileId}>
@@ -141,14 +140,14 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({
               activeOpacity={0.85}
             >
               <Ionicons name="add-circle" size={18} color="#FFFFFF" />
-              <Text style={styles.quickEntryBtnText}>+ New Transaction</Text>
+              <Text style={styles.quickEntryBtnText}>+ Add Expense / Income / FDR / DPS</Text>
             </TouchableOpacity>
 
-            {/* Navigation Menu Items */}
+            {/* Scrollable Navigation Menu Items */}
             <ScrollView
-              style={[styles.menuScroll, { overflow: 'hidden' }]}
-              showsVerticalScrollIndicator={false}
-              contentContainerStyle={{ paddingBottom: 20 }}
+              style={styles.menuScroll}
+              showsVerticalScrollIndicator={true}
+              contentContainerStyle={{ paddingBottom: 48 }}
             >
               {menuItems.map((item) => {
                 const isActive = activeTab === item.id;
@@ -162,8 +161,8 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({
                   >
                     <Ionicons
                       name={item.icon}
-                      size={20}
-                      color={isActive ? '#38BDF8' : '#94A3B8'}
+                      size={19}
+                      color={isActive ? '#FFFFFF' : '#94A3B8'}
                     />
                     <Text style={[styles.menuLabel, isActive && styles.menuLabelActive]}>
                       {item.label}
@@ -174,7 +173,7 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({
                           styles.badge,
                           isActive ? styles.badgeActive : styles.badgeInactive,
                           item.id === 'schedules' && {
-                            backgroundColor: '#EF4444',
+                            backgroundColor: '#DC2626',
                             borderRadius: 10,
                             minWidth: 18,
                             paddingHorizontal: 5,
@@ -196,7 +195,6 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({
                 );
               })}
 
-              {/* Install Mobile App Utility Link */}
               {onOpenQrModal && (
                 <TouchableOpacity
                   style={styles.mobileAppUtilityBtn}
@@ -206,11 +204,11 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({
                   }}
                   activeOpacity={0.85}
                 >
-                  <Ionicons name="phone-portrait-outline" size={18} color="#38BDF8" />
+                  <Ionicons name="phone-portrait-outline" size={18} color="#FFFFFF" />
                   <Text style={styles.mobileAppUtilityText}>
-                    Install Mobile App / PWA
+                    Install App on Phone / Laptop
                   </Text>
-                  <Ionicons name="chevron-forward" size={14} color="#64748B" />
+                  <Ionicons name="chevron-forward" size={14} color="#94A3B8" />
                 </TouchableOpacity>
               )}
             </ScrollView>
@@ -225,17 +223,17 @@ const styles = StyleSheet.create({
   overlay: {
     flex: 1,
     flexDirection: 'row',
-    backgroundColor: 'rgba(0, 0, 0, 0.65)',
+    backgroundColor: 'rgba(15, 23, 42, 0.65)',
   },
   backdrop: {
     ...StyleSheet.absoluteFillObject,
   },
   drawerContainer: {
-    width: '82%',
+    width: '84%',
     maxWidth: 340,
     height: '100%',
-    backgroundColor: '#0F172A', // Quicken Deep Slate
-    borderRightWidth: 1.5,
+    backgroundColor: '#0F172A',
+    borderRightWidth: 1,
     borderRightColor: '#1E293B',
   },
   drawerContent: {
@@ -246,7 +244,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingBottom: 14,
+    paddingBottom: 12,
     borderBottomWidth: 1,
     borderBottomColor: '#1E293B',
   },
@@ -259,16 +257,15 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   brandTitle: {
-    fontSize: 18,
-    fontWeight: '900',
+    fontSize: 17.5,
+    fontWeight: '800',
     color: '#FFFFFF',
-    letterSpacing: -0.5,
+    letterSpacing: -0.3,
   },
   brandSubtitle: {
-    fontSize: 12.5,
-    color: '#38BDF8',
-    fontWeight: '700',
-    textTransform: 'uppercase',
+    fontSize: 11.5,
+    color: '#94A3B8',
+    fontWeight: '600',
   },
   closeBtn: {
     padding: 6,
@@ -280,22 +277,22 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 12,
     backgroundColor: '#1E293B',
-    padding: 12,
-    borderRadius: Radius.lg,
-    marginVertical: Spacing.sm,
+    padding: 11,
+    borderRadius: Radius.md,
+    marginVertical: 10,
     borderWidth: 1,
     borderColor: '#334155',
   },
   avatar: {
-    fontSize: 28,
+    fontSize: 26,
   },
   avatarImg: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
   },
   profileName: {
-    fontSize: 15.5,
+    fontSize: 15,
     fontWeight: '800',
     color: '#FFFFFF',
   },
@@ -311,21 +308,21 @@ const styles = StyleSheet.create({
     borderRadius: 3,
   },
   profileId: {
-    fontSize: 12.5,
+    fontSize: 12,
     color: '#94A3B8',
   },
   quickEntryBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 8,
-    backgroundColor: '#0284C7',
-    paddingVertical: 12,
+    gap: 7,
+    backgroundColor: '#2563EB',
+    paddingVertical: 11,
     borderRadius: Radius.md,
-    marginBottom: Spacing.sm,
+    marginBottom: 8,
   },
   quickEntryBtnText: {
-    fontSize: 15,
+    fontSize: 13.5,
     fontWeight: '800',
     color: '#FFFFFF',
   },
@@ -339,13 +336,13 @@ const styles = StyleSheet.create({
     paddingVertical: 11,
     paddingHorizontal: 12,
     borderRadius: Radius.md,
-    marginVertical: 1.5,
+    marginVertical: 1,
   },
   menuItemActive: {
-    backgroundColor: '#1E293B',
+    backgroundColor: 'rgba(37, 99, 235, 0.25)',
   },
   menuLabel: {
-    fontSize: 15,
+    fontSize: 14.5,
     fontWeight: '600',
     color: '#CBD5E1',
     flex: 1,
@@ -355,22 +352,22 @@ const styles = StyleSheet.create({
     fontWeight: '800',
   },
   badge: {
-    paddingHorizontal: 8,
-    paddingVertical: 2.5,
-    borderRadius: 10,
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+    borderRadius: 6,
   },
   badgeActive: {
-    backgroundColor: 'rgba(2, 132, 199, 0.25)',
+    backgroundColor: '#2563EB',
   },
   badgeInactive: {
     backgroundColor: '#1E293B',
   },
   badgeText: {
-    fontSize: 11.5,
-    fontWeight: '800',
+    fontSize: 10.5,
+    fontWeight: '700',
   },
   badgeTextActive: {
-    color: '#38BDF8',
+    color: '#FFFFFF',
   },
   badgeTextInactive: {
     color: '#94A3B8',
@@ -383,14 +380,14 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 14,
     borderRadius: Radius.md,
-    marginTop: Spacing.md,
+    marginTop: 12,
     borderWidth: 1,
-    borderColor: 'rgba(56, 189, 248, 0.3)',
+    borderColor: '#334155',
   },
   mobileAppUtilityText: {
-    fontSize: 14,
+    fontSize: 13.5,
     fontWeight: '700',
-    color: '#38BDF8',
+    color: '#E2E8F0',
     flex: 1,
     marginLeft: 10,
   },

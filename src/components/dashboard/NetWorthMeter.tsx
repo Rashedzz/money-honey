@@ -60,8 +60,10 @@ export const NetWorthMeter: React.FC<NetWorthMeterProps> = ({
       {/* 1. Header with Institutional Solvency Badge */}
       <View style={styles.headerRow}>
         <View style={styles.titleBadge}>
-          <Ionicons name="shield-checkmark" size={15} color="#0284C7" />
-          <Text style={styles.titleBadgeText}>EXECUTIVE BALANCE SHEET • CONSOLIDATED WEALTH</Text>
+          <Ionicons name="shield-checkmark" size={15} color="#0F172A" />
+          <Text style={[styles.titleBadgeText, { color: '#475569' }]}>
+            TOTAL WEALTH SUMMARY • EVERYTHING YOU OWN MINUS LOANS
+          </Text>
         </View>
 
         <View
@@ -82,14 +84,14 @@ export const NetWorthMeter: React.FC<NetWorthMeterProps> = ({
               { color: solvencyRatio >= 70 ? '#059669' : '#D97706' },
             ]}
           >
-            {solvencyRatio >= 70 ? `${solvencyRatio}% Equity • Strong Solvency` : `${solvencyRatio}% Equity • Moderate Leverage`}
+            {solvencyRatio >= 70 ? `${solvencyRatio}% Debt-Free Ownership` : `${solvencyRatio}% Net Ownership`}
           </Text>
         </View>
       </View>
 
       {/* 2. Flagship Net Worth Figure with Dual Display (Exact BDT + Lakhs) */}
       <View style={styles.heroFigureBox}>
-        <Text style={styles.heroSubLabel}>TOTAL CONSOLIDATED NET WORTH</Text>
+        <Text style={styles.heroSubLabel}>TOTAL NET WORTH</Text>
         <View style={styles.heroAmountRow}>
           <Text style={[styles.heroAmount, { color: isPositive ? '#0F172A' : '#EF4444' }]}>
             {isPositive ? '' : '−'}৳ {formatBDT(Math.abs(netWorth))}
@@ -101,7 +103,7 @@ export const NetWorthMeter: React.FC<NetWorthMeterProps> = ({
           </View>
         </View>
         <Text style={styles.heroCaption}>
-          Net wealth aggregated across liquid bank reserves, DSE/CSE equities, sovereign paper instruments & real assets.
+          Combined value of your Cash & Banks, FDR/DPS/Sanchaypatra, Stocks, and Land/Gold minus Loans.
         </Text>
       </View>
 
@@ -110,8 +112,8 @@ export const NetWorthMeter: React.FC<NetWorthMeterProps> = ({
         {/* Pillar 1: Gross Assets */}
         <View style={styles.pillarCard}>
           <View style={styles.pillarHeader}>
-            <Ionicons name="layers-outline" size={16} color="#0284C7" />
-            <Text style={styles.pillarLabel}>GROSS ASSETS</Text>
+            <Ionicons name="layers-outline" size={16} color="#0F172A" />
+            <Text style={styles.pillarLabel}>TOTAL ASSETS OWNED</Text>
           </View>
           <Text style={styles.pillarValue} numberOfLines={1}>৳ {formatBDT(totalAssets)}</Text>
           <Text style={[styles.pillarSub, { color: '#059669' }]} numberOfLines={1}>
@@ -123,13 +125,13 @@ export const NetWorthMeter: React.FC<NetWorthMeterProps> = ({
         <View style={styles.pillarCard}>
           <View style={styles.pillarHeader}>
             <Ionicons name="card-outline" size={16} color="#DC2626" />
-            <Text style={styles.pillarLabel}>LIABILITIES & DEBTS</Text>
+            <Text style={styles.pillarLabel}>LOANS & DEBTS</Text>
           </View>
           <Text style={[styles.pillarValue, { color: totalLiabilities > 0 ? '#DC2626' : '#0F172A' }]} numberOfLines={1}>
             ৳ {formatBDT(totalLiabilities)}
           </Text>
           <Text style={[styles.pillarSub, { color: totalLiabilities > 0 ? '#DC2626' : '#64748B' }]} numberOfLines={1}>
-            {totalLiabilities > 0 ? `▼ ${formatLakhs(totalLiabilities)}` : 'Debt Free'}
+            {totalLiabilities > 0 ? `▼ ${formatLakhs(totalLiabilities)}` : 'Zero Debt'}
           </Text>
         </View>
 
@@ -137,24 +139,24 @@ export const NetWorthMeter: React.FC<NetWorthMeterProps> = ({
         <View style={styles.pillarCard}>
           <View style={styles.pillarHeader}>
             <Ionicons name="swap-vertical-outline" size={16} color="#059669" />
-            <Text style={styles.pillarLabel}>MONTHLY CASH FLOW</Text>
+            <Text style={styles.pillarLabel}>MONTHLY NET SAVED</Text>
           </View>
           <Text style={[styles.pillarValue, { color: netMonthlyCashFlow >= 0 ? '#059669' : '#DC2626' }]} numberOfLines={1}>
             {netMonthlyCashFlow >= 0 ? '+' : '−'}৳ {formatBDT(Math.abs(netMonthlyCashFlow))}
           </Text>
           <Text style={[styles.pillarSub, { color: netMonthlyCashFlow >= 0 ? '#059669' : '#DC2626' }]} numberOfLines={1}>
-            {netMonthlyCashFlow >= 0 ? '▲ Net Surplus' : '▼ Deficit'}
+            {netMonthlyCashFlow >= 0 ? '▲ Income > Expense' : '▼ Expense > Income'}
           </Text>
         </View>
 
         {/* Pillar 4: Emergency Runway */}
         <View style={styles.pillarCard}>
           <View style={styles.pillarHeader}>
-            <Ionicons name="timer-outline" size={16} color="#7C3AED" />
-            <Text style={styles.pillarLabel}>LIQUID RUNWAY</Text>
+            <Ionicons name="timer-outline" size={16} color="#334155" />
+            <Text style={styles.pillarLabel}>SAFETY CUSHION</Text>
           </View>
           <Text style={styles.pillarValue} numberOfLines={1}>{emergencyRunwayMonths} Mo</Text>
-          <Text style={[styles.pillarSub, { color: '#6366F1' }]} numberOfLines={1}>Burn Capacity</Text>
+          <Text style={[styles.pillarSub, { color: '#64748B' }]} numberOfLines={1}>Expenses Covered</Text>
         </View>
       </View>
 
@@ -196,13 +198,13 @@ export const NetWorthMeter: React.FC<NetWorthMeterProps> = ({
 
           <View style={styles.legendItem}>
             <View style={[styles.legendDot, { backgroundColor: '#6366F1' }]} />
-            <Text style={styles.legendLabel}>Paper & Sanchaypatra ({paperPct}%)</Text>
+            <Text style={styles.legendLabel}>FDR, DPS & Sanchaypatra ({paperPct}%)</Text>
             <Text style={styles.legendValue}>৳ {formatBDT(allocation.paperAssets || 0)}</Text>
           </View>
 
           <View style={styles.legendItem}>
             <View style={[styles.legendDot, { backgroundColor: '#D97706' }]} />
-            <Text style={styles.legendLabel}>Physical & Real Estate ({physicalPct}%)</Text>
+            <Text style={styles.legendLabel}>Land, Gold & Property ({physicalPct}%)</Text>
             <Text style={styles.legendValue}>৳ {formatBDT(allocation.physicalAssets || 0)}</Text>
           </View>
         </View>

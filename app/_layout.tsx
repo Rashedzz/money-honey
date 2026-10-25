@@ -81,9 +81,13 @@ class AppErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundary
 import { initDynamicFavicon } from '../src/utils/dynamicFavicon';
 import { initPwaSupport } from '../src/utils/pwaInstaller';
 import { AuthProvider } from '../src/auth/AuthContext';
+import { GlobalDialogHost, installWebAlertBridge } from '../src/components/shared/GlobalDialogHost';
+
+installWebAlertBridge();
 
 export default function RootLayout() {
   React.useEffect(() => {
+    installWebAlertBridge();
     initDynamicFavicon();
     initPwaSupport();
   }, []);
@@ -92,9 +96,10 @@ export default function RootLayout() {
     <AppErrorBoundary>
       <AuthProvider>
         <DatabaseProvider>
-          <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: '#E0F2FE' } }}>
+          <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: '#F8FAFC' } }}>
             <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
           </Stack>
+          <GlobalDialogHost />
         </DatabaseProvider>
       </AuthProvider>
     </AppErrorBoundary>

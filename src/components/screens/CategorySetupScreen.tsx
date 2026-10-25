@@ -231,12 +231,12 @@ export const CategorySetupScreen: React.FC<CategorySetupScreenProps> = ({ onBack
           <View style={styles.headerActions}>
             {onBackToExpenses && (
               <TouchableOpacity
-                style={[styles.resetBtn, { backgroundColor: '#1E293B', borderColor: '#38BDF8' }]}
+                style={styles.resetBtn}
                 onPress={onBackToExpenses}
                 activeOpacity={0.75}
               >
-                <Ionicons name="arrow-back-outline" size={14} color="#38BDF8" />
-                <Text style={[styles.resetBtnText, { color: '#38BDF8' }]}>Expenses</Text>
+                <Ionicons name="arrow-back-outline" size={14} color="#334155" />
+                <Text style={styles.resetBtnText}>Expenses</Text>
               </TouchableOpacity>
             )}
 
@@ -245,8 +245,8 @@ export const CategorySetupScreen: React.FC<CategorySetupScreenProps> = ({ onBack
               onPress={handleAutoSync}
               activeOpacity={0.85}
             >
-              <Ionicons name="sync-outline" size={16} color="#FFFFFF" />
-              <Text style={styles.syncBtnText}>Auto-Sync Schedules</Text>
+              <Ionicons name="sync-outline" size={16} color="#0F172A" />
+              <Text style={styles.syncBtnText}>Sync Bills</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -263,7 +263,7 @@ export const CategorySetupScreen: React.FC<CategorySetupScreenProps> = ({ onBack
               onPress={handleResetDefaults}
               activeOpacity={0.75}
             >
-              <Ionicons name="refresh-outline" size={14} color="#94A3B8" />
+              <Ionicons name="refresh-outline" size={14} color="#64748B" />
               <Text style={styles.resetBtnText}>Defaults</Text>
             </TouchableOpacity>
           </View>
@@ -273,31 +273,31 @@ export const CategorySetupScreen: React.FC<CategorySetupScreenProps> = ({ onBack
         <View style={styles.kpiStrip}>
           <View style={styles.kpiCol}>
             <Text style={styles.kpiLabel}>MONTHLY EXPENSE BUDGET LIMIT</Text>
-            <Text style={[styles.kpiVal, { color: '#EF4444' }]}>
+            <Text style={[styles.kpiVal, { color: '#DC2626' }]}>
               ৳ {totalExpenseBudget.toLocaleString('en-IN')}
             </Text>
-            <Text style={styles.kpiSub}>Total Ceiling across {allCategories.filter((c) => c.type === 'expense').length} heads</Text>
+            <Text style={styles.kpiSub}>Total limit across {allCategories.filter((c) => c.type === 'expense').length} categories</Text>
           </View>
 
           <View style={styles.kpiDivider} />
 
           <View style={styles.kpiCol}>
             <Text style={styles.kpiLabel}>MONTHLY INCOME TARGET</Text>
-            <Text style={[styles.kpiVal, { color: '#10B981' }]}>
+            <Text style={[styles.kpiVal, { color: '#16A34A' }]}>
               ৳ {totalIncomeTarget.toLocaleString('en-IN')}
             </Text>
-            <Text style={styles.kpiSub}>Target across {allCategories.filter((c) => c.type === 'income').length} revenue streams</Text>
+            <Text style={styles.kpiSub}>Target across {allCategories.filter((c) => c.type === 'income').length} income sources</Text>
           </View>
 
           <View style={styles.kpiDivider} />
 
           <View style={styles.kpiCol}>
-            <Text style={styles.kpiLabel}>PROJECTED SAVINGS MARGIN</Text>
-            <Text style={[styles.kpiVal, { color: '#38BDF8' }]}>
+            <Text style={styles.kpiLabel}>PLANNED SAVINGS MARGIN</Text>
+            <Text style={[styles.kpiVal, { color: '#0F172A' }]}>
               {budgetedSavingsRate}%
             </Text>
             <Text style={styles.kpiSub}>
-              ৳ {(totalIncomeTarget - totalExpenseBudget).toLocaleString('en-IN')} / mo net surplus
+              ৳ {(totalIncomeTarget - totalExpenseBudget).toLocaleString('en-IN')} / mo planned savings
             </Text>
           </View>
         </View>
@@ -313,10 +313,10 @@ export const CategorySetupScreen: React.FC<CategorySetupScreenProps> = ({ onBack
           <Ionicons
             name="receipt-outline"
             size={16}
-            color={activeTab === 'expense' ? '#FFFFFF' : '#94A3B8'}
+            color={activeTab === 'expense' ? '#FFFFFF' : '#64748B'}
           />
           <Text style={[styles.tabSwitchText, activeTab === 'expense' && styles.tabSwitchTextActive]}>
-            🧾 Expense Categories ({allCategories.filter((c) => c.type === 'expense').length})
+            Expense Categories ({allCategories.filter((c) => c.type === 'expense').length})
           </Text>
         </TouchableOpacity>
 
@@ -328,10 +328,10 @@ export const CategorySetupScreen: React.FC<CategorySetupScreenProps> = ({ onBack
           <Ionicons
             name="wallet-outline"
             size={16}
-            color={activeTab === 'income' ? '#FFFFFF' : '#94A3B8'}
+            color={activeTab === 'income' ? '#FFFFFF' : '#64748B'}
           />
           <Text style={[styles.tabSwitchText, activeTab === 'income' && styles.tabSwitchTextActive]}>
-            💰 Income Categories ({allCategories.filter((c) => c.type === 'income').length})
+            Income Categories ({allCategories.filter((c) => c.type === 'income').length})
           </Text>
         </TouchableOpacity>
       </View>
@@ -339,10 +339,10 @@ export const CategorySetupScreen: React.FC<CategorySetupScreenProps> = ({ onBack
       {/* 3. Search & Filter Bar */}
       <View style={styles.searchFilterRow}>
         <View style={styles.searchBox}>
-          <Ionicons name="search-outline" size={16} color="#94A3B8" />
+          <Ionicons name="search-outline" size={16} color="#64748B" />
           <TextInput
             style={styles.searchInput}
-            placeholder={`Search ${activeTab} categories by name or notes...`}
+            placeholder={`Search ${activeTab} categories...`}
             placeholderTextColor="#94A3B8"
             value={searchQuery}
             onChangeText={setSearchQuery}
@@ -362,10 +362,10 @@ export const CategorySetupScreen: React.FC<CategorySetupScreenProps> = ({ onBack
           <Ionicons
             name="shield-checkmark-outline"
             size={14}
-            color={taxFilterOnly ? '#FFFFFF' : '#38BDF8'}
+            color={taxFilterOnly ? '#FFFFFF' : '#475569'}
           />
           <Text style={[styles.filterChipText, taxFilterOnly && styles.filterChipTextActive]}>
-            Tax Deductible Only
+            Tax Rebate Eligible Only
           </Text>
         </TouchableOpacity>
       </View>
@@ -375,10 +375,10 @@ export const CategorySetupScreen: React.FC<CategorySetupScreenProps> = ({ onBack
         {filteredVariances.length === 0 ? (
           <GlassCard style={{ alignItems: 'center', padding: 32 }} padding={32}>
             <Ionicons name="folder-open-outline" size={42} color="#64748B" />
-            <Text style={{ fontSize: 16, fontWeight: '700', color: '#F8FAFC', marginTop: 10 }}>
+            <Text style={{ fontSize: 16, fontWeight: '700', color: '#0F172A', marginTop: 10 }}>
               No {activeTab} categories found
             </Text>
-            <Text style={{ fontSize: 12, color: '#94A3B8', marginTop: 4 }}>
+            <Text style={{ fontSize: 12, color: '#64748B', marginTop: 4 }}>
               Tap "+ New Category" above to create custom category heads.
             </Text>
           </GlassCard>
@@ -388,18 +388,18 @@ export const CategorySetupScreen: React.FC<CategorySetupScreenProps> = ({ onBack
             const isExpense = cat.type === 'expense';
             const progressColor =
               item.percentUsed > 100
-                ? '#EF4444'
+                ? '#DC2626'
                 : item.percentUsed >= 80
-                ? '#F59E0B'
+                ? '#D97706'
                 : isExpense
-                ? '#10B981'
-                : '#0284C7';
+                ? '#16A34A'
+                : '#0F172A';
 
             return (
               <GlassCard key={cat.id} style={styles.catCard} padding={16} glowColor={cat.color}>
                 <View style={styles.catCardTop}>
                   <View style={styles.catIdentityRow}>
-                    <View style={[styles.catIconCircle, { backgroundColor: `${cat.color}25`, borderColor: cat.color }]}>
+                    <View style={[styles.catIconCircle, { backgroundColor: '#F8FAFC', borderColor: '#E2E8F0' }]}>
                       <Text style={{ fontSize: 20 }}>{cat.icon}</Text>
                     </View>
                     <View style={{ flex: 1 }}>
@@ -421,16 +421,16 @@ export const CategorySetupScreen: React.FC<CategorySetupScreenProps> = ({ onBack
                       onPress={() => handleOpenEdit(cat)}
                       activeOpacity={0.75}
                     >
-                      <Ionicons name="pencil" size={14} color="#38BDF8" />
-                      <Text style={{ fontSize: 11, fontWeight: '700', color: '#38BDF8' }}>Edit</Text>
+                      <Ionicons name="pencil" size={14} color="#334155" />
+                      <Text style={{ fontSize: 11, fontWeight: '700', color: '#334155' }}>Edit</Text>
                     </TouchableOpacity>
 
                     <TouchableOpacity
-                      style={[styles.editIconBtn, { backgroundColor: 'rgba(239, 68, 68, 0.15)' }]}
+                      style={[styles.editIconBtn, { backgroundColor: '#FEF2F2', borderColor: '#FECACA' }]}
                       onPress={() => handleDeleteCategory(cat)}
                       activeOpacity={0.75}
                     >
-                      <Ionicons name="trash-outline" size={14} color="#EF4444" />
+                      <Ionicons name="trash-outline" size={14} color="#DC2626" />
                     </TouchableOpacity>
                   </View>
                 </View>
@@ -439,7 +439,7 @@ export const CategorySetupScreen: React.FC<CategorySetupScreenProps> = ({ onBack
                 <View style={styles.meterContainer}>
                   <View style={styles.meterRow}>
                     <Text style={styles.meterLabel}>
-                      {isExpense ? 'Current Month Spend:' : 'Current Month Inflow:'}{' '}
+                      {isExpense ? 'Spent This Month:' : 'Received This Month:'}{' '}
                       <Text style={{ fontWeight: '800', color: progressColor }}>
                         ৳ {item.actual.toLocaleString('en-IN')}
                       </Text>{' '}
@@ -465,13 +465,13 @@ export const CategorySetupScreen: React.FC<CategorySetupScreenProps> = ({ onBack
 
                   <View style={styles.statusFooterRow}>
                     <Text style={[styles.percentUsedText, { color: progressColor }]}>
-                      {item.percentUsed}% {isExpense ? 'of monthly budget used' : 'of monthly revenue target reached'}
+                      {item.percentUsed}% {isExpense ? 'of monthly budget used' : 'of monthly target reached'}
                     </Text>
 
                     <Text style={styles.remainingText}>
                       {isExpense
                         ? item.variance >= 0
-                          ? `৳ ${item.variance.toLocaleString('en-IN')} remaining`
+                          ? `৳ ${item.variance.toLocaleString('en-IN')} left`
                           : `৳ ${Math.abs(item.variance).toLocaleString('en-IN')} OVER BUDGET`
                         : item.variance <= 0
                         ? `Target exceeded by ৳ ${Math.abs(item.variance).toLocaleString('en-IN')}`
@@ -491,10 +491,10 @@ export const CategorySetupScreen: React.FC<CategorySetupScreenProps> = ({ onBack
           <View style={styles.modalCard}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>
-                {editingCategory ? 'Edit Category & Budget' : 'Add New Financial Category'}
+                {editingCategory ? 'Edit Category & Monthly Limit' : 'Add New Category'}
               </Text>
               <TouchableOpacity onPress={() => setIsModalVisible(false)}>
-                <Ionicons name="close" size={20} color="#94A3B8" />
+                <Ionicons name="close" size={20} color="#64748B" />
               </TouchableOpacity>
             </View>
 
@@ -507,7 +507,7 @@ export const CategorySetupScreen: React.FC<CategorySetupScreenProps> = ({ onBack
                   onPress={() => setFormType('expense')}
                 >
                   <Text style={[styles.modalTypeText, formType === 'expense' && styles.modalTypeTextActive]}>
-                    🧾 Expense (Spending Ceiling)
+                    Expense (Spending Limit)
                   </Text>
                 </TouchableOpacity>
 
@@ -516,7 +516,7 @@ export const CategorySetupScreen: React.FC<CategorySetupScreenProps> = ({ onBack
                   onPress={() => setFormType('income')}
                 >
                   <Text style={[styles.modalTypeText, formType === 'income' && styles.modalTypeTextActive]}>
-                    💰 Income (Revenue Target)
+                    Income (Monthly Target)
                   </Text>
                 </TouchableOpacity>
               </View>
@@ -525,7 +525,7 @@ export const CategorySetupScreen: React.FC<CategorySetupScreenProps> = ({ onBack
               <Text style={styles.fieldLabel}>CATEGORY NAME *</Text>
               <TextInput
                 style={styles.modalInput}
-                placeholder="e.g. Software SaaS, Child Tuition, Octane Fuel"
+                placeholder="e.g. Groceries, Child School Fee, Fuel"
                 placeholderTextColor="#94A3B8"
                 value={formName}
                 onChangeText={setFormName}
@@ -533,7 +533,7 @@ export const CategorySetupScreen: React.FC<CategorySetupScreenProps> = ({ onBack
 
               {/* Monthly Budget Limit */}
               <Text style={styles.fieldLabel}>
-                {formType === 'expense' ? 'MONTHLY EXPENSE CEILING (৳ BDT) *' : 'MONTHLY REVENUE TARGET (৳ BDT) *'}
+                {formType === 'expense' ? 'MONTHLY SPENDING LIMIT (৳ BDT) *' : 'MONTHLY INCOME TARGET (৳ BDT) *'}
               </Text>
               <TextInput
                 style={styles.modalInput}
@@ -559,7 +559,7 @@ export const CategorySetupScreen: React.FC<CategorySetupScreenProps> = ({ onBack
               </View>
 
               {/* Color Palette Picker */}
-              <Text style={styles.fieldLabel}>THEME ACCENT COLOR</Text>
+              <Text style={styles.fieldLabel}>ACCENT COLOR</Text>
               <View style={styles.colorGrid}>
                 {PRESET_COLORS.map((col) => (
                   <TouchableOpacity
@@ -581,21 +581,21 @@ export const CategorySetupScreen: React.FC<CategorySetupScreenProps> = ({ onBack
                 <Ionicons
                   name={formTaxDeductible ? 'checkbox' : 'square-outline'}
                   size={20}
-                  color={formTaxDeductible ? '#10B981' : '#64748B'}
+                  color={formTaxDeductible ? '#0F172A' : '#64748B'}
                 />
                 <View style={{ flex: 1 }}>
                   <Text style={styles.taxToggleTitle}>Tax Rebate / Deductible Eligible</Text>
                   <Text style={styles.taxToggleSub}>
-                    Mark if expenditures in this category qualify for personal income tax deduction or investment rebate.
+                    Mark if spending in this category qualifies for NBR income tax rebate or deduction.
                   </Text>
                 </View>
               </TouchableOpacity>
 
               {/* Notes */}
-              <Text style={styles.fieldLabel}>DESCRIPTION / SCOPE (OPTIONAL)</Text>
+              <Text style={styles.fieldLabel}>NOTES (OPTIONAL)</Text>
               <TextInput
                 style={[styles.modalInput, { height: 60 }]}
-                placeholder="e.g. Supermarket grocery shopping and meat supplies"
+                placeholder="e.g. Monthly supermarket groceries"
                 placeholderTextColor="#94A3B8"
                 multiline
                 value={formNotes}
@@ -608,7 +608,7 @@ export const CategorySetupScreen: React.FC<CategorySetupScreenProps> = ({ onBack
                 style={styles.modalCancelBtn}
                 onPress={() => setIsModalVisible(false)}
               >
-                <Text style={{ color: '#94A3B8', fontWeight: '700' }}>Cancel</Text>
+                <Text style={{ color: '#64748B', fontWeight: '700' }}>Cancel</Text>
               </TouchableOpacity>
 
               <TouchableOpacity
@@ -630,7 +630,7 @@ export const CategorySetupScreen: React.FC<CategorySetupScreenProps> = ({ onBack
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#080B14',
+    backgroundColor: '#F8FAFC',
   },
   content: {
     padding: Spacing.lg,
@@ -650,44 +650,49 @@ const styles = StyleSheet.create({
     gap: 16,
   },
   badgeIntuit: {
-    backgroundColor: 'rgba(2, 132, 199, 0.15)',
+    backgroundColor: '#F1F5F9',
     paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: 4,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
   },
   badgeIntuitText: {
     fontSize: 10,
     fontWeight: '800',
-    color: '#38BDF8',
+    color: '#334155',
     letterSpacing: 0.8,
   },
   badgeCount: {
-    backgroundColor: 'rgba(16, 185, 129, 0.15)',
+    backgroundColor: '#F0FDF4',
     paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: 4,
+    borderWidth: 1,
+    borderColor: '#BBF7D0',
   },
   badgeCountText: {
     fontSize: 10,
     fontWeight: '800',
-    color: '#10B981',
+    color: '#15803D',
     letterSpacing: 0.8,
   },
   headerTitle: {
-    fontSize: 22,
+    fontSize: 21,
     fontWeight: '800',
-    color: '#FFFFFF',
+    color: '#0F172A',
     marginTop: 8,
-    letterSpacing: -0.5,
+    letterSpacing: -0.4,
   },
   headerSub: {
-    fontSize: 12,
-    color: '#94A3B8',
+    fontSize: 12.5,
+    color: '#64748B',
     marginTop: 4,
     maxWidth: 550,
   },
   headerActions: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: 8,
     alignItems: 'center',
   },
@@ -695,15 +700,17 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    backgroundColor: '#059669',
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#CBD5E1',
     paddingHorizontal: 13,
-    paddingVertical: 10,
+    paddingVertical: 9,
     borderRadius: Radius.md,
   },
   syncBtnText: {
-    color: '#FFFFFF',
+    color: '#0F172A',
     fontWeight: '800',
-    fontSize: 13,
+    fontSize: 12.5,
   },
   addBtn: {
     flexDirection: 'row',
@@ -711,25 +718,27 @@ const styles = StyleSheet.create({
     gap: 6,
     backgroundColor: '#0F172A',
     paddingHorizontal: 14,
-    paddingVertical: 10,
+    paddingVertical: 9.5,
     borderRadius: Radius.md,
   },
   addBtnText: {
     color: '#FFFFFF',
     fontWeight: '800',
-    fontSize: 13,
+    fontSize: 12.5,
   },
   resetBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    backgroundColor: '#1E293B',
+    backgroundColor: '#F8FAFC',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
     paddingHorizontal: 10,
-    paddingVertical: 10,
+    paddingVertical: 9,
     borderRadius: Radius.md,
   },
   resetBtnText: {
-    color: '#94A3B8',
+    color: '#475569',
     fontWeight: '700',
     fontSize: 12,
   },
@@ -740,7 +749,7 @@ const styles = StyleSheet.create({
     marginTop: 18,
     paddingTop: 16,
     borderTopWidth: 1,
-    borderTopColor: 'rgba(255,255,255,0.08)',
+    borderTopColor: '#F1F5F9',
   },
   kpiCol: {
     flex: 1,
@@ -748,12 +757,12 @@ const styles = StyleSheet.create({
   },
   kpiDivider: {
     width: 1,
-    backgroundColor: 'rgba(255,255,255,0.08)',
+    backgroundColor: '#E2E8F0',
   },
   kpiLabel: {
     fontSize: 10,
     fontWeight: '800',
-    color: '#94A3B8',
+    color: '#64748B',
     letterSpacing: 0.8,
   },
   kpiVal: {
@@ -767,13 +776,13 @@ const styles = StyleSheet.create({
   },
   tabSwitcherRow: {
     flexDirection: 'row',
-    backgroundColor: '#0F172A',
+    backgroundColor: '#FFFFFF',
     borderRadius: Radius.md,
     padding: 4,
     gap: 6,
     marginBottom: 14,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.08)',
+    borderColor: '#E2E8F0',
   },
   tabSwitchBtn: {
     flex: 1,
@@ -790,7 +799,7 @@ const styles = StyleSheet.create({
   tabSwitchText: {
     fontSize: 13,
     fontWeight: '700',
-    color: '#94A3B8',
+    color: '#64748B',
   },
   tabSwitchTextActive: {
     color: '#FFFFFF',
@@ -809,38 +818,38 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    backgroundColor: '#0F172A',
+    backgroundColor: '#FFFFFF',
     paddingHorizontal: 12,
-    paddingVertical: 8,
+    paddingVertical: 9,
     borderRadius: Radius.md,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.08)',
+    borderColor: '#E2E8F0',
   },
   searchInput: {
     flex: 1,
     fontSize: 13,
-    color: '#FFFFFF',
+    color: '#0F172A',
     padding: 0,
   },
   filterChip: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    backgroundColor: '#1E293B',
+    backgroundColor: '#FFFFFF',
     paddingHorizontal: 12,
     paddingVertical: 9,
     borderRadius: Radius.md,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.08)',
+    borderColor: '#E2E8F0',
   },
   filterChipActive: {
     backgroundColor: '#0F172A',
-    borderColor: '#475569',
+    borderColor: '#0F172A',
   },
   filterChipText: {
     fontSize: 12,
     fontWeight: '700',
-    color: '#94A3B8',
+    color: '#475569',
   },
   filterChipTextActive: {
     color: '#FFFFFF',
@@ -849,7 +858,7 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   catCard: {
-    backgroundColor: '#0B1120',
+    backgroundColor: '#FFFFFF',
   },
   catCardTop: {
     flexDirection: 'row',
@@ -875,23 +884,25 @@ const styles = StyleSheet.create({
   catNameText: {
     fontSize: 15,
     fontWeight: '800',
-    color: '#FFFFFF',
+    color: '#0F172A',
   },
   taxBadge: {
-    backgroundColor: 'rgba(16, 185, 129, 0.15)',
+    backgroundColor: '#F0FDF4',
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 4,
+    borderWidth: 1,
+    borderColor: '#BBF7D0',
   },
   taxBadgeText: {
     fontSize: 9,
     fontWeight: '800',
-    color: '#10B981',
+    color: '#15803D',
     letterSpacing: 0.5,
   },
   catNotesText: {
-    fontSize: 11,
-    color: '#94A3B8',
+    fontSize: 11.5,
+    color: '#64748B',
     marginTop: 2,
   },
   cardActionBtns: {
@@ -902,36 +913,40 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    backgroundColor: 'rgba(56, 189, 248, 0.15)',
+    backgroundColor: '#F8FAFC',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
     paddingHorizontal: 8,
     paddingVertical: 5,
     borderRadius: 6,
   },
   meterContainer: {
-    backgroundColor: '#131D33',
+    backgroundColor: '#F8FAFC',
     padding: 12,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.04)',
+    borderColor: '#E2E8F0',
   },
   meterRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'baseline',
+    flexWrap: 'wrap',
+    gap: 6,
     marginBottom: 6,
   },
   meterLabel: {
     fontSize: 12,
-    color: '#CBD5E1',
+    color: '#334155',
   },
   meterTarget: {
     fontSize: 12,
     fontWeight: '700',
-    color: '#94A3B8',
+    color: '#64748B',
   },
   progressTrack: {
     height: 8,
-    backgroundColor: '#1E293B',
+    backgroundColor: '#E2E8F0',
     borderRadius: 4,
     overflow: 'hidden',
     marginVertical: 4,
@@ -943,6 +958,8 @@ const styles = StyleSheet.create({
   statusFooterRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+    flexWrap: 'wrap',
+    gap: 6,
     marginTop: 4,
   },
   percentUsedText: {
@@ -951,24 +968,24 @@ const styles = StyleSheet.create({
   },
   remainingText: {
     fontSize: 11,
-    color: '#94A3B8',
+    color: '#64748B',
     fontStyle: 'italic',
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.75)',
+    backgroundColor: 'rgba(15, 23, 42, 0.5)',
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 20,
+    padding: 16,
   },
   modalCard: {
-    backgroundColor: '#0F172A',
-    borderRadius: 14,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
     padding: 20,
     width: '100%',
     maxWidth: 520,
     borderWidth: 1,
-    borderColor: '#38BDF8',
+    borderColor: '#E2E8F0',
   },
   modalHeader: {
     flexDirection: 'row',
@@ -977,18 +994,18 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     paddingBottom: 10,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.08)',
+    borderBottomColor: '#F1F5F9',
   },
   modalTitle: {
     fontSize: 16,
     fontWeight: '800',
-    color: '#FFFFFF',
+    color: '#0F172A',
   },
   fieldLabel: {
-    fontSize: 10,
-    fontWeight: '800',
-    color: '#94A3B8',
-    letterSpacing: 0.8,
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#475569',
+    letterSpacing: 0.4,
     marginTop: 12,
     marginBottom: 6,
   },
@@ -999,32 +1016,35 @@ const styles = StyleSheet.create({
   },
   modalTypeBtn: {
     flex: 1,
-    paddingVertical: 8,
+    paddingVertical: 9,
     paddingHorizontal: 8,
     borderRadius: Radius.sm,
-    backgroundColor: '#1E293B',
+    backgroundColor: '#F8FAFC',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
     alignItems: 'center',
   },
   modalTypeBtnActive: {
     backgroundColor: '#0F172A',
+    borderColor: '#0F172A',
   },
   modalTypeText: {
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: '700',
-    color: '#94A3B8',
+    color: '#475569',
   },
   modalTypeTextActive: {
     color: '#FFFFFF',
   },
   modalInput: {
-    backgroundColor: '#1E293B',
+    backgroundColor: '#FFFFFF',
     borderRadius: Radius.sm,
     paddingHorizontal: 12,
     paddingVertical: 10,
-    fontSize: 13,
-    color: '#FFFFFF',
+    fontSize: 13.5,
+    color: '#0F172A',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.08)',
+    borderColor: '#CBD5E1',
   },
   pickerGrid: {
     flexDirection: 'row',
@@ -1035,14 +1055,16 @@ const styles = StyleSheet.create({
     width: 38,
     height: 38,
     borderRadius: 8,
-    backgroundColor: '#1E293B',
+    backgroundColor: '#F8FAFC',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
     alignItems: 'center',
     justifyContent: 'center',
   },
   iconPickCellActive: {
-    backgroundColor: '#0F172A',
+    backgroundColor: '#F1F5F9',
     borderWidth: 2,
-    borderColor: '#475569',
+    borderColor: '#0F172A',
   },
   colorGrid: {
     flexDirection: 'row',
@@ -1058,13 +1080,15 @@ const styles = StyleSheet.create({
   },
   colorPickCellActive: {
     borderWidth: 3,
-    borderColor: '#FFFFFF',
+    borderColor: '#0F172A',
   },
   taxToggleRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
     gap: 10,
-    backgroundColor: '#1E293B',
+    backgroundColor: '#F8FAFC',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
     padding: 12,
     borderRadius: Radius.sm,
     marginTop: 14,
@@ -1072,11 +1096,11 @@ const styles = StyleSheet.create({
   taxToggleTitle: {
     fontSize: 13,
     fontWeight: '700',
-    color: '#FFFFFF',
+    color: '#0F172A',
   },
   taxToggleSub: {
-    fontSize: 11,
-    color: '#94A3B8',
+    fontSize: 11.5,
+    color: '#64748B',
     marginTop: 2,
   },
   modalFooter: {
@@ -1086,7 +1110,7 @@ const styles = StyleSheet.create({
     marginTop: 18,
     paddingTop: 14,
     borderTopWidth: 1,
-    borderTopColor: 'rgba(255,255,255,0.08)',
+    borderTopColor: '#F1F5F9',
   },
   modalCancelBtn: {
     paddingHorizontal: 16,
